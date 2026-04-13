@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ART IS LIFE — Lewis Gitonga</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg: #ffffff;
+    --text: #111111;
+    --accent: #b3261e;
+    --muted: #777;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    letter-spacing: 0.2px;
+    line-height: 1.6;
+}
+
+/* HEADER */
+header {
+    padding: 25px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+}
+
+.logo {
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 1rem;
+}
+
+nav a {
+    margin-left: 20px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+/* COVER */
+.cover {
+    width: 100%;
+    height: 70vh;
+    background: url('cover.jpg') center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+.cover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.38);
+}
+
+.cover-content {
+    position: relative;
+    z-index: 2;
+    max-width: 700px;
+    padding: 20px;
+}
+
+.cover h1 {
+    font-size: 2.6rem;
+    font-weight: 300;
+}
+
+.cover p {
+    margin-top: 10px;
+    color: #eee;
+}
+
+/* HERO TEXT */
+.hero {
+    padding: 50px 5%;
+    text-align: center;
+}
+
+.hero h2 {
+    font-weight: 300;
+    margin-bottom: 10px;
+}
+
+.hero p {
+    color: var(--muted);
+}
+
+/* GALLERY */
+.gallery-container {
+    padding: 40px 5%;
+    column-count: 3;
+    column-gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .gallery-container { column-count: 2; }
+}
+
+@media (max-width: 600px) {
+    .gallery-container { column-count: 1; }
+}
+
+.art-card {
+    break-inside: avoid;
+    margin-bottom: 25px;
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.art-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+}
+
+.art-card img {
+    width: 100%;
+    display: block;
+}
+
+.art-info {
+    padding: 14px;
+}
+
+.art-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+    letter-spacing: 0.3px;
+}
+
+.art-price {
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+}
+
+.art-description {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+/* BUTTON */
+.buy-btn {
+    display: block;
+    text-align: center;
+    background: linear-gradient(135deg, #25D366, #1faa5b);
+    color: white;
+    padding: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 2px;
+}
+
+/* FOOTER */
+footer {
+    padding: 50px 5%;
+    text-align: center;
+    background: #f9f9f9;
+    margin-top: 40px;
+}
+
+footer a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">ART IS LIFE — Lewis Gitonga</div>
+    <nav>
+        <a href="#gallery">Gallery</a>
+        <a href="#about">About</a>
+    </nav>
+</header>
+
+<!-- COVER -->
+<section class="cover">
+    <div class="cover-content">
+        <h1>Art is Life</h1>
+        <p>A curated collection of human experience, nature, and memory.</p>
+    </div>
+</section>
+
+<section class="hero">
+    <h2>Minimal art. Maximum meaning.</h2>
+    <p>Collectable works shaped by human experience and nature.</p>
+</section>
+
+<div class="gallery-container" id="gallery">
+
+    <div class="art-card">
+        <img src="resilience.jpg">
+        <div class="art-info">
+            <div class="art-title">Resilience</div>
+            <div class="art-price">2,000 KES</div>
+            <div class="art-description">Quiet endurance shaped by life and silent strength.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Resilience">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+    <div class="art-card">
+        <img src="kingship.jpg">
+        <div class="art-info">
+            <div class="art-title">Kingship & Kindness</div>
+            <div class="art-price">1,800 KES</div>
+            <div class="art-description">Power softened by compassion and calm presence.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Kingship%20and%20Kindness">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+    <div class="art-card">
+        <img src="chic_shadow.jpg">
+        <div class="art-info">
+            <div class="art-title">Chic & Shadow</div>
+            <div class="art-price">1,500 KES</div>
+            <div class="art-description">Confidence and vulnerability existing together.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Chic%20and%20Shadow">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+    <div class="art-card">
+        <img src="neck_to_neck.jpg">
+        <div class="art-info">
+            <div class="art-title">Neck to Neck</div>
+            <div class="art-price">1,200 KES</div>
+            <div class="art-description">Quiet connection without words, only presence.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Neck%20to%20Neck">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+    <div class="art-card">
+        <img src="joyful_blooms.jpg">
+        <div class="art-info">
+            <div class="art-title">Joyful Blooms</div>
+            <div class="art-price">1,400 KES</div>
+            <div class="art-description">Simple joy found in ordinary peaceful moments.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Joyful%20Blooms">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+    <div class="art-card">
+        <img src="macaw_pair.jpg">
+        <div class="art-info">
+            <div class="art-title">The Macaw Pair</div>
+            <div class="art-price">1,600 KES</div>
+            <div class="art-description">Companionship built quietly in shared stillness.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20The%20Macaw%20Pair">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+    <div class="art-card">
+        <img src="sunset_nomad.jpg">
+        <div class="art-info">
+            <div class="art-title">Sunset Nomad</div>
+            <div class="art-price">1,900 KES</div>
+            <div class="art-description">A steady journey through changing skies.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Sunset%20Nomad">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+    <div class="art-card">
+        <img src="color_of_light.jpg">
+        <div class="art-info">
+            <div class="art-title">Color of Light</div>
+            <div class="art-price">1,300 KES</div>
+            <div class="art-description">Hope returning after chaos finds balance again.</div>
+            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Color%20of%20Light">BUY ON WHATSAPP</a>
+        </div>
+    </div>
+
+</div>
+
+<section class="hero" id="about">
+    <h2>Philosophy</h2>
+    <p>Art shaped by nature, memory, and lived human experience.</p>
+</section>
+
+<footer>
+    <a href="#">Instagram</a>
+    <a href="#">Facebook</a>
+    <a href="#">Email</a>
+    <p style="margin-top:20px; font-size:12px;">© 2026 ART IS LIFE — LEWIS GITONGA</p>
+</footer>
+
+</body>
+</html>
