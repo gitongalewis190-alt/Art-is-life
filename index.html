@@ -344,4 +344,21 @@ return `https://wa.me/254704708178?text=${encodeURIComponent("Order: "+title+" "
 
 function render(){
 container.innerHTML = artworks.map(a=>`
-<div class="
+<div class="art-card">
+<div class="banner">AVAILABLE</div>
+<img src="${a.image}" onclick="openModal(this.src)">
+<div class="art-info">
+<div class="art-title">${a.title}</div>
+<div class="art-price">${a.price}</div>
+<div class="art-desc">${a.desc}</div>
+<a class="buy-btn" href="${whatsappLink(a.title,a.price)}" target="_blank">Secure via WhatsApp</a>
+</div>
+</div>
+`).join("");
+}
+
+render();
+</script>
+
+</body>
+</html>
