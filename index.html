@@ -224,7 +224,7 @@ footer{
     <div class="hero-text">
         <h1>Art is emotional evidence.</h1>
         <p>
-            One-time creations. Never reproduced.<br><br>
+            One-time creations. Reproduced rarely. br><br>
             Each piece is a permanent emotional record of African expression.
         </p>
     </div>
@@ -241,7 +241,7 @@ Owning art is connection to a moment that cannot be repeated.
 </div>
 
 <div class="urgency">
-⚡ Limited releases — once sold, removed permanently
+⚡ Limited releases — once sold, price increases by 30% if reproduced.
 </div>
 
 <div class="trust">
@@ -269,10 +269,10 @@ Luminous African Expression Collection
 const artworks = [
   {title:"Resilience",price:"1200 KES",image:"resilience.jpg",banner:"AVAILABLE"},
   {title:"Kingship & Kindness",price:"1700 KES",image:"kingship.jpg",banner:"AVAILABLE"},
-  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg",banner:"FEATURED"},
+  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg",banner:"AVAILABLE"},
   {title:"Neck to Neck",price:"1600 KES",image:"neck_to_neck.jpg",banner:"AVAILABLE"},
   {title:"Joyful Blooms",price:"1400 KES",image:"joyful_blooms.jpg",banner:"AVAILABLE"},
-  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg",banner:"SOLD"},
+  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg",banner:"AVAILABLE"},
   {title:"Color of Light",price:"1600 KES",image:"color_of_light.jpg",banner:"AVAILABLE"}
 ];
 
@@ -293,7 +293,7 @@ function render(data){
                 <div class="art-title">${a.title}</div>
                 <div class="art-price">${a.price}</div>
                 <a class="buy-btn" href="${whatsappLink(a.title,a.price)}">
-                    Secure via WhatsApp
+                    Secure yours via WhatsApp
                 </a>
             </div>
         </div>`;
