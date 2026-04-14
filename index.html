@@ -14,7 +14,6 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-MPX5MMNRB2');
 </script>
 
@@ -32,7 +31,7 @@
 
 body{
     font-family:Inter,sans-serif;
-    background:var(--bg);
+    background:white;
     color:var(--text);
     line-height:1.6;
 }
@@ -51,7 +50,10 @@ header{
 
 .logo{font-weight:800;}
 
-/* HERO */
+/* =========================
+   HERO (FIXED BRIGHT VERSION)
+========================= */
+
 .cover{
     height:78vh;
     background:url('cover.jpg') center/cover no-repeat;
@@ -59,19 +61,21 @@ header{
     align-items:center;
     justify-content:center;
     position:relative;
-    color:white;
+    color:#0b3d91;
+    overflow:hidden;
 }
 
-/* ✅ IMPROVED OVERLAY (LESS DARK, MORE PREMIUM) */
+/* brighten the actual image */
+.cover{
+    filter: brightness(1.15) contrast(1.05) saturate(1.05);
+}
+
+/* soft white overlay instead of dark */
 .cover::after{
     content:"";
     position:absolute;
     inset:0;
-    background: linear-gradient(
-        to bottom,
-        rgba(0,0,0,0.35),
-        rgba(0,0,0,0.55)
-    );
+    background:rgba(255,255,255,0.18);
 }
 
 .cover-content{
@@ -81,18 +85,21 @@ header{
     padding:20px;
 }
 
-/* ✅ BETTER TEXT VISIBILITY */
+/* BLUE PROFESSIONAL ART TEXT */
 .cover-content h1{
     font-size:3rem;
     font-weight:800;
-    text-shadow:0 3px 15px rgba(0,0,0,0.7);
+    color:#0b3d91;
+    text-shadow:0 2px 10px rgba(255,255,255,0.8);
 }
 
 .cover-content p{
-    text-shadow:0 2px 10px rgba(0,0,0,0.7);
+    color:#1e88e5;
+    font-weight:600;
+    text-shadow:0 2px 8px rgba(255,255,255,0.8);
 }
 
-/* HERO */
+/* HERO TEXT */
 .hero{
     padding:60px 5%;
     text-align:center;
@@ -109,7 +116,7 @@ header{
     margin:auto;
 }
 
-/* CORE MESSAGE */
+/* CORE */
 .core-message{
     text-align:center;
     padding:18px;
@@ -181,7 +188,7 @@ header{
     font-weight:800;
 }
 
-/* STATUS BADGE */
+/* STATUS */
 .status{
     position:absolute;
     top:10px;
@@ -266,50 +273,33 @@ Collectors usually start with WhatsApp conversation before purchase.
 <script>
 
 const artworks = [
-  {title:"Resilience",price:"1200 KES",image:"resilience.jpg",category:"emotion",hook:"Built under pressure.",desc:"Endurance through adversity.",featured:true,sold:false},
-  {title:"Kingship & Kindness",price:"1700 KES",image:"kingship.jpg",category:"identity",hook:"Power with empathy.",desc:"Leadership and empathy.",sold:false},
-  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg",category:"identity",hook:"Two selves, one body.",desc:"Dual identity expression.",sold:false},
-  {title:"Neck to Neck",price:"1600 KES",image:"neck_to_neck.jpg",category:"emotion",hook:"Silence becomes connection.",desc:"Silent emotional bond.",sold:false},
-  {title:"Joyful Blooms",price:"1400 KES",image:"joyful_blooms.jpg",category:"nature",hook:"Happiness in small things.",desc:"Light emotional joy.",sold:false},
-  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg",category:"journey",hook:"Movement through uncertainty.",desc:"Life transition.",sold:false},
-  {title:"Color of Light",price:"1600 KES",image:"color_of_light.jpg",category:"emotion",hook:"From darkness to clarity.",desc:"Renewal and clarity.",sold:false}
+  {title:"Resilience",price:"1200 KES",image:"resilience.jpg"},
+  {title:"Kingship & Kindness",price:"1700 KES",image:"kingship.jpg"},
+  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg"},
+  {title:"Neck to Neck",price:"1600 KES",image:"neck_to_neck.jpg"},
+  {title:"Joyful Blooms",price:"1400 KES",image:"joyful_blooms.jpg"},
+  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg"},
+  {title:"Color of Light",price:"1600 KES",image:"color_of_light.jpg"}
 ];
 
 const container = document.querySelector(".gallery-container");
 
 function whatsappLink(title, price){
-
-    const msg =
-`ORDER REQUEST
-
-Artwork: ${title}
-Price: ${price}
-
-Status check required.`;
-
+    const msg = `ORDER REQUEST\n\nArtwork: ${title}\nPrice: ${price}\n\nStatus check required.`;
     return `https://wa.me/254704708178?text=${encodeURIComponent(msg)}`;
 }
 
 function render(data){
     container.innerHTML = data.map(a=>{
-
         const link = whatsappLink(a.title, a.price);
-
-        const statusText = a.sold ? "SOLD" : "AVAILABLE";
-        const statusClass = a.sold ? "sold" : "available";
 
         return `
         <div class="art-card">
-            <span class="status ${statusClass}">${statusText}</span>
-
             <img src="${a.image}" alt="${a.title}">
 
             <div class="art-info">
                 <div class="art-title">${a.title}</div>
-                <div class="art-hook">${a.hook}</div>
                 <div class="art-price">${a.price}</div>
-                <div class="art-scarcity">One-off piece</div>
-                <div class="art-description">${a.desc}</div>
                 <a class="buy-btn" href="${link}">Secure via WhatsApp</a>
             </div>
         </div>`;
