@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,41 +52,43 @@ header{
 .logo{font-weight:800;}
 
 /* =========================
-   HERO (FIXED BRIGHT VERSION)
+   HERO (CLEAN FULL IMAGE FIX)
 ========================= */
 
 .cover{
     height:78vh;
-    background:url('cover.jpg') center/cover no-repeat;
-    display:flex;
-    align-items:center;
-    justify-content:center;
     position:relative;
-    color:#0b3d91;
     overflow:hidden;
 }
 
-/* brighten the actual image */
-.cover{
+/* image layer */
+.cover::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:url('cover.jpg') center center / cover no-repeat;
+    transform:scale(1.02);
     filter: brightness(1.15) contrast(1.05) saturate(1.05);
 }
 
-/* soft white overlay instead of dark */
+/* soft overlay */
 .cover::after{
     content:"";
     position:absolute;
     inset:0;
-    background:rgba(255,255,255,0.18);
+    background:rgba(255,255,255,0.12);
 }
 
+/* HERO TEXT */
 .cover-content{
     position:relative;
     text-align:center;
     max-width:850px;
-    padding:20px;
+    margin:auto;
+    top:50%;
+    transform:translateY(-50%);
 }
 
-/* BLUE PROFESSIONAL ART TEXT */
 .cover-content h1{
     font-size:3rem;
     font-weight:800;
@@ -99,7 +102,7 @@ header{
     text-shadow:0 2px 8px rgba(255,255,255,0.8);
 }
 
-/* HERO TEXT */
+/* HERO SECTION BELOW */
 .hero{
     padding:60px 5%;
     text-align:center;
@@ -143,6 +146,16 @@ header{
     color:#333;
 }
 
+/* CATALOGUE TITLE */
+.catalogue-title{
+    text-align:center;
+    margin:35px 0 10px 0;
+    font-weight:700;
+    letter-spacing:1px;
+    color:#b08d57; /* soft African gold */
+    font-size:0.95rem;
+}
+
 /* GALLERY */
 .gallery-container{
     padding:40px 5%;
@@ -168,7 +181,7 @@ header{
     box-shadow:0 10px 25px rgba(0,0,0,0.08);
 }
 
-.art-card img{width:100%;}
+.art-card img{width:100%; display:block;}
 
 .art-info{padding:14px;}
 
@@ -177,31 +190,10 @@ header{
     color:var(--accent);
 }
 
-.art-hook{
-    font-size:0.85rem;
-    font-style:italic;
-    margin:6px 0;
-}
-
 .art-price{
     color:var(--accent);
     font-weight:800;
 }
-
-/* STATUS */
-.status{
-    position:absolute;
-    top:10px;
-    left:10px;
-    padding:4px 8px;
-    font-size:0.7rem;
-    font-weight:700;
-    border-radius:3px;
-    color:white;
-}
-
-.available{background:#1f8f3a;}
-.sold{background:#111;}
 
 /* CTA */
 .buy-btn{
@@ -231,7 +223,7 @@ footer{
 <body>
 
 <header>
-    <div class="logo">ART IS LIFE — Lewis Gitonga</div>
+    <div class="logo">ART IS LIFE FOUNDATION — Lewis Gitonga</div>
 </header>
 
 <section class="cover">
@@ -262,10 +254,15 @@ Owning art is connection to a moment that cannot be repeated.
 Collectors usually start with WhatsApp conversation before purchase.
 </div>
 
+<!-- CATALOGUE TITLE (SINGLE, CLEAN) -->
+<div class="catalogue-title">
+Luminous African Expression Collection
+</div>
+
 <div class="gallery-container"></div>
 
 <footer>
-<p><strong>Lewis Gitonga</strong></p>
+<p><strong>ART IS LIFE FOUNDATION — Lewis Gitonga</strong></p>
 <p>WhatsApp: 0704708178</p>
 <p>© 2026 Art Is Life Foundation</p>
 </footer>
@@ -296,7 +293,6 @@ function render(data){
         return `
         <div class="art-card">
             <img src="${a.image}" alt="${a.title}">
-
             <div class="art-info">
                 <div class="art-title">${a.title}</div>
                 <div class="art-price">${a.price}</div>
