@@ -8,7 +8,7 @@
 
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces available via WhatsApp.">
 
-<!-- 🔵 GOOGLE ANALYTICS (FIXED + WORKING) -->
+<!-- 🔵 GOOGLE ANALYTICS (YOUR ID ADDED) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
 <script>
 window.dataLayer = window.dataLayer || [];
@@ -16,6 +16,23 @@ function gtag(){dataLayer.push(arguments);}
 
 gtag('js', new Date());
 gtag('config', 'G-MPX5MMNRB2');
+
+/* 🔥 CUSTOM TRACKING SYSTEM */
+function trackWhatsApp(art){
+  gtag('event','whatsapp_click',{art:art});
+}
+
+function trackSocial(platform){
+  gtag('event','social_click',{platform:platform});
+}
+
+function trackArtClick(title){
+  gtag('event','art_click',{art:title});
+}
+
+function trackArtView(title){
+  gtag('event','art_view',{art:title});
+}
 </script>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -119,8 +136,12 @@ header{
     box-shadow:0 20px 40px rgba(0,0,0,0.12);
 }
 
-.art-card img{width:100%;cursor:pointer;}
+.art-card img{
+    width:100%;
+    cursor:pointer;
+}
 
+/* BANNER */
 .banner{
     position:absolute;
     top:10px;
@@ -203,9 +224,9 @@ header{
 
 <div class="story-box">
 <h2>HOW IT ALL STARTED – BY LEWIS THE CEO</h2>
-<p>From a young age I developed a passion for art...</p>
-<p>This journey evolved into Art Is Life Foundation...</p>
-<p>Today I create emotional, meaningful artworks...</p>
+<p>From a young age I began exploring creativity...</p>
+<p>Elvis introduced me to painting fundamentals...</p>
+<p>This journey led to Art Is Life Foundation...</p>
 </div>
 
 <div class="gallery-container" id="gallery"></div>
@@ -216,28 +237,31 @@ header{
 
 <div class="socials">
 <a href="https://instagram.com/lewis_art.is.life"
-onclick="gtag('event','instagram_click')" target="_blank">Instagram</a>
+onclick="trackSocial('instagram')"
+target="_blank">Instagram</a>
 
 <a href="https://facebook.com/lewis_art.is.life"
-onclick="gtag('event','facebook_click')" target="_blank">Facebook</a>
+onclick="trackSocial('facebook')"
+target="_blank">Facebook</a>
 
 <a href="https://wa.me/254704708178"
-onclick="gtag('event','whatsapp_click')" target="_blank">WhatsApp</a>
+onclick="trackSocial('whatsapp')"
+target="_blank">WhatsApp</a>
 </div>
 
 <script>
 const artworks = [
-{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotional rhythm merging nature and sound."},
-{title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",desc:"Wisdom and endurance of nature."},
-{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"Inner identity and stillness."}
+{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotional rhythm of nature."},
+{title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",desc:"Wisdom of endurance."},
+{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"Inner stillness and identity."}
 ];
 
 const container = document.getElementById("gallery");
 
-function openModal(src, title){
+function openModal(src,title){
 document.getElementById("imageModal").style.display="flex";
 document.getElementById("modalImg").src=src;
-gtag('event','art_image_view',{art:title});
+gtag('event','art_view',{art:title});
 }
 
 document.getElementById("imageModal").onclick=function(){
@@ -251,11 +275,12 @@ return `https://wa.me/254704708178?text=${encodeURIComponent(title+" "+price)}`;
 function render(){
 container.innerHTML = artworks.map(a=>`
 <div class="art-card"
-onclick="gtag('event','art_card_click',{art:'${a.title}'})">
+onclick="trackArtClick('${a.title}')">
 
 <div class="banner">AVAILABLE</div>
 
-<img src="${a.image}" onclick="openModal('${a.image}','${a.title}')">
+<img src="${a.image}"
+onclick="openModal('${a.image}','${a.title}')">
 
 <div class="art-info">
 <div class="art-title">${a.title}</div>
@@ -264,7 +289,7 @@ onclick="gtag('event','art_card_click',{art:'${a.title}'})">
 
 <a class="buy-btn"
 href="${whatsappLink(a.title,a.price)}"
-onclick="gtag('event','whatsapp_click',{art:'${a.title}'})"
+onclick="trackWhatsApp('${a.title}')"
 target="_blank">
 Secure via WhatsApp
 </a>
