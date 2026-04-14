@@ -6,15 +6,9 @@
 
 <title>ART IS LIFE — Lewis Gitonga</title>
 
-<meta name="description" content="Art Is Life by Lewis Gitonga — Kenyan contemporary art exploring emotion, identity, and psychology. Available artworks for purchase via WhatsApp.">
+<meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces available via WhatsApp.">
 
-<meta name="keywords" content="Kenyan artist, contemporary art, emotional painting, art for sale Kenya, Lewis Gitonga">
-
-<meta property="og:title" content="Art Is Life — Lewis Gitonga">
-<meta property="og:description" content="Kenyan contemporary art exploring emotion, identity, and psychology.">
-<meta property="og:type" content="website">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -42,16 +36,14 @@ header{
     position:sticky;
     top:0;
     background:white;
+    z-index:10;
 }
 
-.logo{
-    font-weight:700;
-    letter-spacing:1px;
-}
+.logo{font-weight:800;}
 
-/* COVER */
+/* HERO */
 .cover{
-    height:75vh;
+    height:78vh;
     background:url('cover.jpg') center/cover no-repeat;
     display:flex;
     align-items:center;
@@ -70,21 +62,15 @@ header{
 .cover-content{
     position:relative;
     text-align:center;
-    max-width:800px;
+    max-width:850px;
     padding:20px;
 }
 
 .cover-content h1{
-    font-size:3.2rem;
-    font-weight:700;
+    font-size:3rem;
+    font-weight:800;
 }
 
-.cover-content p{
-    font-size:1.2rem;
-    opacity:0.9;
-}
-
-/* HERO */
 .hero{
     padding:60px 5%;
     text-align:center;
@@ -92,52 +78,40 @@ header{
 
 .hero h2{
     font-size:1.8rem;
-    margin-bottom:15px;
+    font-weight:700;
 }
 
 .hero p{
     color:var(--muted);
-    max-width:900px;
+    max-width:850px;
     margin:auto;
+}
+
+/* CORE MESSAGE */
+.core-message{
+    text-align:center;
+    padding:18px;
+    background:#fafafa;
+    border-top:1px solid #eee;
+    border-bottom:1px solid #eee;
+    font-weight:600;
 }
 
 /* URGENCY */
 .urgency{
     text-align:center;
-    padding:15px;
+    padding:12px;
     color:#b3261e;
-    font-size:0.9rem;
+    font-weight:700;
 }
 
 /* TRUST */
-.trust{
+.trust, .social-proof{
     text-align:center;
-    padding:15px;
+    padding:12px;
     font-size:0.85rem;
     background:#f5f5f5;
     color:#333;
-}
-
-/* SOCIAL PROOF */
-.social-proof{
-    text-align:center;
-    padding:20px;
-    font-size:0.85rem;
-    color:#555;
-}
-
-/* CONTROLS */
-.controls{
-    padding:20px 5%;
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    justify-content:center;
-}
-
-.controls input, .controls select{
-    padding:10px;
-    border:1px solid #ddd;
 }
 
 /* GALLERY */
@@ -150,16 +124,19 @@ header{
 @media(max-width:900px){.gallery-container{column-count:2;}}
 @media(max-width:600px){.gallery-container{column-count:1;}}
 
+/* ART CARD */
 .art-card{
     break-inside:avoid;
     margin-bottom:25px;
     border:1px solid #eee;
-    transition:0.2s;
     background:white;
+    transition:0.25s;
+    position:relative;
 }
 
 .art-card:hover{
-    transform:scale(1.01);
+    transform:scale(1.02);
+    box-shadow:0 10px 25px rgba(0,0,0,0.08);
 }
 
 .art-card img{width:100%;}
@@ -167,7 +144,7 @@ header{
 .art-info{padding:14px;}
 
 .art-title{
-    font-weight:700;
+    font-weight:800;
     color:var(--accent);
 }
 
@@ -175,35 +152,38 @@ header{
     font-size:0.85rem;
     font-style:italic;
     margin:6px 0;
-    color:#222;
 }
 
 .art-price{
     color:var(--accent);
+    font-weight:800;
+}
+
+/* STATUS BADGE */
+.status{
+    position:absolute;
+    top:10px;
+    left:10px;
+    padding:4px 8px;
+    font-size:0.7rem;
     font-weight:700;
+    border-radius:3px;
+    color:white;
 }
 
-.art-scarcity{
-    font-size:0.75rem;
-    color:#b3261e;
-    margin-top:4px;
-}
+.available{background:#1f8f3a;}
+.sold{background:#111;}
 
-.art-description{
-    color:var(--muted);
-    font-size:0.9rem;
-    margin:8px 0 10px 0;
-}
-
+/* CTA */
 .buy-btn{
     display:block;
     text-align:center;
     background:#25D366;
     color:white;
-    padding:12px;
+    padding:13px;
+    font-weight:800;
+    border-radius:6px;
     text-decoration:none;
-    font-weight:700;
-    border-radius:4px;
 }
 
 .buy-btn:hover{
@@ -214,9 +194,7 @@ footer{
     text-align:center;
     padding:40px;
     background:#f9f9f9;
-    margin-top:40px;
     font-size:0.9rem;
-    color:#444;
 }
 </style>
 </head>
@@ -229,110 +207,97 @@ footer{
 
 <section class="cover">
     <div class="cover-content">
-        <h1>Art is not decoration.</h1>
-        <p>It is emotional memory made visible. Each piece exists once.</p>
+        <h1>Art is emotional evidence.</h1>
+        <p>One-time creations. Never reproduced.</p>
     </div>
 </section>
 
 <section class="hero">
-    <h2>Created for collectors, not viewers.</h2>
-    <p>Each artwork is a one-time emotional record. When it is gone, it is gone.</p>
+    <h2>Art created for emotional connection.</h2>
+    <p>Each piece is a singular emotional record — not decoration.</p>
 </section>
 
+<div class="core-message">
+Owning art is connection to a moment that cannot be repeated.
+</div>
+
 <div class="urgency">
-    New works are released unpredictably. Available pieces may not remain listed.
+⚡ Limited releases — once sold, removed permanently
 </div>
 
 <div class="trust">
-    ✔ Original works • ✔ One-off pieces • ✔ Direct artist access • ✔ No reproductions
+✔ Direct artist access • ✔ WhatsApp orders • ✔ One-off collector pieces
 </div>
 
 <div class="social-proof">
-    Trusted by early collectors • Growing independent art brand
-</div>
-
-<section style="text-align:center;padding:40px 5%;max-width:800px;margin:auto;">
-    <h3>About the Artist</h3>
-    <p style="color:#666;">
-        I am Lewis Gitonga, a Kenyan contemporary artist focused on emotion, identity, and psychological depth.
-        Each artwork I create is a one-time expression built slowly, reflecting lived experience and inner reality.
-    </p>
-</section>
-
-<div class="controls">
-    <input type="text" id="search" placeholder="Search artwork...">
-    <select id="filter">
-        <option value="all">All</option>
-        <option value="emotion">Emotion</option>
-        <option value="identity">Identity</option>
-        <option value="nature">Nature</option>
-        <option value="journey">Journey</option>
-    </select>
+Collectors usually start with WhatsApp conversation before purchase.
 </div>
 
 <div class="gallery-container"></div>
 
-<section style="text-align:center;padding:40px 5%;max-width:800px;margin:auto;">
-    <p style="color:#555;">
-        Owning original art is not decoration. It is connection.
-        Each piece carries a moment that cannot be recreated.
-    </p>
-</section>
-
 <footer>
-    <p><strong>Lewis Gitonga</strong></p>
-    <p>WhatsApp: 0704708178</p>
-    <p>© 2026 Art Is Life Foundation</p>
+<p><strong>Lewis Gitonga</strong></p>
+<p>WhatsApp: 0704708178</p>
+<p>© 2026 Art Is Life</p>
 </footer>
 
 <script>
+
 const artworks = [
-  {title:"Resilience",price:"1200 KES",image:"resilience.jpg",category:"emotion",hook:"Built under pressure.",desc:"Endurance through adversity.",link:"https://wa.me/254704708178?text=Hi%20I%20want%20to%20secure%20Resilience"},
-  {title:"Kingship & Kindness",price:"1700 KES",image:"kingship.jpg",category:"identity",hook:"Power with empathy.",desc:"Leadership and empathy.",link:"https://wa.me/254704708178?text=Hi%20I%20want%20to%20secure%20Kingship"},
-  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg",category:"identity",hook:"Two selves, one body.",desc:"Dual identity expression.",link:"https://wa.me/254704708178?text=Hi%20I%20want%20to%20secure%20Chic"},
-  {title:"Neck to Neck",price:"1600 KES",image:"neck_to_neck.jpg",category:"emotion",hook:"Silence becomes connection.",desc:"Silent emotional bond.",link:"https://wa.me/254704708178?text=Hi%20I%20want%20to%20secure%20Neck"},
-  {title:"Joyful Blooms",price:"1400 KES",image:"joyful_blooms.jpg",category:"nature",hook:"Happiness in small things.",desc:"Light emotional joy.",link:"https://wa.me/254704708178?text=Hi%20I%20want%20to%20secure%20Joyful"},
-  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg",category:"journey",hook:"Movement through uncertainty.",desc:"Life transition.",link:"https://wa.me/254704708178?text=Hi%20I%20want%20to%20secure%20Sunset"},
-  {title:"Color of Light",price:"1600 KES",image:"color_of_light.jpg",category:"emotion",hook:"From darkness to clarity.",desc:"Renewal and clarity.",link:"https://wa.me/254704708178?text=Hi%20I%20want%20to%20secure%20Color"}
+  {title:"Resilience",price:"1200 KES",image:"resilience.jpg",category:"emotion",hook:"Built under pressure.",desc:"Endurance through adversity.",featured:true,sold:false},
+  {title:"Kingship & Kindness",price:"1700 KES",image:"kingship.jpg",category:"identity",hook:"Power with empathy.",desc:"Leadership and empathy.",sold:false},
+  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg",category:"identity",hook:"Two selves, one body.",desc:"Dual identity expression.",sold:false},
+  {title:"Neck to Neck",price:"1600 KES",image:"neck_to_neck.jpg",category:"emotion",hook:"Silence becomes connection.",desc:"Silent emotional bond.",sold:false},
+  {title:"Joyful Blooms",price:"1400 KES",image:"joyful_blooms.jpg",category:"nature",hook:"Happiness in small things.",desc:"Light emotional joy.",sold:false},
+  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg",category:"journey",hook:"Movement through uncertainty.",desc:"Life transition.",sold:false},
+  {title:"Color of Light",price:"1600 KES",image:"color_of_light.jpg",category:"emotion",hook:"From darkness to clarity.",desc:"Renewal and clarity.",sold:false}
 ];
 
 const container = document.querySelector(".gallery-container");
-const search = document.getElementById("search");
-const filter = document.getElementById("filter");
+
+function whatsappLink(title, price){
+
+    const msg =
+`ORDER REQUEST
+
+Artwork: ${title}
+Price: ${price}
+
+Status check required.`;
+
+    return `https://wa.me/254704708178?text=${encodeURIComponent(msg)}`;
+}
 
 function render(data){
-    container.innerHTML = data.map(a=>`
+    container.innerHTML = data.map(a=>{
+
+        const link = whatsappLink(a.title, a.price);
+
+        const statusText = a.sold ? "SOLD" : "AVAILABLE";
+        const statusClass = a.sold ? "sold" : "available";
+
+        return `
         <div class="art-card">
+            <span class="status ${statusClass}">${statusText}</span>
+
             <img src="${a.image}" alt="${a.title}">
+
             <div class="art-info">
                 <div class="art-title">${a.title}</div>
                 <div class="art-hook">${a.hook}</div>
                 <div class="art-price">${a.price}</div>
-                <div class="art-scarcity">Only 1 available</div>
+                <div class="art-scarcity">One-off piece</div>
                 <div class="art-description">${a.desc}</div>
-                <a class="buy-btn" href="${a.link}">Secure This Artwork</a>
+                <a class="buy-btn" href="${link}">Secure via WhatsApp</a>
             </div>
-        </div>
-    `).join("");
+        </div>`;
+    }).join("");
 }
-
-function update(){
-    let q = search.value.toLowerCase();
-    let f = filter.value;
-
-    let filtered = artworks.filter(a=>{
-        return (f==="all" || a.category===f) &&
-               (a.title.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q));
-    });
-
-    render(filtered);
-}
-
-search.addEventListener("input",update);
-filter.addEventListener("change",update);
 
 render(artworks);
+
 </script>
 
 </body>
 </html>
+
