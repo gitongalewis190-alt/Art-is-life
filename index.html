@@ -84,6 +84,35 @@ header{
     .gallery-container{grid-template-columns:1fr;}
 }
 
+/* COLLECTION HEADERS (ADDED) */
+.collection-title{
+    text-align:center;
+    font-size:1.4rem;
+    font-weight:900;
+    margin:35px 0 10px 0;
+    color:var(--deep-blue);
+    text-decoration:underline;
+    letter-spacing:1px;
+}
+
+/* INTRO QUOTE BEFORE GALLERY (ADDED) */
+.gallery-intro-quote{
+    text-align:center;
+    padding:50px 20px 10px 20px;
+    font-size:1.05rem;
+    color:#333;
+    font-style:italic;
+    max-width:750px;
+    margin:0 auto;
+}
+
+.gallery-intro-quote span{
+    display:block;
+    margin-top:10px;
+    font-weight:800;
+    color:var(--deep-blue);
+}
+
 /* ART CARD */
 .art-card{
     border:1px solid #eee;
@@ -182,7 +211,19 @@ footer{
 </div>
 </section>
 
+<!-- ADDED: INTRO CONVERSION QUOTE -->
+<div class="gallery-intro-quote">
+“Every painting is not just seen — it is experienced.  
+Each piece is a fragment of emotion, memory, and becoming.”
+<span>— Art Is Life Foundation</span>
+</div>
+
+<!-- ADDED: COLLECTION 1 -->
+<div class="collection-title">THE GENERAL SERIES</div>
+
 <div class="gallery-container"></div>
+
+<!-- ADDED: COLLECTION 2 (inserted via JS visual break below after first item group effect) -->
 
 <div class="socials">
 <a href="https://instagram.com/lewis_art.is.life" target="_blank">Instagram</a>
@@ -199,7 +240,6 @@ footer{
 
 const artworks = [
 
-/* YOUR NEW WORKS FIRST */
 {title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",
 desc:"A reflection on how human emotion and nature merge through sound, where creativity becomes a shared language between self and the natural world."},
 
@@ -215,7 +255,6 @@ desc:"A reflection on companionship in nature, where shared presence becomes a s
 {title:"Solace in Grey",price:"1000 KES",image:"solace.jpg",
 desc:"A moment of human connection within an isolating urban world, where warmth and unity create shelter from emotional distance."},
 
-/* EXISTING WORKS (ADJUSTED RANGE) */
 {title:"Resilience",price:"900 KES",image:"resilience.jpg",desc:"A portrait of quiet strength formed through struggle."},
 {title:"Kingship & Kindness",price:"1500 KES",image:"kingship.jpg",desc:"Leadership rooted in emotional intelligence."},
 {title:"Chic & Shadow",price:"1200 KES",image:"chic_shadow.jpg",desc:"Contrast between identity and depth."},
@@ -234,7 +273,20 @@ return `https://wa.me/254704708178?text=${encodeURIComponent(msg)}`;
 }
 
 function render(data){
-container.innerHTML = data.map(a=>`
+
+let html = "";
+
+/* INSERT COLLECTION BREAK LOGIC */
+let inserted = false;
+
+data.forEach((a, i) => {
+
+if(!inserted && i === 5){
+html += `<div class="collection-title">TURNING OF THE NEW CHARLOTTE AD</div>`;
+inserted = true;
+}
+
+html += `
 <div class="art-card">
 <div class="banner">AVAILABLE</div>
 <img src="${a.image}" alt="${a.title}">
@@ -247,7 +299,10 @@ Secure via WhatsApp
 </a>
 </div>
 </div>
-`).join("");
+`;
+});
+
+container.innerHTML = html;
 }
 
 render(artworks);
