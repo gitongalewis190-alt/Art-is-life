@@ -8,7 +8,7 @@
 
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces available via WhatsApp.">
 
-<!-- 🔵 GOOGLE ANALYTICS (YOUR ID ADDED) -->
+<!-- GOOGLE ANALYTICS -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
 <script>
 window.dataLayer = window.dataLayer || [];
@@ -17,13 +17,17 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-MPX5MMNRB2');
 
-/* 🔥 CUSTOM TRACKING SYSTEM */
+/* TRACKING SYSTEM */
 function trackWhatsApp(art){
-  gtag('event','whatsapp_click',{art:art});
+  gtag('event','whatsapp_click',{art});
 }
 
-function trackSocial(platform){
-  gtag('event','social_click',{platform:platform});
+function trackInstagram(){
+  gtag('event','instagram_click');
+}
+
+function trackFacebook(){
+  gtag('event','facebook_click');
 }
 
 function trackArtClick(title){
@@ -113,14 +117,23 @@ header{
     margin-bottom:14px;
     line-height:1.7;
     font-size:0.95rem;
+    color:#222;
 }
 
-/* GRID */
+/* GALLERY */
 .gallery-container{
     padding:60px 7%;
     display:grid;
     grid-template-columns:repeat(3,1fr);
     gap:35px;
+}
+
+@media(max-width:900px){
+    .gallery-container{grid-template-columns:repeat(2,1fr);}
+}
+
+@media(max-width:600px){
+    .gallery-container{grid-template-columns:1fr;}
 }
 
 /* CARD */
@@ -129,6 +142,7 @@ header{
     background:white;
     transition:0.3s ease;
     position:relative;
+    border-radius:6px;
 }
 
 .art-card:hover{
@@ -136,12 +150,13 @@ header{
     box-shadow:0 20px 40px rgba(0,0,0,0.12);
 }
 
+/* IMAGE */
 .art-card img{
     width:100%;
     cursor:pointer;
 }
 
-/* BANNER */
+/* AVAILABLE BANNER */
 .banner{
     position:absolute;
     top:10px;
@@ -152,17 +167,38 @@ header{
     border-radius:4px;
     color:white;
     background:var(--green);
+    animation:pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse{
+    0%{transform:scale(1);opacity:1;}
+    50%{transform:scale(1.05);opacity:0.7;}
+    100%{transform:scale(1);opacity:1;}
 }
 
 /* INFO */
 .art-info{padding:18px;}
 
-.art-title{color:var(--accent);font-weight:800;}
+.art-title{
+    font-weight:800;
+    color:var(--accent);
+}
 
-.art-price{color:var(--price-blue);font-weight:800;}
+/* PRICE BLUE FIX */
+.art-price{
+    color:var(--price-blue);
+    font-weight:900;
+    font-size:1rem;
+}
 
-.art-desc{font-size:0.88rem;color:#555;margin:10px 0 14px;}
+.art-desc{
+    font-size:0.88rem;
+    color:#555;
+    margin:10px 0 14px;
+    line-height:1.5;
+}
 
+/* BUTTON */
 .buy-btn{
     display:block;
     text-align:center;
@@ -182,9 +218,9 @@ header{
 
 .socials a{
     margin:0 10px;
+    text-decoration:none;
     font-weight:700;
     color:var(--deep-blue);
-    text-decoration:none;
 }
 
 /* MODAL */
@@ -214,6 +250,7 @@ header{
 <div class="logo">ART IS LIFE FOUNDATION — Lewis Gitonga</div>
 </header>
 
+<!-- HERO -->
 <section class="hero-wrapper">
 <div class="hero-image"></div>
 <div class="hero-text">
@@ -222,42 +259,50 @@ header{
 </div>
 </section>
 
+<!-- STORY -->
 <div class="story-box">
 <h2>HOW IT ALL STARTED – BY LEWIS THE CEO</h2>
-<p>From a young age I began exploring creativity...</p>
+
+<p>From a young age, I found myself deeply drawn to creativity and crafting...</p>
 <p>Elvis introduced me to painting fundamentals...</p>
-<p>This journey led to Art Is Life Foundation...</p>
+<p>The African Kidpreneur Summit changed my direction...</p>
+<p><strong>This is the birth of Art Is Life Foundation.</strong></p>
 </div>
 
+<!-- GALLERY -->
 <div class="gallery-container" id="gallery"></div>
 
+<!-- MODAL -->
 <div class="image-modal" id="imageModal">
 <img id="modalImg">
 </div>
 
+<!-- SOCIALS -->
 <div class="socials">
-<a href="https://instagram.com/lewis_art.is.life"
-onclick="trackSocial('instagram')"
-target="_blank">Instagram</a>
-
-<a href="https://facebook.com/lewis_art.is.life"
-onclick="trackSocial('facebook')"
-target="_blank">Facebook</a>
-
-<a href="https://wa.me/254704708178"
-onclick="trackSocial('whatsapp')"
-target="_blank">WhatsApp</a>
+<a href="https://instagram.com/lewis_art.is.life" onclick="trackInstagram()" target="_blank">Instagram</a>
+<a href="https://facebook.com/lewis_art.is.life" onclick="trackFacebook()" target="_blank">Facebook</a>
+<a href="https://wa.me/254704708178" onclick="trackWhatsApp('footer')" target="_blank">WhatsApp</a>
 </div>
 
 <script>
 const artworks = [
-{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotional rhythm of nature."},
+{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotional frequency of nature."},
 {title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",desc:"Wisdom of endurance."},
-{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"Inner stillness and identity."}
+{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"Inner stillness."},
+{title:"Kinship of the Canopy",price:"600 KES",image:"canopy.jpg",desc:"Connection in nature."},
+{title:"Solace in Grey",price:"1000 KES",image:"solace.jpg",desc:"Emotional refuge."},
+{title:"Resilience",price:"900 KES",image:"resilience.jpg",desc:"Strength through struggle."},
+{title:"Kingship & Kindness",price:"1500 KES",image:"kingship.jpg",desc:"Empathetic leadership."},
+{title:"Chic & Shadow",price:"1200 KES",image:"chic_shadow.jpg",desc:"Dual identity."},
+{title:"Neck to Neck",price:"1100 KES",image:"neck_to_neck.jpg",desc:"Emotional tension."},
+{title:"Joyful Blooms",price:"1000 KES",image:"joyful_blooms.jpg",desc:"Growth and renewal."},
+{title:"Sunset Nomad",price:"1300 KES",image:"sunset_nomad.jpg",desc:"Journey transitions."},
+{title:"Color of Light",price:"1400 KES",image:"color_of_light.jpg",desc:"Hope and vision."}
 ];
 
 const container = document.getElementById("gallery");
 
+/* MODAL */
 function openModal(src,title){
 document.getElementById("imageModal").style.display="flex";
 document.getElementById("modalImg").src=src;
@@ -268,10 +313,12 @@ document.getElementById("imageModal").onclick=function(){
 this.style.display="none";
 };
 
-function whatsappLink(title, price){
+/* WHATSAPP */
+function whatsappLink(title,price){
 return `https://wa.me/254704708178?text=${encodeURIComponent(title+" "+price)}`;
 }
 
+/* RENDER */
 function render(){
 container.innerHTML = artworks.map(a=>`
 <div class="art-card"
