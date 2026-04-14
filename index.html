@@ -68,6 +68,32 @@ header{
     color:var(--deep-blue);
 }
 
+/* STORY SECTION (ADDED — NO IMPACT ON EXISTING LAYOUT) */
+.story-section{
+    padding:60px 8%;
+    max-width:1000px;
+    margin:0 auto;
+}
+
+.story-title{
+    font-size:1.6rem;
+    font-weight:900;
+    color:var(--accent);
+    margin-bottom:25px;
+    letter-spacing:1px;
+}
+
+.story-text p{
+    margin-bottom:16px;
+    line-height:1.7;
+    font-size:0.95rem;
+    color:#222;
+}
+
+.story-text p strong{
+    color:var(--accent);
+}
+
 /* GRID */
 .gallery-container{
     padding:40px 5%;
@@ -84,7 +110,7 @@ header{
     .gallery-container{grid-template-columns:1fr;}
 }
 
-/* COLLECTION HEADERS (ADDED) */
+/* COLLECTION HEADERS */
 .collection-title{
     text-align:center;
     font-size:1.4rem;
@@ -95,7 +121,7 @@ header{
     letter-spacing:1px;
 }
 
-/* INTRO QUOTE BEFORE GALLERY (ADDED) */
+/* INTRO QUOTE */
 .gallery-intro-quote{
     text-align:center;
     padding:50px 20px 10px 20px;
@@ -130,7 +156,7 @@ header{
     width:100%;
 }
 
-/* GLITTER EFFECT */
+/* GLITTER */
 @keyframes glitter {
     0%{opacity:1; filter:brightness(1);}
     50%{opacity:0.6; filter:brightness(1.5);}
@@ -194,6 +220,29 @@ footer{
     padding:40px;
     background:#f9f9f9;
 }
+
+/* STORY BOX (RED ACCENT AS REQUESTED) */
+.story-box{
+    padding:50px 8%;
+    max-width:1000px;
+    margin:auto;
+    border-left:4px solid var(--accent);
+    background:#fff;
+}
+
+.story-box h2{
+    color:var(--accent);
+    font-size:1.5rem;
+    margin-bottom:20px;
+    letter-spacing:1px;
+}
+
+.story-box p{
+    margin-bottom:14px;
+    line-height:1.7;
+    font-size:0.95rem;
+    color:#222;
+}
 </style>
 </head>
 
@@ -211,19 +260,50 @@ footer{
 </div>
 </section>
 
-<!-- ADDED: INTRO CONVERSION QUOTE -->
+<!-- INTRO QUOTE -->
 <div class="gallery-intro-quote">
 “Every painting is not just seen — it is experienced.  
 Each piece is a fragment of emotion, memory, and becoming.”
 <span>— Art Is Life Foundation</span>
 </div>
 
-<!-- ADDED: COLLECTION 1 -->
+<!-- 🔴 FULL STORY SECTION ADDED EXACTLY AS REQUESTED -->
+<div class="story-box">
+
+<h2>HOW IT ALL STARTED – LEWIS CEO</h2>
+
+<p>From a young age, I found myself deeply drawn to creativity and crafting. In school, while many of my peers focused on competitive drawing—especially cars—I developed a strong desire not only to participate, but to improve, excel, and master skill through dedication. That early environment sparked in me both curiosity and ambition.</p>
+
+<p>My true turning point came in the late 2020s when I met a man named Elvis. He would gather children in a shared space and guide us through the fundamentals of painting—teaching us color blending, brush control, and artistic expression. This experience opened a new world for me. I was not only inspired by the art itself, but also by the idea of learning under guidance. I developed a strong personal desire to connect more deeply with the craft and with those who taught it.</p>
+
+<p>This led me to enroll in a one-year pencil art program under Elsie, where I learned the foundational principles of pencil drawing. However, I soon realized that pencil work alone was not enough for the vision I was developing. I wanted to explore painting in its full depth—color, emotion, and expression.</p>
+
+<p>I began teaching myself through observation and practice. I studied painting techniques from videos, learned color mixing, and experimented with watercolors on manila paper, carefully storing my works in a personal portfolio. Each piece represented growth, curiosity, and persistence.</p>
+
+<p>A significant moment came when a well-wisher visited my home and learned about my interest in art. He requested to see my work. I presented my portfolio, not knowing that this simple moment would open a new path. Weeks later, I was invited to the African Kidpreneur Summit, where young innovators from across Africa gathered to showcase their talents and entrepreneurial ideas.</p>
+
+<p>At the summit, I witnessed extraordinary creativity from other young people—some already selling their work and receiving support. This experience deeply challenged and motivated me. It made me realize that even with limited skill at the time, others were actively pursuing their craft and building opportunities from it.</p>
+
+<p>On the final day of the summit, a woman from Botswana noticed me and offered me the opportunity to present my ideas alongside other participants. I prepared a basic business proposal and showcased my portfolio. The response I received gave me hope and confidence.</p>
+
+<p>On my journey home, a kind woman approached me and offered financial support to help me purchase art materials and supplies. That moment became a turning point. I used the support as intended, and it marked the true beginning of what would become the Art Is Life Foundation.</p>
+
+<p>As I continued practicing and improving my skills, I gradually increased the value of my artwork and began reaching more audiences. Through this journey, I have learned that everything has purpose, and that what we possess—no matter how small—can become a foundation for growth and transformation.</p>
+
+<p>I also realized a deeper truth: many people have talent and passion for art, but lack access to materials, training, or space to develop their skills. This awareness shaped my vision for the future.</p>
+
+<p>I made a commitment to build something greater than myself—a space that would function as both a learning environment and a gallery. A place where artists can be taught, supported, and inspired. A place where artwork is not only displayed, but where every piece tells a story that words alone cannot express.</p>
+
+<p>Today, I continue to create paintings not only to refine my skill, but to build toward that vision. Every work is a step closer to a future where art is accessible, meaningful, and transformative.</p>
+
+<p><strong>Art Is Life Foundation is not just a name. It is a belief—that art is expression, art is opportunity, and art is life itself.</strong></p>
+
+</div>
+
+<!-- COLLECTION -->
 <div class="collection-title">THE GENERAL SERIES</div>
 
 <div class="gallery-container"></div>
-
-<!-- ADDED: COLLECTION 2 (inserted via JS visual break below after first item group effect) -->
 
 <div class="socials">
 <a href="https://instagram.com/lewis_art.is.life" target="_blank">Instagram</a>
@@ -276,7 +356,6 @@ function render(data){
 
 let html = "";
 
-/* INSERT COLLECTION BREAK LOGIC */
 let inserted = false;
 
 data.forEach((a, i) => {
