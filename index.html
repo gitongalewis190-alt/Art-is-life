@@ -10,189 +10,126 @@
 
 <style>
 :root {
-    --bg: #ffffff;
-    --text: #111111;
-    --accent: #b3261e;
-    --muted: #777;
+    --bg:#ffffff;
+    --text:#111;
+    --accent:#b3261e;
+    --muted:#666;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+    font-family:Inter,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
 }
 
-body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    letter-spacing: 0.2px;
-    line-height: 1.6;
+header{
+    padding:20px 5%;
+    display:flex;
+    justify-content:space-between;
+    border-bottom:1px solid #eee;
+    position:sticky;
+    top:0;
+    background:white;
 }
 
-/* HEADER */
-header {
-    padding: 25px 5%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-    position: sticky;
-    top: 0;
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    z-index: 100;
+.logo{
+    font-weight:600;
+    letter-spacing:1px;
 }
 
-.logo {
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-size: 1rem;
+.social a{
+    margin-left:15px;
+    text-decoration:none;
+    color:var(--muted);
+    font-size:0.9rem;
 }
 
-nav a {
-    margin-left: 20px;
-    text-decoration: none;
-    color: var(--text);
-    font-size: 0.9rem;
+.cover{
+    height:70vh;
+    background:url('cover.jpg') center/cover no-repeat;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    color:white;
 }
 
-/* COVER */
-.cover {
-    width: 100%;
-    height: 70vh;
-    background: url('cover.jpg') center/cover no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: white;
-    position: relative;
+.cover::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.45);
 }
 
-.cover::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.38);
+.cover-content{
+    position:relative;
+    text-align:center;
+    max-width:800px;
+    padding:20px;
 }
 
-.cover-content {
-    position: relative;
-    z-index: 2;
-    max-width: 700px;
-    padding: 20px;
+.hero{
+    padding:50px 5%;
+    text-align:center;
 }
 
-.cover h1 {
-    font-size: 2.6rem;
-    font-weight: 300;
+.hero h2{
+    margin-bottom:15px;
+    font-weight:400;
 }
 
-.cover p {
-    margin-top: 10px;
-    color: #eee;
+.hero p{
+    color:var(--muted);
+    max-width:900px;
+    margin:0 auto;
 }
 
-/* HERO TEXT */
-.hero {
-    padding: 50px 5%;
-    text-align: center;
+.gallery-container{
+    padding:40px 5%;
+    column-count:3;
+    column-gap:20px;
 }
 
-.hero h2 {
-    font-weight: 300;
-    margin-bottom: 10px;
+@media(max-width:900px){.gallery-container{column-count:2;}}
+@media(max-width:600px){.gallery-container{column-count:1;}}
+
+.art-card{
+    break-inside:avoid;
+    margin-bottom:25px;
+    border:1px solid #eee;
 }
 
-.hero p {
-    color: var(--muted);
+.art-card img{width:100%;}
+
+.art-info{padding:14px;}
+
+.art-title{font-weight:600;margin-bottom:5px;}
+
+.art-price{color:var(--accent);margin-bottom:8px;}
+
+.art-description{
+    color:var(--muted);
+    font-size:0.9rem;
+    margin-bottom:10px;
 }
 
-/* GALLERY */
-.gallery-container {
-    padding: 40px 5%;
-    column-count: 3;
-    column-gap: 20px;
+.buy-btn{
+    display:block;
+    text-align:center;
+    background:#25D366;
+    color:white;
+    padding:10px;
+    text-decoration:none;
+    font-weight:600;
 }
-
-@media (max-width: 900px) {
-    .gallery-container { column-count: 2; }
-}
-
-@media (max-width: 600px) {
-    .gallery-container { column-count: 1; }
-}
-
-.art-card {
-    break-inside: avoid;
-    margin-bottom: 25px;
-    background: #fff;
-    border: 1px solid #f0f0f0;
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
-}
-
-.art-card:hover {
-    transform: translateY(-8px) scale(1.01);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.08);
-}
-
-.art-card img {
-    width: 100%;
-    display: block;
-}
-
-.art-info {
-    padding: 14px;
-}
-
-.art-title {
-    font-weight: 600;
-    margin-bottom: 5px;
-    letter-spacing: 0.3px;
-}
-
-.art-price {
-    color: var(--accent);
-    margin-bottom: 8px;
-    font-weight: 500;
-    letter-spacing: 0.4px;
-}
-
-.art-description {
-    font-size: 0.9rem;
-    color: var(--muted);
-    margin-bottom: 10px;
-    line-height: 1.5;
-}
-
-/* BUTTON */
-.buy-btn {
-    display: block;
-    text-align: center;
-    background: linear-gradient(135deg, #25D366, #1faa5b);
-    color: white;
-    padding: 10px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.85rem;
-    border-radius: 2px;
-}
-
-/* FOOTER */
-footer {
-    padding: 50px 5%;
-    text-align: center;
-    background: #f9f9f9;
-    margin-top: 40px;
-}
-
-footer a {
-    margin: 0 10px;
-    text-decoration: none;
-    color: var(--muted);
-    font-size: 0.85rem;
+footer{
+    text-align:center;
+    padding:40px;
+    background:#f9f9f9;
+    margin-top:40px;
 }
 </style>
 </head>
@@ -201,34 +138,42 @@ footer a {
 
 <header>
     <div class="logo">ART IS LIFE — Lewis Gitonga</div>
-    <nav>
-        <a href="#gallery">Gallery</a>
-        <a href="#about">About</a>
-    </nav>
+    <div class="social">
+        <a href="https://instagram.com/lewis-art.is.life" target="_blank">Instagram</a>
+        <a href="#">Facebook</a>
+    </div>
 </header>
 
-<!-- COVER -->
 <section class="cover">
     <div class="cover-content">
         <h1>Art is Life</h1>
-        <p>A curated collection of human experience, nature, and memory.</p>
+        <p>Where emotion, memory, and African identity are translated into visual storytelling that speaks beyond words.</p>
     </div>
 </section>
 
 <section class="hero">
-    <h2>Minimal art. Maximum meaning.</h2>
-    <p>Collectable works shaped by human experience and nature.</p>
+    <h2>About the Artist</h2>
+    <p>
+        I am a Kenyan 18-year-old contemporary artist working under the identity <strong>Lewis Gitonga</strong>.
+        My work explores emotional depth, human psychology, identity, and lived experience through painting.
+        Each piece is designed not only to be seen, but to be felt—capturing silent emotions, cultural memory,
+        and personal reflection. My goal is to create artwork that connects deeply with collectors who value meaning
+        as much as beauty.
+    </p>
 </section>
 
-<div class="gallery-container" id="gallery">
+<div class="gallery-container">
 
     <div class="art-card">
         <img src="resilience.jpg">
         <div class="art-info">
             <div class="art-title">Resilience</div>
-            <div class="art-price">2,000 KES</div>
-            <div class="art-description">Quiet endurance shaped by life and silent strength.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Resilience">BUY ON WHATSAPP</a>
+            <div class="art-price">2000 KES</div>
+            <div class="art-description">
+                A powerful expression of endurance through adversity.
+                This piece reflects the quiet strength required to survive life’s pressure while still standing with dignity.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20Resilience">BUY ON WHATSAPP</a>
         </div>
     </div>
 
@@ -236,9 +181,12 @@ footer a {
         <img src="kingship.jpg">
         <div class="art-info">
             <div class="art-title">Kingship & Kindness</div>
-            <div class="art-price">1,800 KES</div>
-            <div class="art-description">Power softened by compassion and calm presence.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Kingship%20and%20Kindness">BUY ON WHATSAPP</a>
+            <div class="art-price">1700 KES</div>
+            <div class="art-description">
+                A balance between authority and empathy.
+                It represents leadership that is firm yet deeply humane and emotionally aware.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20Kingship%20and%20Kindness">BUY ON WHATSAPP</a>
         </div>
     </div>
 
@@ -246,9 +194,12 @@ footer a {
         <img src="chic_shadow.jpg">
         <div class="art-info">
             <div class="art-title">Chic & Shadow</div>
-            <div class="art-price">1,500 KES</div>
-            <div class="art-description">Confidence and vulnerability existing together.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Chic%20and%20Shadow">BUY ON WHATSAPP</a>
+            <div class="art-price">1500 KES</div>
+            <div class="art-description">
+                A study of dual identity—confidence on the surface, vulnerability beneath.
+                It reflects the complexity of modern self-expression.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20Chic%20and%20Shadow">BUY ON WHATSAPP</a>
         </div>
     </div>
 
@@ -256,9 +207,12 @@ footer a {
         <img src="neck_to_neck.jpg">
         <div class="art-info">
             <div class="art-title">Neck to Neck</div>
-            <div class="art-price">1,200 KES</div>
-            <div class="art-description">Quiet connection without words, only presence.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Neck%20to%20Neck">BUY ON WHATSAPP</a>
+            <div class="art-price">1200 KES</div>
+            <div class="art-description">
+                A silent moment of human closeness.
+                This work captures connection that exists beyond words, where presence itself becomes communication.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20Neck%20to%20Neck">BUY ON WHATSAPP</a>
         </div>
     </div>
 
@@ -266,9 +220,12 @@ footer a {
         <img src="joyful_blooms.jpg">
         <div class="art-info">
             <div class="art-title">Joyful Blooms</div>
-            <div class="art-price">1,400 KES</div>
-            <div class="art-description">Simple joy found in ordinary peaceful moments.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Joyful%20Blooms">BUY ON WHATSAPP</a>
+            <div class="art-price">1400 KES</div>
+            <div class="art-description">
+                A celebration of simplicity and emotional lightness.
+                It represents happiness found in everyday moments often overlooked.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20Joyful%20Blooms">BUY ON WHATSAPP</a>
         </div>
     </div>
 
@@ -276,9 +233,12 @@ footer a {
         <img src="macaw_pair.jpg">
         <div class="art-info">
             <div class="art-title">The Macaw Pair</div>
-            <div class="art-price">1,600 KES</div>
-            <div class="art-description">Companionship built quietly in shared stillness.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20The%20Macaw%20Pair">BUY ON WHATSAPP</a>
+            <div class="art-price">1600 KES</div>
+            <div class="art-description">
+                A reflection of companionship and unity.
+                It symbolizes emotional trust, harmony, and shared existence in silence.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20The%20Macaw%20Pair">BUY ON WHATSAPP</a>
         </div>
     </div>
 
@@ -286,9 +246,12 @@ footer a {
         <img src="sunset_nomad.jpg">
         <div class="art-info">
             <div class="art-title">Sunset Nomad</div>
-            <div class="art-price">1,900 KES</div>
-            <div class="art-description">A steady journey through changing skies.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Sunset%20Nomad">BUY ON WHATSAPP</a>
+            <div class="art-price">1700 KES</div>
+            <div class="art-description">
+                A journey through change, time, and emotional transition.
+                It reflects movement through life’s uncertain yet beautiful paths.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20Sunset%20Nomad">BUY ON WHATSAPP</a>
         </div>
     </div>
 
@@ -296,24 +259,21 @@ footer a {
         <img src="color_of_light.jpg">
         <div class="art-info">
             <div class="art-title">Color of Light</div>
-            <div class="art-price">1,300 KES</div>
-            <div class="art-description">Hope returning after chaos finds balance again.</div>
-            <a class="buy-btn" href="https://wa.me/254704272278?text=I%20want%20Color%20of%20Light">BUY ON WHATSAPP</a>
+            <div class="art-price">1600 KES</div>
+            <div class="art-description">
+                A symbolic return of hope after emotional darkness.
+                It represents renewal, clarity, and inner healing.
+            </div>
+            <a class="buy-btn" href="https://wa.me/2547048178?text=I%20want%20Color%20of%20Light">BUY ON WHATSAPP</a>
         </div>
     </div>
 
 </div>
 
-<section class="hero" id="about">
-    <h2>Philosophy</h2>
-    <p>Art shaped by nature, memory, and lived human experience.</p>
-</section>
-
 <footer>
-    <a href="#">Instagram</a>
-    <a href="#">Facebook</a>
-    <a href="#">Email</a>
-    <p style="margin-top:20px; font-size:12px;">© 2026 ART IS LIFE — LEWIS GITONGA</p>
+    <p><strong>Lewis Gitonga</strong> — Kenyan Contemporary Artist</p>
+    <p>Instagram: @lewis-art.is.life | Facebook: Lewis Gitonga</p>
+    <p>WhatsApp: 0704708178</p>
 </footer>
 
 </body>
