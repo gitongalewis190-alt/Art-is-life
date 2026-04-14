@@ -9,15 +9,6 @@
 
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces available via WhatsApp.">
 
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-MPX5MMNRB2');
-</script>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -26,6 +17,7 @@
     --text:#111;
     --accent:#b3261e;
     --muted:#666;
+    --deep-blue:#0b1f4b;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -52,71 +44,58 @@ header{
 .logo{font-weight:800;}
 
 /* =========================
-   HERO (CLEAN FULL IMAGE FIX)
+   HERO SPLIT (70 / 30)
 ========================= */
 
-.cover{
+.hero-wrapper{
+    display:flex;
     height:78vh;
+}
+
+/* IMAGE SIDE (70%) */
+.hero-image{
+    flex:7;
     position:relative;
     overflow:hidden;
 }
 
-/* image layer */
-.cover::before{
+.hero-image::before{
     content:"";
     position:absolute;
     inset:0;
-    background:url('cover.jpg') center center / cover no-repeat;
+    background:url('cover.jpg') center/cover no-repeat;
     transform:scale(1.02);
     filter: brightness(1.15) contrast(1.05) saturate(1.05);
 }
 
-/* soft overlay */
-.cover::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:rgba(255,255,255,0.12);
+/* TEXT SIDE (30%) */
+.hero-text{
+    flex:3;
+    background:#ffffff;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:40px;
+    border-left:4px solid var(--deep-blue);
 }
 
-/* HERO TEXT */
-.cover-content{
-    position:relative;
-    text-align:center;
-    max-width:850px;
-    margin:auto;
-    top:50%;
-    transform:translateY(-50%);
+.hero-text h1{
+    font-size:2.2rem;
+    font-weight:900;
+    color:var(--deep-blue);
+    margin-bottom:15px;
 }
 
-.cover-content h1{
-    font-size:3rem;
-    font-weight:800;
-    color:#0b3d91;
-    text-shadow:0 2px 10px rgba(255,255,255,0.8);
+.hero-text p{
+    color:#222;
+    font-weight:500;
+    line-height:1.6;
 }
 
-.cover-content p{
-    color:#1e88e5;
-    font-weight:600;
-    text-shadow:0 2px 8px rgba(255,255,255,0.8);
-}
-
-/* HERO SECTION BELOW */
+/* HERO BELOW */
 .hero{
     padding:60px 5%;
     text-align:center;
-}
-
-.hero h2{
-    font-size:1.8rem;
-    font-weight:700;
-}
-
-.hero p{
-    color:var(--muted);
-    max-width:850px;
-    margin:auto;
 }
 
 /* CORE */
@@ -133,7 +112,7 @@ header{
 .urgency{
     text-align:center;
     padding:12px;
-    color:#b3261e;
+    color:var(--accent);
     font-weight:700;
 }
 
@@ -150,10 +129,12 @@ header{
 .catalogue-title{
     text-align:center;
     margin:35px 0 10px 0;
-    font-weight:700;
+    font-weight:800;
     letter-spacing:1px;
-    color:#b08d57; /* soft African gold */
-    font-size:0.95rem;
+    color:#b08d57;
+    font-size:1rem;
+    text-decoration: underline;
+    text-underline-offset: 6px;
 }
 
 /* GALLERY */
@@ -183,6 +164,19 @@ header{
 
 .art-card img{width:100%; display:block;}
 
+/* BANNER */
+.banner{
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:var(--deep-blue);
+    color:white;
+    font-size:0.7rem;
+    font-weight:800;
+    padding:5px 8px;
+    border-radius:4px;
+}
+
 .art-info{padding:14px;}
 
 .art-title{
@@ -207,10 +201,6 @@ header{
     text-decoration:none;
 }
 
-.buy-btn:hover{
-    background:#1fa851;
-}
-
 footer{
     text-align:center;
     padding:40px;
@@ -226,11 +216,19 @@ footer{
     <div class="logo">ART IS LIFE FOUNDATION — Lewis Gitonga</div>
 </header>
 
-<section class="cover">
-    <div class="cover-content">
+<!-- HERO SPLIT -->
+<section class="hero-wrapper">
+
+    <div class="hero-image"></div>
+
+    <div class="hero-text">
         <h1>Art is emotional evidence.</h1>
-        <p>One-time creations. Never reproduced.</p>
+        <p>
+            One-time creations. Never reproduced.<br><br>
+            Each piece is a permanent emotional record of African expression.
+        </p>
     </div>
+
 </section>
 
 <section class="hero">
@@ -254,7 +252,6 @@ Owning art is connection to a moment that cannot be repeated.
 Collectors usually start with WhatsApp conversation before purchase.
 </div>
 
-<!-- CATALOGUE TITLE (SINGLE, CLEAN) -->
 <div class="catalogue-title">
 Luminous African Expression Collection
 </div>
@@ -270,13 +267,13 @@ Luminous African Expression Collection
 <script>
 
 const artworks = [
-  {title:"Resilience",price:"1200 KES",image:"resilience.jpg"},
-  {title:"Kingship & Kindness",price:"1700 KES",image:"kingship.jpg"},
-  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg"},
-  {title:"Neck to Neck",price:"1600 KES",image:"neck_to_neck.jpg"},
-  {title:"Joyful Blooms",price:"1400 KES",image:"joyful_blooms.jpg"},
-  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg"},
-  {title:"Color of Light",price:"1600 KES",image:"color_of_light.jpg"}
+  {title:"Resilience",price:"1200 KES",image:"resilience.jpg",banner:"AVAILABLE"},
+  {title:"Kingship & Kindness",price:"1700 KES",image:"kingship.jpg",banner:"AVAILABLE"},
+  {title:"Chic & Shadow",price:"1500 KES",image:"chic_shadow.jpg",banner:"FEATURED"},
+  {title:"Neck to Neck",price:"1600 KES",image:"neck_to_neck.jpg",banner:"AVAILABLE"},
+  {title:"Joyful Blooms",price:"1400 KES",image:"joyful_blooms.jpg",banner:"AVAILABLE"},
+  {title:"Sunset Nomad",price:"1700 KES",image:"sunset_nomad.jpg",banner:"SOLD"},
+  {title:"Color of Light",price:"1600 KES",image:"color_of_light.jpg",banner:"AVAILABLE"}
 ];
 
 const container = document.querySelector(".gallery-container");
@@ -288,15 +285,16 @@ function whatsappLink(title, price){
 
 function render(data){
     container.innerHTML = data.map(a=>{
-        const link = whatsappLink(a.title, a.price);
-
         return `
         <div class="art-card">
+            <div class="banner">${a.banner}</div>
             <img src="${a.image}" alt="${a.title}">
             <div class="art-info">
                 <div class="art-title">${a.title}</div>
                 <div class="art-price">${a.price}</div>
-                <a class="buy-btn" href="${link}">Secure via WhatsApp</a>
+                <a class="buy-btn" href="${whatsappLink(a.title,a.price)}">
+                    Secure via WhatsApp
+                </a>
             </div>
         </div>`;
     }).join("");
