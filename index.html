@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,6 +26,7 @@ body{
     line-height:1.6;
 }
 
+/* HEADER */
 header{
     padding:20px 5%;
     display:flex;
@@ -47,6 +49,7 @@ header{
     font-size:0.9rem;
 }
 
+/* COVER */
 .cover{
     height:70vh;
     background:url('cover.jpg') center/cover no-repeat;
@@ -61,7 +64,7 @@ header{
     content:"";
     position:absolute;
     inset:0;
-    background:rgba(0,0,0,0.45);
+    background:rgba(0,0,0,0.65);
 }
 
 .cover-content{
@@ -71,6 +74,18 @@ header{
     padding:20px;
 }
 
+.cover-content h1{
+    font-size:3rem;
+    font-weight:600;
+    text-shadow:0 3px 10px rgba(0,0,0,0.8);
+}
+
+.cover-content p{
+    font-size:1.2rem;
+    text-shadow:0 2px 8px rgba(0,0,0,0.7);
+}
+
+/* HERO */
 .hero{
     padding:50px 5%;
     text-align:center;
@@ -78,15 +93,16 @@ header{
 
 .hero h2{
     margin-bottom:15px;
-    font-weight:400;
+    font-weight:500;
 }
 
 .hero p{
     color:var(--muted);
     max-width:900px;
-    margin:0 auto;
+    margin:0 auto 15px auto;
 }
 
+/* GALLERY */
 .gallery-container{
     padding:40px 5%;
     column-count:3;
@@ -106,9 +122,18 @@ header{
 
 .art-info{padding:14px;}
 
-.art-title{font-weight:600;margin-bottom:5px;}
+.art-title{
+    font-weight:600;
+    margin-bottom:5px;
+    color:var(--accent);
+    text-decoration:underline;
+}
 
-.art-price{color:var(--accent);margin-bottom:8px;}
+.art-price{
+    color:var(--accent);
+    margin-bottom:8px;
+    font-weight:600;
+}
 
 .art-description{
     color:var(--muted);
@@ -125,11 +150,15 @@ header{
     text-decoration:none;
     font-weight:600;
 }
+
+/* FOOTER */
 footer{
     text-align:center;
     padding:40px;
     background:#f9f9f9;
     margin-top:40px;
+    font-size:0.9rem;
+    color:#444;
 }
 </style>
 </head>
@@ -147,31 +176,46 @@ footer{
 <section class="cover">
     <div class="cover-content">
         <h1>Art is Life</h1>
-        <p>Where emotion, memory, and African identity are translated into visual storytelling that speaks beyond words.</p>
+        <p>Emotion, memory, and identity translated into visual storytelling.</p>
     </div>
 </section>
 
+<!-- ABOUT -->
 <section class="hero">
     <h2>About the Artist</h2>
+
     <p>
-        I am a Kenyan 18-year-old contemporary artist working under the identity <strong>Lewis Gitonga</strong>.
+        I am a Kenyan contemporary artist working under the initiative <strong>Art Is Life Foundation</strong>.
         My work explores emotional depth, human psychology, identity, and lived experience through painting.
-        Each piece is designed not only to be seen, but to be felt—capturing silent emotions, cultural memory,
-        and personal reflection. My goal is to create artwork that connects deeply with collectors who value meaning
-        as much as beauty.
+        Each piece is created to be felt as much as it is seen, capturing silent emotions, cultural memory,
+        and personal reflection.
+    </p>
+
+    <p>
+        Beyond personal creation, I envision building a foundation that provides space for upcoming artists
+        to grow, access visibility, and develop work that is both affordable and communicative.
+    </p>
+
+    <p>
+        Through art, I have learned that everything meaningful is built slowly—stroke by stroke.
+        The end of something often reveals what the beginning could never show, yet every stage carries value.
+    </p>
+
+    <p>
+        I am continuously growing, refining my process, and optimizing my creative potential with each piece.
     </p>
 </section>
 
+<!-- GALLERY -->
 <div class="gallery-container">
 
     <div class="art-card">
         <img src="resilience.jpg">
         <div class="art-info">
             <div class="art-title">Resilience</div>
-            <div class="art-price">2000 KES</div>
+            <div class="art-price">1200 KES</div>
             <div class="art-description">
-                A powerful expression of endurance through adversity.
-                This piece reflects the quiet strength required to survive life’s pressure while still standing with dignity.
+                Endurance shaped through pressure and survival. A visual statement of standing firm through adversity with dignity.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20Resilience">BUY ON WHATSAPP</a>
         </div>
@@ -183,8 +227,7 @@ footer{
             <div class="art-title">Kingship & Kindness</div>
             <div class="art-price">1700 KES</div>
             <div class="art-description">
-                A balance between authority and empathy.
-                It represents leadership that is firm yet deeply humane and emotionally aware.
+                Leadership balanced between authority and empathy, grounded in emotional awareness and humanity.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20Kingship%20and%20Kindness">BUY ON WHATSAPP</a>
         </div>
@@ -196,8 +239,7 @@ footer{
             <div class="art-title">Chic & Shadow</div>
             <div class="art-price">1500 KES</div>
             <div class="art-description">
-                A study of dual identity—confidence on the surface, vulnerability beneath.
-                It reflects the complexity of modern self-expression.
+                Dual identity expressed through confidence and vulnerability within modern self-expression.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20Chic%20and%20Shadow">BUY ON WHATSAPP</a>
         </div>
@@ -209,8 +251,7 @@ footer{
             <div class="art-title">Neck to Neck</div>
             <div class="art-price">1200 KES</div>
             <div class="art-description">
-                A silent moment of human closeness.
-                This work captures connection that exists beyond words, where presence itself becomes communication.
+                A silent moment of closeness where presence becomes the only form of communication.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20Neck%20to%20Neck">BUY ON WHATSAPP</a>
         </div>
@@ -222,8 +263,7 @@ footer{
             <div class="art-title">Joyful Blooms</div>
             <div class="art-price">1400 KES</div>
             <div class="art-description">
-                A celebration of simplicity and emotional lightness.
-                It represents happiness found in everyday moments often overlooked.
+                A reflection of emotional lightness and joy found in simple overlooked moments.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20Joyful%20Blooms">BUY ON WHATSAPP</a>
         </div>
@@ -235,8 +275,7 @@ footer{
             <div class="art-title">The Macaw Pair</div>
             <div class="art-price">1600 KES</div>
             <div class="art-description">
-                A reflection of companionship and unity.
-                It symbolizes emotional trust, harmony, and shared existence in silence.
+                Companionship built on trust and emotional harmony beyond words and time.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20The%20Macaw%20Pair">BUY ON WHATSAPP</a>
         </div>
@@ -248,8 +287,7 @@ footer{
             <div class="art-title">Sunset Nomad</div>
             <div class="art-price">1700 KES</div>
             <div class="art-description">
-                A journey through change, time, and emotional transition.
-                It reflects movement through life’s uncertain yet beautiful paths.
+                A journey through transition, uncertainty, and meaningful movement through life.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20Sunset%20Nomad">BUY ON WHATSAPP</a>
         </div>
@@ -261,8 +299,7 @@ footer{
             <div class="art-title">Color of Light</div>
             <div class="art-price">1600 KES</div>
             <div class="art-description">
-                A symbolic return of hope after emotional darkness.
-                It represents renewal, clarity, and inner healing.
+                A symbolic emergence from darkness into clarity, renewal, and inner restoration.
             </div>
             <a class="buy-btn" href="https://wa.me/254704708178?text=I%20want%20Color%20of%20Light">BUY ON WHATSAPP</a>
         </div>
@@ -270,10 +307,17 @@ footer{
 
 </div>
 
+<section style="text-align:center; padding:40px;">
+    <p style="color:#666;">
+        More artworks are continuously being added. Stay tuned.
+    </p>
+</section>
+
 <footer>
     <p><strong>Lewis Gitonga</strong> — Kenyan Contemporary Artist</p>
     <p>Instagram: @lewis-art.is.life | Facebook: Lewis Gitonga</p>
     <p>WhatsApp: 0704708178</p>
+    <p>© 2026 Art Is Life Foundation. All rights reserved.</p>
 </footer>
 
 </body>
