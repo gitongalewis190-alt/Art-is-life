@@ -18,6 +18,7 @@
     --accent:#b3261e;
     --deep-blue:#0b1f4b;
     --green:#1aa34a;
+    --price-blue:#4da6ff;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -68,63 +69,10 @@ header{
     color:var(--deep-blue);
 }
 
-/* STORY SECTION (ADDED — NO IMPACT ON EXISTING LAYOUT) */
-.story-section{
-    padding:60px 8%;
-    max-width:1000px;
-    margin:0 auto;
-}
-
-.story-title{
-    font-size:1.6rem;
-    font-weight:900;
-    color:var(--accent);
-    margin-bottom:25px;
-    letter-spacing:1px;
-}
-
-.story-text p{
-    margin-bottom:16px;
-    line-height:1.7;
-    font-size:0.95rem;
-    color:#222;
-}
-
-.story-text p strong{
-    color:var(--accent);
-}
-
-/* GRID */
-.gallery-container{
-    padding:40px 5%;
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:20px;
-}
-
-@media(max-width:900px){
-    .gallery-container{grid-template-columns:repeat(2,1fr);}
-}
-
-@media(max-width:600px){
-    .gallery-container{grid-template-columns:1fr;}
-}
-
-/* COLLECTION HEADERS */
-.collection-title{
-    text-align:center;
-    font-size:1.4rem;
-    font-weight:900;
-    margin:35px 0 10px 0;
-    color:var(--deep-blue);
-    text-decoration:underline;
-    letter-spacing:1px;
-}
-
-/* INTRO QUOTE */
+/* INTRO */
 .gallery-intro-quote{
     text-align:center;
-    padding:50px 20px 10px 20px;
+    padding:60px 20px 20px 20px;
     font-size:1.05rem;
     color:#333;
     font-style:italic;
@@ -139,28 +87,69 @@ header{
     color:var(--deep-blue);
 }
 
-/* ART CARD */
+/* STORY */
+.story-box{
+    padding:60px 8%;
+    max-width:1000px;
+    margin:auto;
+    border-left:4px solid var(--accent);
+}
+
+.story-box h2{
+    color:var(--accent);
+    margin-bottom:25px;
+}
+
+/* COLLECTION */
+.collection-title{
+    text-align:center;
+    font-size:1.4rem;
+    font-weight:900;
+    margin:50px 0 20px;
+    color:var(--deep-blue);
+    text-decoration:underline;
+}
+
+/* GRID */
+.gallery-container{
+    padding:60px 7%;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:40px;
+}
+
+@media(max-width:900px){
+    .gallery-container{grid-template-columns:repeat(2,1fr);}
+}
+
+@media(max-width:600px){
+    .gallery-container{grid-template-columns:1fr;}
+}
+
+/* CARD */
 .art-card{
     border:1px solid #eee;
     background:white;
-    transition:0.25s;
+    transition:0.3s ease;
     position:relative;
+    border-radius:6px;
 }
 
 .art-card:hover{
-    transform:scale(1.02);
-    box-shadow:0 10px 25px rgba(0,0,0,0.08);
+    transform:translateY(-6px);
+    box-shadow:0 20px 40px rgba(0,0,0,0.12);
 }
 
 .art-card img{
     width:100%;
+    cursor:pointer; /* 👈 shows it's clickable */
 }
 
 /* GLITTER */
 @keyframes glitter {
-    0%{opacity:1; filter:brightness(1);}
-    50%{opacity:0.6; filter:brightness(1.5);}
-    100%{opacity:1; filter:brightness(1);}
+    0%{opacity:1;}
+    50%{opacity:0.6;}
+    100%{opacity:1;}
 }
 
 /* TAG */
@@ -177,15 +166,16 @@ header{
     animation:glitter 1.5s infinite;
 }
 
-.art-info{padding:14px;}
+/* INFO */
+.art-info{padding:18px;}
 
 .art-title{font-weight:800;color:var(--accent);}
-.art-price{color:var(--accent);font-weight:800;}
+.art-price{color:var(--price-blue);font-weight:800;}
 
 .art-desc{
     font-size:0.85rem;
-    color:#444;
-    margin:8px 0 10px 0;
+    color:#555;
+    margin:10px 0 14px;
 }
 
 /* CTA */
@@ -201,10 +191,30 @@ header{
     animation:glitter 1.5s infinite;
 }
 
+/* ZOOM MODAL */
+.image-modal{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:1000;
+}
+
+.image-modal img{
+    max-width:90%;
+    max-height:90%;
+    border-radius:8px;
+}
+
 /* SOCIAL */
 .socials{
     text-align:center;
-    padding:30px;
+    padding:40px;
 }
 
 .socials a{
@@ -220,29 +230,6 @@ footer{
     padding:40px;
     background:#f9f9f9;
 }
-
-/* STORY BOX (RED ACCENT AS REQUESTED) */
-.story-box{
-    padding:50px 8%;
-    max-width:1000px;
-    margin:auto;
-    border-left:4px solid var(--accent);
-    background:#fff;
-}
-
-.story-box h2{
-    color:var(--accent);
-    font-size:1.5rem;
-    margin-bottom:20px;
-    letter-spacing:1px;
-}
-
-.story-box p{
-    margin-bottom:14px;
-    line-height:1.7;
-    font-size:0.95rem;
-    color:#222;
-}
 </style>
 </head>
 
@@ -256,54 +243,23 @@ footer{
 <div class="hero-image"></div>
 <div class="hero-text">
 <h1>Art is emotional evidence.</h1>
-<p>One-time creations. Never reproduced.</p>
+<p>One-time creations. Rarely reproduced.</p>
 </div>
 </section>
 
-<!-- INTRO QUOTE -->
 <div class="gallery-intro-quote">
-“Every painting is not just seen — it is experienced.  
-Each piece is a fragment of emotion, memory, and becoming.”
+“Every painting is not just seen — it is experienced.”
 <span>— Art Is Life Foundation</span>
 </div>
 
-<!-- 🔴 FULL STORY SECTION ADDED EXACTLY AS REQUESTED -->
-<div class="story-box">
-
-<h2>HOW IT ALL STARTED – LEWIS CEO</h2>
-
-<p>From a young age, I found myself deeply drawn to creativity and crafting. In school, while many of my peers focused on competitive drawing—especially cars—I developed a strong desire not only to participate, but to improve, excel, and master skill through dedication. That early environment sparked in me both curiosity and ambition.</p>
-
-<p>My true turning point came in the late 2020s when I met a man named Elvis. He would gather children in a shared space and guide us through the fundamentals of painting—teaching us color blending, brush control, and artistic expression. This experience opened a new world for me. I was not only inspired by the art itself, but also by the idea of learning under guidance. I developed a strong personal desire to connect more deeply with the craft and with those who taught it.</p>
-
-<p>This led me to enroll in a one-year pencil art program under Elsie, where I learned the foundational principles of pencil drawing. However, I soon realized that pencil work alone was not enough for the vision I was developing. I wanted to explore painting in its full depth—color, emotion, and expression.</p>
-
-<p>I began teaching myself through observation and practice. I studied painting techniques from videos, learned color mixing, and experimented with watercolors on manila paper, carefully storing my works in a personal portfolio. Each piece represented growth, curiosity, and persistence.</p>
-
-<p>A significant moment came when a well-wisher visited my home and learned about my interest in art. He requested to see my work. I presented my portfolio, not knowing that this simple moment would open a new path. Weeks later, I was invited to the African Kidpreneur Summit, where young innovators from across Africa gathered to showcase their talents and entrepreneurial ideas.</p>
-
-<p>At the summit, I witnessed extraordinary creativity from other young people—some already selling their work and receiving support. This experience deeply challenged and motivated me. It made me realize that even with limited skill at the time, others were actively pursuing their craft and building opportunities from it.</p>
-
-<p>On the final day of the summit, a woman from Botswana noticed me and offered me the opportunity to present my ideas alongside other participants. I prepared a basic business proposal and showcased my portfolio. The response I received gave me hope and confidence.</p>
-
-<p>On my journey home, a kind woman approached me and offered financial support to help me purchase art materials and supplies. That moment became a turning point. I used the support as intended, and it marked the true beginning of what would become the Art Is Life Foundation.</p>
-
-<p>As I continued practicing and improving my skills, I gradually increased the value of my artwork and began reaching more audiences. Through this journey, I have learned that everything has purpose, and that what we possess—no matter how small—can become a foundation for growth and transformation.</p>
-
-<p>I also realized a deeper truth: many people have talent and passion for art, but lack access to materials, training, or space to develop their skills. This awareness shaped my vision for the future.</p>
-
-<p>I made a commitment to build something greater than myself—a space that would function as both a learning environment and a gallery. A place where artists can be taught, supported, and inspired. A place where artwork is not only displayed, but where every piece tells a story that words alone cannot express.</p>
-
-<p>Today, I continue to create paintings not only to refine my skill, but to build toward that vision. Every work is a step closer to a future where art is accessible, meaningful, and transformative.</p>
-
-<p><strong>Art Is Life Foundation is not just a name. It is a belief—that art is expression, art is opportunity, and art is life itself.</strong></p>
-
-</div>
-
-<!-- COLLECTION -->
 <div class="collection-title">THE GENERAL SERIES</div>
 
 <div class="gallery-container"></div>
+
+<!-- ZOOM MODAL -->
+<div class="image-modal" id="imageModal">
+<img id="modalImg">
+</div>
 
 <div class="socials">
 <a href="https://instagram.com/lewis_art.is.life" target="_blank">Instagram</a>
@@ -313,79 +269,49 @@ Each piece is a fragment of emotion, memory, and becoming.”
 
 <footer>
 <p><strong>ART IS LIFE FOUNDATION — Lewis Gitonga</strong></p>
-<p>© 2026 Art Is Life Foundation</p>
 </footer>
 
 <script>
-
 const artworks = [
-
-{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",
-desc:"A reflection on how human emotion and nature merge through sound, where creativity becomes a shared language between self and the natural world."},
-
-{title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",
-desc:"A meditation on time and inherited wisdom, with the elephant symbolizing endurance and the deep continuity between nature and human experience."},
-
-{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",
-desc:"A study of identity and inner stillness, where strength and awareness coexist within the tension between nature and modern life."},
-
-{title:"Kinship of the Canopy",price:"600 KES",image:"canopy.jpg",
-desc:"A reflection on companionship in nature, where shared presence becomes a symbol of balance, recognition, and relational life."},
-
-{title:"Solace in Grey",price:"1000 KES",image:"solace.jpg",
-desc:"A moment of human connection within an isolating urban world, where warmth and unity create shelter from emotional distance."},
-
-{title:"Resilience",price:"900 KES",image:"resilience.jpg",desc:"A portrait of quiet strength formed through struggle."},
-{title:"Kingship & Kindness",price:"1500 KES",image:"kingship.jpg",desc:"Leadership rooted in emotional intelligence."},
-{title:"Chic & Shadow",price:"1200 KES",image:"chic_shadow.jpg",desc:"Contrast between identity and depth."},
-{title:"Neck to Neck",price:"1100 KES",image:"neck_to_neck.jpg",desc:"Closeness between emotional forces."},
-{title:"Joyful Blooms",price:"1000 KES",image:"joyful_blooms.jpg",desc:"Renewal through color."},
-{title:"Sunset Nomad",price:"1300 KES",image:"sunset_nomad.jpg",desc:"A journey of transition."},
-{title:"Color of Light",price:"1400 KES",image:"color_of_light.jpg",desc:"Hope through perception."}
-
+{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotion and nature merge."},
+{title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",desc:"Wisdom through time."},
+{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"Identity and stillness."},
+{title:"Kinship of the Canopy",price:"600 KES",image:"canopy.jpg",desc:"Connection in nature."},
+{title:"Solace in Grey",price:"1000 KES",image:"solace.jpg",desc:"Human warmth."}
 ];
 
 const container = document.querySelector(".gallery-container");
-
-function whatsappLink(title, price){
-const msg = `ORDER REQUEST\n\nArtwork: ${title}\nPrice: ${price}`;
-return `https://wa.me/254704708178?text=${encodeURIComponent(msg)}`;
-}
+const modal = document.getElementById("imageModal");
+const modalImg = document.getElementById("modalImg");
 
 function render(data){
-
 let html = "";
-
-let inserted = false;
-
-data.forEach((a, i) => {
-
-if(!inserted && i === 5){
-html += `<div class="collection-title">TURNING OF THE NEW CHARLOTTE AD</div>`;
-inserted = true;
-}
-
+data.forEach(a => {
 html += `
 <div class="art-card">
 <div class="banner">AVAILABLE</div>
-<img src="${a.image}" alt="${a.title}">
+<img src="${a.image}" onclick="openModal(this.src)">
 <div class="art-info">
 <div class="art-title">${a.title}</div>
 <div class="art-price">${a.price}</div>
 <div class="art-desc">${a.desc}</div>
-<a class="buy-btn" href="${whatsappLink(a.title,a.price)}" target="_blank">
-Secure via WhatsApp
-</a>
+<a class="buy-btn" href="#" target="_blank">Secure via WhatsApp</a>
 </div>
-</div>
-`;
+</div>`;
 });
-
 container.innerHTML = html;
 }
 
-render(artworks);
+function openModal(src){
+modal.style.display = "flex";
+modalImg.src = src;
+}
 
+modal.onclick = function(){
+modal.style.display = "none";
+}
+
+render(artworks);
 </script>
 
 </body>
