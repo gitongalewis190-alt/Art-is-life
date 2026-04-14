@@ -69,6 +69,27 @@ header{
     color:var(--deep-blue);
 }
 
+/* 🔴 STORY SECTION */
+.story-box{
+    padding:50px 8%;
+    max-width:1000px;
+    margin:auto;
+    border-left:4px solid var(--accent);
+}
+
+.story-box h2{
+    color:var(--accent);
+    text-decoration:underline;
+    margin-bottom:20px;
+}
+
+.story-box p{
+    margin-bottom:14px;
+    line-height:1.7;
+    font-size:0.95rem;
+    color:#222;
+}
+
 /* GRID */
 .gallery-container{
     padding:60px 7%;
@@ -122,7 +143,7 @@ header{
     cursor:pointer;
 }
 
-/* ✨ ANIMATED BANNER */
+/* ✨ ANIMATED AVAILABLE / WHATSAPP BANNER */
 @keyframes waveGlow {
     0%{transform:translateY(0); opacity:1;}
     50%{transform:translateY(-3px); opacity:0.7;}
@@ -227,6 +248,23 @@ footer{
 </div>
 </section>
 
+<!-- 🔴 STORY INSERTED HERE (AS YOU REQUESTED) -->
+<div class="story-box">
+<h2>HOW IT ALL STARTED – BY LEWIS THE CEO</h2>
+
+<p>From a young age, I found myself deeply drawn to creativity and crafting. In school, while many of my peers focused on competitive drawing—especially cars—I developed a strong desire not only to participate, but to improve, excel, and master skill through dedication. That early environment sparked curiosity, discipline, and ambition in me.</p>
+
+<p>My turning point came when I met Elvis, who gathered children and taught us painting fundamentals like color blending, brush control, and emotional expression. That experience opened my eyes to art as a language, not just a skill.</p>
+
+<p>I later enrolled in structured pencil training, but soon realized I wanted more than technique—I wanted emotion, color, and meaning. I began self-teaching through observation, videos, and constant practice.</p>
+
+<p>A breakthrough came when a visitor saw my work and invited me to the African Kidpreneur Summit, where I witnessed young artists building real opportunities from creativity. There I presented my ideas and portfolio, gaining encouragement that changed my direction.</p>
+
+<p>After the summit, I received support that allowed me to buy materials and fully begin my journey. That moment marked the birth of what is now the Art Is Life Foundation.</p>
+
+<p><strong>Today, I create not just to paint—but to build a future where art becomes opportunity, identity, and life itself.</strong></p>
+</div>
+
 <div class="gallery-intro-quote">
 “Every painting is not just seen — it is experienced.”
 <span>— Art Is Life Foundation</span>
@@ -252,85 +290,58 @@ footer{
 
 <script>
 const artworks = [
-
 {title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",
-desc:"An exploration of the invisible dialogue between human emotion and natural rhythm, where color becomes sound and expression flows like an unspoken language between the inner self and the external world."},
+desc:"An exploration of emotional frequency where human feeling merges with natural rhythm, transforming color into sound and silence into expression."},
 
 {title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",
-desc:"A symbolic reflection on wisdom, memory, and endurance, capturing the elephant as both a guardian of time and a mirror of humanity’s quiet strength rooted in nature."},
+desc:"A symbolic meditation on memory and endurance, where the elephant becomes a living archive of time, wisdom, and silent strength."},
 
 {title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",
-desc:"A meditation on identity and internal stillness, revealing the powerful space where self-awareness and emotional depth exist beyond noise and distraction."},
+desc:"A deep reflection on inner stillness where identity forms not in noise, but in awareness, balance, and emotional depth."},
 
 {title:"Kinship of the Canopy",price:"600 KES",image:"canopy.jpg",
-desc:"A visual narrative of connection and coexistence, where shared presence within nature reflects the deeper bonds that define human relationships and belonging."},
+desc:"A visual story of coexistence where connection within nature reflects the human need for belonging and shared existence."},
 
 {title:"Solace in Grey",price:"1000 KES",image:"solace.jpg",
-desc:"An intimate portrayal of warmth and unity within an isolating environment, capturing how human connection becomes refuge in emotionally distant spaces."},
+desc:"A portrayal of emotional refuge in an isolating world where human warmth becomes shelter against silence and distance."},
 
 {title:"Resilience",price:"900 KES",image:"resilience.jpg",
-desc:"A powerful expression of strength shaped through adversity, where struggle becomes the foundation upon which identity is rebuilt and refined."},
+desc:"A depiction of strength formed through struggle, where endurance reshapes identity into something stronger and refined."},
 
 {title:"Kingship & Kindness",price:"1500 KES",image:"kingship.jpg",
-desc:"A study of leadership that transcends authority, emphasizing emotional intelligence, compassion, and the balance between power and humanity."},
+desc:"A study of leadership grounded in empathy, showing that true power exists in balance, care, and emotional intelligence."},
 
 {title:"Chic & Shadow",price:"1200 KES",image:"chic_shadow.jpg",
-desc:"An artistic contrast between outward identity and inner depth, exploring the tension between what is presented and what is truly felt."},
+desc:"An exploration of duality between external presentation and internal reality, revealing contrast within identity."},
 
 {title:"Neck to Neck",price:"1100 KES",image:"neck_to_neck.jpg",
-desc:"A representation of closeness, tension, and emotional proximity, where forces meet in a delicate balance of connection and intensity."},
+desc:"A visual tension of closeness and opposition, where emotional forces exist in delicate balance and proximity."},
 
 {title:"Joyful Blooms",price:"1000 KES",image:"joyful_blooms.jpg",
-desc:"A celebration of renewal and emotional awakening, where color symbolizes growth, hope, and the beauty of transformation."},
+desc:"A celebration of renewal where color represents growth, hope, and emotional rebirth."},
 
 {title:"Sunset Nomad",price:"1300 KES",image:"sunset_nomad.jpg",
-desc:"A journey through transition and reflection, capturing the quiet movement between endings and new beginnings."},
+desc:"A journey of transition symbolizing movement between endings and new beginnings."},
 
 {title:"Color of Light",price:"1400 KES",image:"color_of_light.jpg",
-desc:"An interpretation of hope and perception, where light becomes a symbol of perspective and the way we choose to see the world."}
-
+desc:"An exploration of perception where light becomes a metaphor for hope, clarity, and vision."}
 ];
 
 const container = document.querySelector(".gallery-container");
-const modal = document.getElementById("imageModal");
-const modalImg = document.getElementById("modalImg");
-
-function whatsappLink(title, price){
-const msg = `ORDER REQUEST\n\nArtwork: ${title}\nPrice: ${price}`;
-return `https://wa.me/254704708178?text=${encodeURIComponent(msg)}`;
-}
-
-function render(data){
-let html = "";
-data.forEach(a => {
-html += `
-<div class="art-card">
-<div class="banner">AVAILABLE</div>
-<img src="${a.image}" alt="${a.title}" onclick="openModal(this.src)">
-<div class="art-info">
-<div class="art-title">${a.title}</div>
-<div class="art-price">${a.price}</div>
-<div class="art-desc">${a.desc}</div>
-<a class="buy-btn" href="${whatsappLink(a.title,a.price)}" target="_blank">
-Secure via WhatsApp
-</a>
-</div>
-</div>`;
-});
-container.innerHTML = html;
-}
 
 function openModal(src){
-modal.style.display = "flex";
-modalImg.src = src;
+document.getElementById("imageModal").style.display="flex";
+document.getElementById("modalImg").src=src;
 }
 
-modal.onclick = function(){
-modal.style.display = "none";
+document.getElementById("imageModal").onclick = function(){
+this.style.display="none";
+};
+
+function whatsappLink(title, price){
+return `https://wa.me/254704708178?text=${encodeURIComponent("Order: "+title+" "+price)}`;
 }
 
-render(artworks);
-</script>
-
-</body>
-</html>
+function render(){
+container.innerHTML = artworks.map(a=>`
+<div class="
