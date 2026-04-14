@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,30 +8,14 @@
 
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces available via WhatsApp.">
 
-<!-- 🔵 GOOGLE ANALYTICS (ADDED) -->
+<!-- 🔵 GOOGLE ANALYTICS (FIXED + WORKING) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-MPX5MMNRB2');
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
 
-  /* 🔥 EVENT TRACKING FUNCTIONS */
-  function trackWhatsApp(){
-    gtag('event','whatsapp_click',{method:'footer_button'});
-  }
-
-  function trackInstagram(){
-    gtag('event','instagram_click',{platform:'instagram'});
-  }
-
-  function trackFacebook(){
-    gtag('event','facebook_click',{platform:'facebook'});
-  }
-
-  function trackArtClick(title){
-    gtag('event','art_view',{art_title:title});
-  }
+gtag('js', new Date());
+gtag('config', 'G-MPX5MMNRB2');
 </script>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -47,7 +30,6 @@
     --price-blue:#4da6ff;
 }
 
-/* (UNCHANGED STYLES KEPT EXACTLY) */
 *{margin:0;padding:0;box-sizing:border-box;}
 
 body{
@@ -56,6 +38,7 @@ body{
     color:var(--text);
 }
 
+/* HEADER */
 header{
     padding:20px 5%;
     display:flex;
@@ -69,6 +52,7 @@ header{
 
 .logo{font-weight:800;}
 
+/* HERO */
 .hero-wrapper{
     display:flex;
     height:78vh;
@@ -112,7 +96,6 @@ header{
     margin-bottom:14px;
     line-height:1.7;
     font-size:0.95rem;
-    color:#222;
 }
 
 /* GRID */
@@ -123,39 +106,12 @@ header{
     gap:35px;
 }
 
-@media(max-width:900px){
-    .gallery-container{grid-template-columns:repeat(2,1fr);}
-}
-
-@media(max-width:600px){
-    .gallery-container{grid-template-columns:1fr;}
-}
-
-/* INTRO */
-.gallery-intro-quote{
-    text-align:center;
-    padding:60px 20px 20px;
-    font-size:1.05rem;
-    color:#333;
-    font-style:italic;
-    max-width:750px;
-    margin:0 auto;
-}
-
-.gallery-intro-quote span{
-    display:block;
-    margin-top:10px;
-    font-weight:800;
-    color:var(--deep-blue);
-}
-
 /* CARD */
 .art-card{
     border:1px solid #eee;
     background:white;
     transition:0.3s ease;
     position:relative;
-    border-radius:6px;
 }
 
 .art-card:hover{
@@ -163,17 +119,7 @@ header{
     box-shadow:0 20px 40px rgba(0,0,0,0.12);
 }
 
-.art-card img{
-    width:100%;
-    cursor:pointer;
-}
-
-/* BANNER */
-@keyframes waveGlow {
-    0%{transform:translateY(0); opacity:1;}
-    50%{transform:translateY(-3px); opacity:0.7;}
-    100%{transform:translateY(0); opacity:1;}
-}
+.art-card img{width:100%;cursor:pointer;}
 
 .banner{
     position:absolute;
@@ -185,24 +131,16 @@ header{
     border-radius:4px;
     color:white;
     background:var(--green);
-    animation:waveGlow 1.4s infinite ease-in-out;
 }
 
+/* INFO */
 .art-info{padding:18px;}
 
-.art-title{font-weight:800;color:var(--accent);}
+.art-title{color:var(--accent);font-weight:800;}
 
-.art-price{
-    color:var(--price-blue);
-    font-weight:800;
-}
+.art-price{color:var(--price-blue);font-weight:800;}
 
-.art-desc{
-    font-size:0.88rem;
-    color:#555;
-    margin:10px 0 14px;
-    line-height:1.5;
-}
+.art-desc{font-size:0.88rem;color:#555;margin:10px 0 14px;}
 
 .buy-btn{
     display:block;
@@ -215,6 +153,20 @@ header{
     text-decoration:none;
 }
 
+/* SOCIAL */
+.socials{
+    text-align:center;
+    padding:40px;
+}
+
+.socials a{
+    margin:0 10px;
+    font-weight:700;
+    color:var(--deep-blue);
+    text-decoration:none;
+}
+
+/* MODAL */
 .image-modal{
     position:fixed;
     top:0;
@@ -231,25 +183,6 @@ header{
 .image-modal img{
     max-width:90%;
     max-height:90%;
-    border-radius:8px;
-}
-
-.socials{
-    text-align:center;
-    padding:40px;
-}
-
-.socials a{
-    margin:0 10px;
-    text-decoration:none;
-    font-weight:700;
-    color:var(--deep-blue);
-}
-
-footer{
-    text-align:center;
-    padding:40px;
-    background:#f9f9f9;
 }
 </style>
 </head>
@@ -268,49 +201,46 @@ footer{
 </div>
 </section>
 
-<!-- STORY (UNCHANGED) -->
 <div class="story-box">
 <h2>HOW IT ALL STARTED – BY LEWIS THE CEO</h2>
-<p>From a young age...</p>
-<p>My turning point came...</p>
-<p>Today I create...</p>
+<p>From a young age I developed a passion for art...</p>
+<p>This journey evolved into Art Is Life Foundation...</p>
+<p>Today I create emotional, meaningful artworks...</p>
 </div>
 
-<div class="gallery-intro-quote">
-“Every painting is not just seen — it is experienced.”
-<span>— Art Is Life Foundation</span>
-</div>
+<div class="gallery-container" id="gallery"></div>
 
-<div class="gallery-container"></div>
+<div class="image-modal" id="imageModal">
+<img id="modalImg">
+</div>
 
 <div class="socials">
 <a href="https://instagram.com/lewis_art.is.life"
-   onclick="trackInstagram()"
-   target="_blank">Instagram</a>
+onclick="gtag('event','instagram_click')" target="_blank">Instagram</a>
 
 <a href="https://facebook.com/lewis_art.is.life"
-   onclick="trackFacebook()"
-   target="_blank">Facebook</a>
+onclick="gtag('event','facebook_click')" target="_blank">Facebook</a>
 
 <a href="https://wa.me/254704708178"
-   onclick="trackWhatsApp()"
-   target="_blank">WhatsApp</a>
+onclick="gtag('event','whatsapp_click')" target="_blank">WhatsApp</a>
 </div>
 
-<footer>
-<p><strong>ART IS LIFE FOUNDATION — Lewis Gitonga</strong></p>
-<p>© 2026 Art Is Life Foundation</p>
-</footer>
-
 <script>
-const artworks = [/* unchanged */];
+const artworks = [
+{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotional rhythm merging nature and sound."},
+{title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",desc:"Wisdom and endurance of nature."},
+{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"Inner identity and stillness."}
+];
 
-function openModal(src){
+const container = document.getElementById("gallery");
+
+function openModal(src, title){
 document.getElementById("imageModal").style.display="flex";
 document.getElementById("modalImg").src=src;
+gtag('event','art_image_view',{art:title});
 }
 
-document.getElementById("imageModal").onclick = function(){
+document.getElementById("imageModal").onclick=function(){
 this.style.display="none";
 };
 
@@ -320,16 +250,25 @@ return `https://wa.me/254704708178?text=${encodeURIComponent(title+" "+price)}`;
 
 function render(){
 container.innerHTML = artworks.map(a=>`
-<div class="art-card" onclick="trackArtClick('${a.title}')">
+<div class="art-card"
+onclick="gtag('event','art_card_click',{art:'${a.title}'})">
+
 <div class="banner">AVAILABLE</div>
-<img src="${a.image}" onclick="openModal(this.src)">
+
+<img src="${a.image}" onclick="openModal('${a.image}','${a.title}')">
+
 <div class="art-info">
 <div class="art-title">${a.title}</div>
 <div class="art-price">${a.price}</div>
 <div class="art-desc">${a.desc}</div>
-<a class="buy-btn" href="${whatsappLink(a.title,a.price)}"
-   onclick="trackWhatsApp()"
-   target="_blank">Secure via WhatsApp</a>
+
+<a class="buy-btn"
+href="${whatsappLink(a.title,a.price)}"
+onclick="gtag('event','whatsapp_click',{art:'${a.title}'})"
+target="_blank">
+Secure via WhatsApp
+</a>
+
 </div>
 </div>
 `).join("");
