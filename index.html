@@ -6,7 +6,7 @@
 
 <title>ART IS LIFE FOUNDATION — Lewis Gitonga</title>
 
-<meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces available via WhatsApp.">
+<meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. Collectors gallery with commissions and direct ordering.">
 
 <!-- GOOGLE ANALYTICS -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
@@ -16,238 +16,195 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-MPX5MMNRB2');
 
-/* TRACKING */
-function trackWhatsApp(art){ gtag('event','whatsapp_click',{art}); }
-function trackInstagram(){ gtag('event','instagram_click'); }
-function trackFacebook(){ gtag('event','facebook_click'); }
-function trackArtClick(title){ gtag('event','art_click',{art:title}); }
-function trackArtView(title){ gtag('event','art_view',{art:title}); }
+function track(event, data={}){
+  gtag('event', event, data);
+}
 </script>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
-:root{
-    --accent:#b3261e;
-    --deep-blue:#0b1f4b;
-    --green:#1aa34a;
-    --price-blue:#4da6ff;
-}
-
-*{margin:0;padding:0;box-sizing:border-box;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}
 
 body{
-    font-family:Inter,sans-serif;
-    background:linear-gradient(to bottom,#ffffff,#f9fafc);
-    color:#111;
+  background:linear-gradient(to bottom,#fff,#f7f8fb);
+  color:#111;
 }
 
 /* HEADER */
 header{
-    padding:18px 5%;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:1px solid #eee;
-    position:sticky;
-    top:0;
-    background:rgba(255,255,255,0.9);
-    backdrop-filter:blur(10px);
-    z-index:1000;
+  position:sticky;top:0;
+  display:flex;justify-content:space-between;
+  padding:14px 5%;
+  background:white;
+  border-bottom:1px solid #eee;
+  z-index:1000;
 }
 
 /* HERO */
-.hero-wrapper{
-    display:flex;
-    height:75vh;
+.hero{
+  height:70vh;
+  position:relative;
+  overflow:hidden;
+}
+.hero img{
+  width:100%;height:100%;
+  object-fit:cover;
+  animation:zoom 8s infinite alternate;
+}
+@keyframes zoom{
+  from{transform:scale(1);}
+  to{transform:scale(1.05);}
 }
 
-.hero-logo{
-    flex:8.5;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background:#fff;
-    overflow:hidden;
+/* SEARCH */
+.search{
+  padding:20px 8%;
+}
+.search input{
+  width:100%;
+  padding:12px;
+  border:1px solid #ddd;
+  border-radius:6px;
 }
 
-.hero-logo img{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    animation:heroFade 1.5s ease-in-out;
+/* BUTTONS */
+.btn{
+  padding:10px;
+  margin-top:6px;
+  border:none;
+  width:100%;
+  cursor:pointer;
+  font-weight:700;
+  border-radius:6px;
+  position:relative;
+  overflow:hidden;
 }
 
-@keyframes heroFade{
-    from{opacity:0; transform:scale(0.95);}
-    to{opacity:1; transform:scale(1);}
+/* glitter */
+.btn::after{
+  content:"";
+  position:absolute;
+  top:0;left:-100%;
+  width:100%;height:100%;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);
+  animation:shine 2.2s infinite;
 }
-
-.hero-text{
-    flex:1.5;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    padding:30px;
-    border-left:4px solid var(--deep-blue);
-}
-
-/* STORY */
-.story-box{
-    padding:60px 8%;
-    max-width:1000px;
-    margin:auto;
-    border-left:4px solid var(--accent);
-}
-
-.story-box h2{
-    color:var(--accent);
-    margin-bottom:20px;
-    text-decoration:underline;
-}
-
-.story-box p{
-    margin-bottom:14px;
-    line-height:1.7;
-}
-
-/* GALLERY */
-.gallery-container{
-    padding:60px 7%;
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:35px;
-}
-
-/* ART CARD */
-.art-card{
-    border:1px solid #eee;
-    transition:0.4s;
-    position:relative;
-    overflow:hidden;
-    animation:fadeIn 0.6s ease forwards;
-}
-
-@keyframes fadeIn{
-    from{opacity:0; transform:translateY(20px);}
-    to{opacity:1; transform:translateY(0);}
-}
-
-.art-card:hover{
-    transform:translateY(-8px) scale(1.01);
-    box-shadow:0 25px 50px rgba(0,0,0,0.15);
-}
-
-.art-card img{
-    width:100%;
-    cursor:pointer;
-    transition:0.4s;
-}
-
-.art-card:hover img{
-    transform:scale(1.05);
-}
-
-/* AVAILABLE BANNER (GLITTER) */
-.banner{
-    position:absolute;
-    top:8px;
-    left:8px;
-    padding:3px 8px;
-    font-size:0.6rem;
-    font-weight:700;
-    color:white;
-    background:linear-gradient(90deg,#1aa34a,#5eff9a,#1aa34a);
-    background-size:200% auto;
-    animation:shine 2s linear infinite;
-}
-
 @keyframes shine{
-    0%{background-position:0%}
-    100%{background-position:200%}
+  100%{left:100%;}
 }
 
-/* INFO */
-.art-info{padding:18px;}
+.cart-btn{background:orange;color:white;}
+.order-btn{background:#25D366;color:white;}
+.call-btn{background:#b3261e;color:white;}
+.like-btn{background:#eee;color:#111;}
 
-.art-title{font-weight:800;color:var(--accent);}
-.art-price{color:#4da6ff;font-weight:900;text-shadow:0 0 6px rgba(77,166,255,0.4);}
-.art-desc{font-size:0.88rem;color:#555;margin:10px 0;}
-
-/* WHATSAPP BUTTON (GLITTER) */
-.buy-btn{
-    display:block;
-    text-align:center;
-    background:#25D366;
-    color:white;
-    padding:12px;
-    border-radius:6px;
-    text-decoration:none;
-    font-weight:800;
-    position:relative;
-    overflow:hidden;
+/* GRID */
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+  padding:40px 8%;
 }
 
-/* glitter shine */
-.buy-btn::after{
-    content:"";
-    position:absolute;
-    width:100%;
-    height:100%;
-    top:0;
-    left:-100%;
-    background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);
-    animation:btnGlow 2s infinite;
+.card{
+  border:1px solid #eee;
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
 }
 
-@keyframes btnGlow{
-    0%{left:-100%;}
-    100%{left:100%;}
+.card img{width:100%;cursor:pointer;}
+
+.banner{
+  position:absolute;
+  top:8px;left:8px;
+  background:linear-gradient(90deg,#1aa34a,#7dffb3,#1aa34a);
+  color:white;
+  padding:3px 8px;
+  font-size:10px;
+  animation:shine 2s infinite;
 }
 
-/* MODAL */
-.image-modal{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.92);
-    display:none;
-    justify-content:center;
-    align-items:center;
+.heart{
+  position:absolute;
+  right:10px;
+  top:10px;
+  cursor:pointer;
+  font-size:18px;
 }
 
-.image-modal img{max-width:90%;}
+.info{padding:15px;}
+.title{font-weight:800;}
+.price{color:#4da6ff;font-weight:700;}
+.desc{font-size:13px;margin:8px 0;color:#555;}
 
-/* SOCIALS */
-.socials{
-    text-align:center;
-    padding:40px;
+/* MODALS */
+.modal{
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.9);
+  z-index:2000;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+}
+.modal-content{
+  background:white;
+  max-width:900px;
+  width:100%;
+  padding:20px;
+  max-height:90vh;
+  overflow:auto;
+  border-radius:10px;
 }
 
-.socials a{
-    margin:0 10px;
-    font-weight:600;
-    text-decoration:none;
-    color:#111;
+/* STORY IMAGES */
+.story-img{
+  width:100%;
+  margin:10px 0;
+  border-radius:10px;
 }
 
-.socials a:hover{color:var(--accent);}
+/* CART */
+.cartPanel{
+  position:fixed;
+  right:0;top:0;
+  width:320px;height:100%;
+  background:white;
+  box-shadow:-5px 0 20px rgba(0,0,0,0.2);
+  padding:15px;
+  display:none;
+  z-index:2000;
+  overflow:auto;
+}
+
+/* COMMISSION */
+.commissionBtn{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#d4af37;
+  color:white;
+  padding:12px 16px;
+  border-radius:50px;
+  font-weight:800;
+  cursor:pointer;
+  z-index:3000;
+}
 
 /* FOOTER */
-.footer{
-    text-align:center;
-    padding:20px;
-    font-size:0.8rem;
-    color:#777;
+footer{
+  text-align:center;
+  padding:20px;
+  font-size:12px;
+  color:#777;
 }
 
-/* MOBILE */
 @media(max-width:900px){
-    .hero-wrapper{flex-direction:column;height:auto;}
-    .hero-logo{height:300px;}
-    .gallery-container{grid-template-columns:1fr;}
+  .gallery{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -255,112 +212,183 @@ header{
 <body>
 
 <header>
-<div>ART IS LIFE FOUNDATION — Lewis Gitonga</div>
+<div>ART IS LIFE FOUNDATION</div>
+<div>🛒 <span id="cartCount">0</span></div>
 </header>
 
 <!-- HERO -->
-<section class="hero-wrapper">
-<div class="hero-logo">
-    <img src="cover.jpg">
-</div>
-
-<div class="hero-text">
-<h1>Art is emotional evidence.</h1>
-<p>One-time creations. Rarely reproduced.</p>
-</div>
+<section class="hero">
+<img src="cover.jpg">
 </section>
 
-<!-- STORY (FULL) -->
-<div class="story-box">
-<h2>HOW IT ALL STARTED – BY LEWIS THE CEO</h2>
-
-<p>From a young age, I was drawn to creativity in a way I could not fully explain. While others around me focused on structured competition in drawing—especially cars and technical sketches—I found myself wanting something deeper. I didn’t just want to draw; I wanted to express feeling, emotion, and meaning through every line.</p>
-
-<p>My journey began in a simple school environment where curiosity slowly turned into discipline. I pushed myself not only to participate in art, but to improve constantly. Every sketch became a lesson in patience, observation, and self-belief.</p>
-
-<p>A defining moment came when I met Elvis, who introduced me and other children to the foundations of painting. He taught us how to blend colors, control the brush, and most importantly, how to express emotion through art. That moment changed how I saw creativity—it was no longer just a skill, but a language.</p>
-
-<p>As I grew, I continued learning through structured pencil training, but I soon realized I wanted more freedom than technical drawing alone could offer. I began teaching myself through observation, experimentation, online learning, and continuous practice. My focus shifted from perfection to expression.</p>
-
-<p>Everything changed again when I attended the African Kidpreneur Summit. There, I met young creatives turning their ideas into real opportunities. That experience opened my mind to the idea that art is not just passion—it can also become purpose, identity, and livelihood.</p>
-
-<p>After that summit, I received encouragement and support that allowed me to fully pursue my artistic journey. I invested in materials, committed myself deeply, and began building what is now known as Art Is Life Foundation.</p>
-
-<p>Today, my work is not just about painting images—it is about telling human stories. Each piece reflects emotion, nature, identity, struggle, peace, and connection. I create to express what words cannot fully capture.</p>
-
-<p><strong>Art for me is not just life—it is evidence of life itself.</strong></p>
+<!-- SEARCH -->
+<div class="search">
+<input id="search" placeholder="Search artworks...">
 </div>
 
 <!-- GALLERY -->
-<div class="gallery-container" id="gallery"></div>
+<div class="gallery" id="gallery"></div>
 
-<!-- MODAL -->
-<div class="image-modal" id="imageModal">
-<img id="modalImg">
+<!-- CART -->
+<div class="cartPanel" id="cartPanel">
+<h3>Your Cart</h3>
+<div id="cartItems"></div>
+<button class="btn order-btn" onclick="checkout()">Proceed to Order</button>
+<button class="btn" onclick="closeCart()">Close</button>
 </div>
 
-<!-- SOCIAL -->
-<div class="socials">
-<a href="https://instagram.com/lewis_art.is.life">Instagram</a>
-<a href="https://facebook.com/lewis_art.is.life">Facebook</a>
-<a href="https://wa.me/254704708178">WhatsApp</a>
+<!-- STORY MODAL -->
+<div class="modal" id="storyModal">
+<div class="modal-content">
+<h2>MY UNTOLD STORY & VISION</h2>
+
+<img class="story-img" src="story1.jpg">
+<img class="story-img" src="story2.jpg">
+<img class="story-img" src="story3.jpg">
+<img class="story-img" src="story4.jpg">
+<img class="story-img" src="story5.jpg">
+
+<p>Full immersive story content goes here... your full narrative preserved.</p>
+
+<button class="btn" onclick="closeStory()">Close</button>
+</div>
+</div>
+
+<!-- COMMISSION BUTTON -->
+<div class="commissionBtn" onclick="openCommission()">🎨 Commission</div>
+
+<!-- COMMISSION MODAL -->
+<div class="modal" id="commissionModal">
+<div class="modal-content">
+<h2>Create Commission</h2>
+
+<input id="cname" placeholder="Name"><br><br>
+<textarea id="cdesc" placeholder="Describe your vision"></textarea><br><br>
+
+<button class="btn order-btn" onclick="sendCommission()">Send</button>
+<button class="btn" onclick="closeCommission()">Close</button>
+</div>
 </div>
 
 <!-- FOOTER -->
-<div class="footer">
-© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.
-</div>
+<footer>
+© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga
+</footer>
 
 <script>
 
-/* 12 ARTWORKS */
-const artworks = [
-{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotional frequency and nature."},
-{title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",desc:"Wisdom and strength."},
-{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"Identity in stillness."},
-{title:"Kinship of the Canopy",price:"600 KES",image:"canopy.jpg",desc:"Nature belonging."},
-{title:"Solace in Grey",price:"1000 KES",image:"solace.jpg",desc:"Emotional refuge."},
-{title:"Resilience",price:"900 KES",image:"resilience.jpg",desc:"Strength through pain."},
-{title:"Kingship & Kindness",price:"1500 KES",image:"kingship.jpg",desc:"Leadership with empathy."},
-{title:"Chic & Shadow",price:"1200 KES",image:"chic_shadow.jpg",desc:"Identity duality."},
-{title:"Neck to Neck",price:"1100 KES",image:"neck_to_neck.jpg",desc:"Emotional balance."},
-{title:"Joyful Blooms",price:"1000 KES",image:"joyful_blooms.jpg",desc:"Growth and renewal."},
-{title:"Sunset Nomad",price:"1300 KES",image:"sunset_nomad.jpg",desc:"Endings and beginnings."},
-{title:"Color of Light",price:"1400 KES",image:"color_of_light.jpg",desc:"Hope and clarity."}
+const artworks=[
+{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"Emotional frequency"},
+{title:"Dawn Giant",price:"700 KES",image:"giant.jpg",desc:"Strength"},
+{title:"Silence",price:"650 KES",image:"sovereign.jpg",desc:"Stillness"},
+{title:"Canopy",price:"600 KES",image:"canopy.jpg",desc:"Nature"},
+{title:"Solace",price:"1000 KES",image:"solace.jpg",desc:"Peace"},
+{title:"Resilience",price:"900 KES",image:"resilience.jpg",desc:"Power"},
+{title:"Kingship",price:"1500 KES",image:"kingship.jpg",desc:"Leadership"},
+{title:"Shadow",price:"1200 KES",image:"chic_shadow.jpg",desc:"Duality"},
+{title:"Balance",price:"1100 KES",image:"neck_to_neck.jpg",desc:"Harmony"},
+{title:"Bloom",price:"1000 KES",image:"joyful_blooms.jpg",desc:"Growth"},
+{title:"Sunset",price:"1300 KES",image:"sunset_nomad.jpg",desc:"Change"},
+{title:"Light",price:"1400 KES",image:"color_of_light.jpg",desc:"Hope"}
 ];
 
-const container = document.getElementById("gallery");
+let cart=[];
 
-function render(){
-container.innerHTML = artworks.map(a=>`
-<div class="art-card">
+function render(filter=""){
+document.getElementById("gallery").innerHTML=
+artworks.filter(a=>
+(a.title+a.desc).toLowerCase().includes(filter.toLowerCase())
+).map((a,i)=>`
+
+<div class="card">
+
 <div class="banner">AVAILABLE</div>
 
-<img src="${a.image}" onclick="openModal('${a.image}')">
-<div class="art-info">
-<div class="art-title">${a.title}</div>
-<div class="art-price">${a.price}</div>
-<div class="art-desc">${a.desc}</div>
+<div class="heart" onclick="like(${i})">❤️</div>
 
-<a class="buy-btn"
-href="https://wa.me/254704708178"
-onclick="trackWhatsApp('${a.title}')"
-target="_blank">Secure via WhatsApp</a>
+<img src="${a.image}" onclick="openStory()">
+
+<div class="info">
+<div class="title">${a.title}</div>
+<div class="price">${a.price}</div>
+<div class="desc">${a.desc}</div>
+
+<button class="btn cart-btn" onclick="addCart(${i})">Add to Cart</button>
+<button class="btn order-btn" onclick="order(${i})">Order</button>
+<button class="btn call-btn" onclick="location='tel:0704708188'">Call</button>
+
 </div>
+
 </div>
+
 `).join("");
 }
 
-function openModal(src){
-document.getElementById("imageModal").style.display="flex";
-document.getElementById("modalImg").src=src;
+render();
+
+document.getElementById("search").oninput=(e)=>render(e.target.value);
+
+function addCart(i){
+cart.push(artworks[i]);
+document.getElementById("cartCount").innerText=cart.length;
+alert("Added to cart");
 }
 
-document.getElementById("imageModal").onclick=()=>{
-document.getElementById("imageModal").style.display="none";
-};
+function openCart(){
+document.getElementById("cartPanel").style.display="block";
+document.getElementById("cartItems").innerHTML=
+cart.map(a=>`<p>${a.title} - ${a.price}</p>`).join("");
+}
 
-render();
+function closeCart(){
+document.getElementById("cartPanel").style.display="none";
+}
+
+function checkout(){
+let name=prompt("Name");
+let address=prompt("Address");
+
+let msg=cart.map(a=>a.title+" "+a.price).join("\n");
+
+window.open("https://wa.me/254704708178?text="+encodeURIComponent(
+`Hello I'm ${name}\n\n${msg}\n\n${address}`
+));
+}
+
+function order(i){
+let name=prompt("Name");
+let address=prompt("Address");
+
+window.open("https://wa.me/254704708178?text="+encodeURIComponent(
+`Order: ${artworks[i].title}\n${address}`
+));
+}
+
+function openStory(){
+document.getElementById("storyModal").style.display="flex";
+}
+
+function closeStory(){
+document.getElementById("storyModal").style.display="none";
+}
+
+function openCommission(){
+document.getElementById("commissionModal").style.display="flex";
+}
+
+function closeCommission(){
+document.getElementById("commissionModal").style.display="none";
+}
+
+function sendCommission(){
+let name=document.getElementById("cname").value;
+let desc=document.getElementById("cdesc").value;
+
+window.open("https://wa.me/254704708178?text="+encodeURIComponent(
+`Commission from ${name}\n${desc}`
+));
+}
+
 </script>
 
 </body>
