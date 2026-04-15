@@ -1,1303 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ART IS LIFE FOUNDATION — Lewis Gitonga</title>
-<meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces. Commissions open.">
 
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-MPX5MMNRB2');
+<!-- Firebase CDN -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  addDoc,
+  onSnapshot,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+/* =========================
+   FIREBASE CONFIG (REQUIRED)
+   ========================= */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+/* =========================
+   STATE
+   ========================= */
+let currentUser = null;
+let userRole = null;
+let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+/* =========================
+   ARTWORK STRUCTURE (1:1 STORY MAP)
+   ========================= */
+const artworks = [
+  {
+    id: "1",
+    title: "The Beginning — Me",
+    imageUrl: "me.jpg",
+    description: "Lewis Gitonga early identity",
+    price: 1200,
+    status: "available"
+  },
+  {
+    id: "2",
+    title: "Early Journey",
+    imageUrl: "early_journey.jpg",
+    description: "First steps in art and discipline",
+    price: 1500,
+    status: "available"
+  },
+  {
+    id: "3",
+    title: "Turning Point — Kidpreneur Summit",
+    imageUrl: "elvis_teaching.jpg",
+    description: "Transformation phase & exposure",
+    price: 2200,
+    status: "available"
+  },
+  {
+    id: "4",
+    title: "Vision Phase",
+    imageUrl: "vision.jpg",
+    description: "Future imagination and purpose",
+    price: 2600,
+    status: "available"
+  },
+  {
+    id: "5",
+    title: "Current Work",
+    imageUrl: "current_work.jpg",
+    description: "Present mastery and execution",
+    price: 3000,
+    status: "available"
+  }
+];
+
+/* =========================
+   ROLE CHECK
+   ========================= */
+async function fetchRole(uid) {
+  const ref = doc(db, "users", uid);
+  const snap = await getDoc(ref);
+  return snap.exists() ? snap.data().role : null;
+}
+
+/* =========================
+   ADMIN SECURITY
+   ========================= */
+function denyAccess() {
+  alert("Access denied");
+  closeAdmin();
+}
+
+/* =========================
+   ADMIN DRAWER
+   ========================= */
+const adminOverlay = document.getElementById("adminOverlay");
+const adminDrawer = document.getElementById("adminDrawer");
+
+function openAdminDrawer() {
+  adminOverlay.style.display = "block";
+  adminDrawer.classList.add("open");
+}
+
+function closeAdmin() {
+  adminOverlay.style.display = "none";
+  adminDrawer.classList.remove("open");
+}
+
+/* =========================
+   👑 CROWN BUTTON ALWAYS VISIBLE
+   ========================= */
+document.getElementById("crownBtn").addEventListener("click", async () => {
+  if (!currentUser) {
+    const email = prompt("Admin Email:");
+    const pass = prompt("Password:");
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch {
+      alert("Login failed");
+    }
+    return;
+  }
+
+  userRole = await fetchRole(currentUser.uid);
+
+  if (userRole === "crown") {
+    openAdminDrawer();
+  } else {
+    denyAccess();
+  }
+});
+
+/* =========================
+   AUTH STATE
+   ========================= */
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+
+  if (user) {
+    userRole = await fetchRole(user.uid);
+  }
+});
+
+/* =========================
+   RENDER GALLERY
+   ========================= */
+function renderGallery() {
+  const container = document.getElementById("gallery");
+  container.innerHTML = "";
+
+  artworks.forEach(a => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <img src="${a.imageUrl}" />
+      <h3>${a.title}</h3>
+      <p>${a.description}</p>
+      <b>KES ${a.price}</b>
+      <span class="badge">${a.status}</span>
+      <button onclick="addToCart('${a.id}')">Add to Cart</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+/* =========================
+   CART SYSTEM
+   ========================= */
+window.addToCart = function(id) {
+  const item = artworks.find(a => a.id === id);
+  if (!cart.find(c => c.id === id)) {
+    cart.push(item);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    alert("Added to cart");
+  }
+  renderCart();
+};
+
+function renderCart() {
+  const c = document.getElementById("cartItems");
+  c.innerHTML = "";
+
+  cart.forEach(i => {
+    const div = document.createElement("div");
+    div.innerHTML = `${i.title} - KES ${i.price}`;
+    c.appendChild(div);
+  });
+}
+
+/* =========================
+   ORDER SYSTEM
+   ========================= */
+window.checkout = async function () {
+  if (!cart.length) return alert("Cart empty");
+
+  const order = {
+    items: cart,
+    total: cart.reduce((s, i) => s + i.price, 0),
+    status: "pending",
+    createdAt: serverTimestamp()
+  };
+
+  await addDoc(collection(db, "orders"), order);
+
+  alert("Order placed");
+  cart = [];
+  localStorage.removeItem("cart");
+  renderCart();
+};
+
+/* =========================
+   INIT
+   ========================= */
+window.onload = () => {
+  renderGallery();
+  renderCart();
+};
+
 </script>
 
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
 <style>
-/* ═══════════════════════ ROOT ═══════════════════════ */
-:root {
-  --gold:#c9a84c; --gold-light:#e8d48b; --gold-dark:#9a7a2e;
-  --cream:#faf8f3; --warm-white:#fffef9; --charcoal:#1a1a1a; --ink:#2c2c2c; --muted:#6b6b6b;
-  --red:#b3261e; --green:#1aa34a; --green-bright:#25D366; --blue:#2563eb; --orange:#ea580c;
-  --card-shadow:0 4px 30px rgba(0,0,0,0.08); --card-hover:0 20px 60px rgba(0,0,0,0.18);
-  --admin-bg:#0f0f0f; --admin-surface:#181818; --admin-border:rgba(201,168,76,0.15);
+body { margin:0; font-family:Arial; background:#0b0b0b; color:white; }
+
+header {
+  display:flex;
+  justify-content:space-between;
+  padding:15px;
+  background:#111;
+  position:sticky;
+  top:0;
 }
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-body{font-family:'DM Sans',sans-serif;background:var(--warm-white);color:var(--ink);overflow-x:hidden;}
-h1,h2,h3{font-family:'Cormorant Garamond',serif;}
-::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-track{background:var(--cream);}
-::-webkit-scrollbar-thumb{background:var(--gold);}
 
-/* ═══ HEADER ═══ */
-header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(201,168,76,0.2);padding:0 5%;display:flex;justify-content:space-between;align-items:center;height:64px;}
-.header-brand{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;letter-spacing:0.04em;color:var(--charcoal);}
-.header-brand span{color:var(--gold);}
-.header-right{display:flex;align-items:center;gap:16px;}
-.cart-icon{cursor:pointer;display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:600;color:var(--ink);padding:8px 14px;border:1px solid rgba(201,168,76,0.4);border-radius:50px;transition:all 0.3s;user-select:none;}
-.cart-icon:hover{border-color:var(--gold);background:rgba(201,168,76,0.06);}
-#cartCount{background:var(--gold);color:white;border-radius:50%;width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;}
-#crownTrigger{cursor:pointer;font-size:1.05rem;padding:7px 11px;border-radius:50%;border:1px solid transparent;transition:all 0.3s;user-select:none;opacity:0;pointer-events:none;}
-#crownTrigger.visible{opacity:1;pointer-events:auto;border-color:rgba(201,168,76,0.35);}
-#crownTrigger:hover{background:rgba(201,168,76,0.1);}
-
-/* ═══ HERO ═══ */
-.hero{position:relative;height:85vh;min-height:500px;overflow:hidden;display:flex;align-items:flex-end;}
-.hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 50%,#1a1008 100%);overflow:hidden;}
-.hero-bg img{width:100%;height:100%;object-fit:cover;opacity:0.7;animation:heroZoom 12s ease-in-out infinite alternate;}
-@keyframes heroZoom{from{transform:scale(1);}to{transform:scale(1.08);}}
-.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(26,16,8,0.85) 0%,rgba(26,16,8,0.3) 50%,rgba(201,168,76,0.05) 100%);}
-.hero-content{position:relative;z-index:2;padding:5% 8% 6%;animation:heroEntry 1.5s ease forwards;}
-@keyframes heroEntry{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
-.hero-eyebrow{font-size:0.7rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;font-weight:500;}
-.hero-title{font-size:clamp(2.8rem,7vw,5.5rem);font-weight:300;color:white;line-height:1.05;margin-bottom:18px;}
-.hero-title em{font-style:italic;color:var(--gold-light);}
-.hero-sub{font-size:1rem;color:rgba(255,255,255,0.65);margin-bottom:28px;max-width:420px;line-height:1.6;font-weight:300;}
-.hero-cta{display:inline-flex;gap:14px;flex-wrap:wrap;}
-.btn-hero-primary{padding:13px 28px;background:var(--gold);color:white;border:none;font-size:0.85rem;font-weight:600;letter-spacing:0.05em;cursor:pointer;border-radius:3px;font-family:'DM Sans',sans-serif;transition:all 0.3s;position:relative;overflow:hidden;}
-.btn-hero-primary::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.3),transparent);animation:shimmer 2.5s infinite;}
-@keyframes shimmer{100%{left:100%;}}
-.btn-hero-primary:hover{background:var(--gold-dark);transform:translateY(-1px);box-shadow:0 8px 24px rgba(201,168,76,0.4);}
-.btn-hero-secondary{padding:13px 28px;background:transparent;color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.3);font-size:0.85rem;font-weight:500;letter-spacing:0.05em;cursor:pointer;border-radius:3px;font-family:'DM Sans',sans-serif;transition:all 0.3s;}
-.btn-hero-secondary:hover{border-color:var(--gold);color:var(--gold-light);}
-
-/* ═══ IDENTITY BAND ═══ */
-.identity-band{background:var(--charcoal);padding:18px 8%;display:flex;align-items:center;overflow:hidden;}
-.identity-band-text{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;color:rgba(255,255,255,0.55);white-space:nowrap;animation:marquee 18s linear infinite;}
-@keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-
-/* ═══ CANVAS SECTION ═══ */
-.canvas-section{padding:100px 8%;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;max-width:1400px;margin:0 auto;}
-.canvas-left .section-eyebrow{font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;}
-.canvas-left h2{font-size:clamp(2rem,4vw,3.2rem);font-weight:400;line-height:1.15;color:var(--charcoal);margin-bottom:24px;}
-.canvas-left h2 em{font-style:italic;color:var(--gold-dark);}
-.canvas-left p{font-size:0.95rem;line-height:1.8;color:var(--muted);margin-bottom:16px;}
-.canvas-quote{border-left:3px solid var(--gold);padding-left:20px;margin:28px 0;font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-style:italic;color:var(--charcoal);line-height:1.5;}
-.btn-canvas{display:inline-flex;align-items:center;gap:10px;padding:13px 26px;border:1px solid var(--gold);color:var(--gold-dark);background:transparent;font-size:0.85rem;font-weight:600;letter-spacing:0.06em;cursor:pointer;border-radius:3px;font-family:'DM Sans',sans-serif;transition:all 0.3s;position:relative;overflow:hidden;}
-.btn-canvas::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(201,168,76,0.15),transparent);animation:shimmer 3s infinite;}
-.btn-canvas:hover{background:var(--gold);color:white;transform:translateY(-1px);}
-.canvas-right{position:relative;}
-.canvas-img-frame{position:relative;}
-.canvas-img-frame img{width:100%;height:420px;object-fit:cover;border-radius:3px;display:block;}
-.canvas-img-frame::before{content:'';position:absolute;top:-12px;left:-12px;right:12px;bottom:12px;border:1px solid rgba(201,168,76,0.35);border-radius:3px;z-index:-1;}
-.canvas-img-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(26,16,8,0.7) 0%,transparent 100%);padding:30px 20px 20px;border-radius:0 0 3px 3px;}
-.canvas-img-overlay span{font-family:'Cormorant Garamond',serif;font-style:italic;color:rgba(255,255,255,0.8);font-size:0.9rem;}
-
-/* ═══ SEARCH ═══ */
-.search-section{background:var(--cream);padding:40px 8%;border-top:1px solid rgba(201,168,76,0.15);border-bottom:1px solid rgba(201,168,76,0.15);}
-.search-inner{max-width:600px;margin:0 auto;position:relative;}
-.search-label{display:block;font-size:0.65rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;text-align:center;}
-.search-inner input{width:100%;padding:14px 50px 14px 20px;border:1px solid rgba(201,168,76,0.3);border-radius:3px;background:white;font-size:0.95rem;font-family:'DM Sans',sans-serif;color:var(--ink);transition:all 0.3s;outline:none;}
-.search-inner input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.1);}
-.search-inner input::placeholder{color:#bbb;}
-.search-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:1.1rem;pointer-events:none;margin-top:12px;}
-
-/* ═══ GALLERY ═══ */
-.gallery-section{padding:70px 8%;}
-.gallery-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:50px;}
-.gallery-header h2{font-size:clamp(1.8rem,3vw,2.8rem);font-weight:400;color:var(--charcoal);}
-.gallery-header h2 span{font-style:italic;color:var(--gold-dark);}
-.gallery-count{font-size:0.8rem;color:var(--muted);letter-spacing:0.1em;}
-.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;}
-
-/* Skeleton */
-.skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% auto;animation:skelPulse 1.5s infinite;border-radius:4px;}
-@keyframes skelPulse{0%{background-position:200%;}100%{background-position:0%;}}
-.skeleton-card{border:1px solid rgba(0,0,0,0.07);border-radius:4px;overflow:hidden;background:white;box-shadow:var(--card-shadow);}
-.skeleton-img{height:260px;}
-.skeleton-text{height:14px;margin:18px 18px 10px;}
-.skeleton-text-sm{height:12px;margin:0 18px 8px;width:60%;}
-
-/* Art card */
-.art-card{border:1px solid rgba(0,0,0,0.07);border-radius:4px;overflow:hidden;background:white;box-shadow:var(--card-shadow);transition:all 0.45s cubic-bezier(0.25,0.46,0.45,0.94);animation:cardFade 0.6s ease both;position:relative;}
-@keyframes cardFade{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
-.art-card:not(.sold-card):hover{transform:translateY(-8px);box-shadow:var(--card-hover);}
-.art-card.sold-card{opacity:0.72;}
-.art-card.sold-card::after{content:'SOLD';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-20deg);font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;color:rgba(255,255,255,0.9);text-shadow:0 2px 8px rgba(0,0,0,0.4);pointer-events:none;z-index:10;letter-spacing:0.1em;}
-.art-card.sold-card .art-img-wrap img{filter:grayscale(60%);}
-.art-card.featured-card{box-shadow:0 0 0 2px var(--gold),var(--card-shadow);}
-.art-img-wrap{position:relative;overflow:hidden;height:260px;}
-.art-img-wrap img{width:100%;height:100%;object-fit:cover;cursor:pointer;transition:transform 0.6s ease;display:block;}
-.art-card:hover .art-img-wrap img{transform:scale(1.06);}
-.badge{position:absolute;top:10px;left:10px;font-size:0.58rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 10px;border-radius:2px;}
-.badge-available{background:linear-gradient(90deg,#1aa34a,#5eff9a,#1aa34a);background-size:200% auto;color:white;animation:badgeShine 2.5s linear infinite;}
-@keyframes badgeShine{0%{background-position:0%;}100%{background-position:200%;}}
-.badge-sold{background:rgba(0,0,0,0.65);color:rgba(255,255,255,0.7);}
-.badge-featured{background:linear-gradient(90deg,var(--gold),var(--gold-light),var(--gold));background-size:200% auto;color:white;animation:badgeShine 2s linear infinite;}
-.like-btn{position:absolute;top:10px;right:10px;width:34px;height:34px;background:rgba(255,255,255,0.92);border:none;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all 0.3s;box-shadow:0 2px 8px rgba(0,0,0,0.12);}
-.like-btn:hover{transform:scale(1.15);box-shadow:0 4px 12px rgba(0,0,0,0.2);}
-.like-btn.liked{background:rgba(255,50,50,0.1);}
-.art-info{padding:18px 18px 14px;}
-.art-title{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:var(--charcoal);margin-bottom:4px;}
-.art-price{color:var(--gold-dark);font-weight:700;font-size:0.9rem;margin-bottom:8px;letter-spacing:0.03em;}
-.art-desc{font-size:0.82rem;color:var(--muted);line-height:1.5;margin-bottom:14px;}
-.art-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 18px 18px;}
-.art-btn{padding:9px 6px;border:none;border-radius:3px;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:5px;position:relative;overflow:hidden;letter-spacing:0.03em;}
-.art-btn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.4),transparent);animation:shimmer 2.8s infinite;}
-.art-btn:disabled{opacity:0.35;cursor:not-allowed;}
-.art-btn-order{background:var(--green-bright);color:white;grid-column:1/-1;}
-.art-btn-order:not(:disabled):hover{background:#128C7E;}
-.art-btn-cart{background:var(--gold);color:white;}
-.art-btn-cart:not(:disabled):hover{background:var(--gold-dark);}
-.art-btn-call{background:var(--red);color:white;}
-.art-btn-call:hover{background:#8b1a15;}
-.no-results{text-align:center;padding:80px 20px;color:var(--muted);grid-column:1/-1;}
-.no-results h3{font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:10px;color:var(--charcoal);}
-.no-results button{margin-top:20px;padding:10px 24px;border:1px solid var(--gold);background:transparent;color:var(--gold-dark);border-radius:3px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.85rem;}
-
-/* ═══ SIDE DRAWERS (shared base) ═══ */
-.side-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1500;display:none;animation:fadeOv 0.3s ease;}
-@keyframes fadeOv{from{opacity:0;}to{opacity:1;}}
-.side-drawer{position:fixed;top:0;right:0;width:380px;max-width:95vw;height:100%;background:white;z-index:1600;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,0.15);transform:translateX(100%);transition:transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);}
-.side-drawer.open{transform:translateX(0);}
-.drawer-header{padding:22px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;}
-.drawer-header h3{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;}
-.drawer-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);transition:color 0.2s;}
-.drawer-close:hover{color:var(--charcoal);}
-.cart-items{flex:1;overflow-y:auto;padding:20px 24px;}
-.cart-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid #f0f0f0;align-items:center;}
-.cart-item-title{flex:1;}
-.cart-item-title strong{display:block;font-size:0.9rem;margin-bottom:3px;color:var(--charcoal);}
-.cart-item-title span{font-size:0.8rem;color:var(--gold-dark);font-weight:600;}
-.cart-item-remove{background:none;border:none;color:#ccc;cursor:pointer;font-size:1rem;transition:color 0.2s;padding:4px;}
-.cart-item-remove:hover{color:var(--red);}
-.cart-empty{text-align:center;padding:60px 20px;color:var(--muted);}
-.cart-empty-icon{font-size:3rem;margin-bottom:14px;opacity:0.4;}
-.cart-footer{padding:20px 24px;border-top:1px solid #eee;}
-.cart-subtotal{display:flex;justify-content:space-between;margin-bottom:16px;font-weight:600;font-size:0.95rem;}
-.cart-subtotal span:last-child{color:var(--gold-dark);}
-.btn-checkout{width:100%;padding:14px;background:var(--green-bright);color:white;border:none;border-radius:3px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.3s;position:relative;overflow:hidden;}
-.btn-checkout::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.3),transparent);animation:shimmer 2s infinite;}
-.btn-checkout:hover{background:#128C7E;transform:translateY(-1px);}
-
-/* ═══ ADMIN DRAWER ═══ */
-#adminDrawer{position:fixed;top:0;right:0;width:480px;max-width:98vw;height:100%;background:var(--admin-bg);z-index:1600;display:flex;flex-direction:column;box-shadow:-10px 0 60px rgba(0,0,0,0.6);transform:translateX(100%);transition:transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94);border-left:1px solid var(--admin-border);}
-#adminDrawer.open{transform:translateX(0);}
-.admin-drawer-header{padding:20px 24px;border-bottom:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;background:var(--admin-surface);}
-.admin-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:var(--gold-light);display:flex;align-items:center;gap:10px;}
-.admin-tabs{display:flex;border-bottom:1px solid var(--admin-border);background:var(--admin-surface);}
-.admin-tab{flex:1;padding:11px 6px;background:none;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,0.35);font-size:0.68rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.25s;}
-.admin-tab:hover{color:rgba(255,255,255,0.65);}
-.admin-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);}
-.admin-body{flex:1;overflow-y:auto;padding:22px;}
-.admin-body::-webkit-scrollbar{width:3px;}
-.admin-body::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3);}
-.admin-panel{display:none;}
-.admin-panel.active{display:block;}
-.admin-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
-.admin-stat{background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:6px;padding:14px 16px;}
-.admin-stat-val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:var(--gold-light);line-height:1;margin-bottom:4px;}
-.admin-stat-label{font-size:0.67rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);}
-.admin-section-title{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold);margin-bottom:12px;font-style:italic;}
-.admin-row{background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:4px;padding:12px 14px;margin-bottom:8px;}
-.admin-row-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-.admin-row-name{font-size:0.85rem;color:white;font-weight:600;margin-bottom:2px;}
-.admin-row-sub{font-size:0.73rem;color:rgba(255,255,255,0.4);}
-.admin-row-body{font-size:0.78rem;color:rgba(255,255,255,0.55);margin-top:8px;line-height:1.5;}
-.admin-row-meta{font-size:0.7rem;color:rgba(255,255,255,0.25);margin-top:6px;}
-.admin-row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
-.sbadge{font-size:0.62rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 7px;border-radius:2px;white-space:nowrap;}
-.s-pending{background:rgba(234,88,12,0.2);color:#fb923c;}
-.s-processing{background:rgba(37,99,235,0.2);color:#60a5fa;}
-.s-completed{background:rgba(26,163,74,0.2);color:#4ade80;}
-.s-accepted{background:rgba(26,163,74,0.2);color:#4ade80;}
-.s-rejected{background:rgba(179,38,30,0.2);color:#f87171;}
-.s-reviewed{background:rgba(201,168,76,0.2);color:var(--gold-light);}
-.s-available{background:rgba(26,163,74,0.2);color:#4ade80;}
-.s-sold{background:rgba(100,100,100,0.2);color:rgba(255,255,255,0.4);}
-.s-featured{background:rgba(201,168,76,0.2);color:var(--gold-light);}
-.admin-art-row{background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:4px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
-.admin-art-img{width:46px;height:46px;object-fit:cover;border-radius:3px;flex-shrink:0;background:rgba(201,168,76,0.08);}
-.admin-art-info{flex:1;min-width:0;}
-.admin-art-info strong{display:block;font-size:0.83rem;color:white;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.admin-art-info span{font-size:0.72rem;color:rgba(255,255,255,0.4);}
-.admin-art-controls{display:flex;gap:5px;flex-shrink:0;align-items:center;}
-.inline-status{background:var(--admin-bg);border:1px solid var(--admin-border);color:rgba(255,255,255,0.65);font-size:0.7rem;font-family:'DM Sans',sans-serif;padding:3px 5px;border-radius:3px;outline:none;cursor:pointer;}
-.inline-status:focus{border-color:var(--gold);}
-.ico-btn{width:28px;height:28px;border-radius:3px;border:1px solid var(--admin-border);background:none;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:rgba(255,255,255,0.5);}
-.ico-btn:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(201,168,76,0.08);}
-.ico-btn.del:hover{border-color:var(--red);color:#f87171;background:rgba(179,38,30,0.08);}
-.admin-form-wrap{display:none;background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:6px;padding:16px;margin-bottom:18px;}
-.admin-form-title{font-size:0.72rem;font-weight:700;color:var(--gold-light);letter-spacing:0.08em;margin-bottom:12px;}
-.aform-group{margin-bottom:12px;}
-.aform-group label{display:block;font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:5px;}
-.aform-group input,.aform-group textarea,.aform-group select{width:100%;padding:9px 11px;background:var(--admin-bg);border:1px solid var(--admin-border);border-radius:3px;font-size:0.85rem;font-family:'DM Sans',sans-serif;color:white;outline:none;transition:border-color 0.3s;}
-.aform-group input:focus,.aform-group textarea:focus,.aform-group select:focus{border-color:var(--gold);}
-.aform-group textarea{resize:vertical;min-height:64px;}
-.aform-group select option{background:#222;}
-.aform-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.aform-btns{display:flex;gap:8px;margin-top:4px;}
-.abtn{padding:9px 14px;border:none;border-radius:3px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.3s;letter-spacing:0.04em;}
-.abtn-primary{background:var(--gold);color:white;}
-.abtn-primary:hover{background:var(--gold-dark);}
-.abtn-secondary{background:var(--admin-surface);color:rgba(255,255,255,0.6);border:1px solid var(--admin-border);}
-.abtn-secondary:hover{border-color:var(--gold);color:var(--gold-light);}
-.abtn-full{width:100%;padding:11px;}
-.upload-area{border:2px dashed var(--admin-border);border-radius:4px;padding:20px;text-align:center;cursor:pointer;transition:all 0.3s;margin-bottom:10px;}
-.upload-area:hover,.upload-area.drag-over{border-color:var(--gold);background:rgba(201,168,76,0.04);}
-.upload-icon{font-size:1.8rem;margin-bottom:6px;opacity:0.5;}
-.upload-area p{font-size:0.75rem;color:rgba(255,255,255,0.4);line-height:1.5;}
-.upload-area p strong{color:var(--gold-light);}
-.upload-preview{width:100%;height:130px;object-fit:cover;border-radius:3px;margin-top:8px;display:none;}
-.upload-prog-wrap{margin-top:8px;display:none;}
-.upload-prog-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
-.upload-prog-fill{height:100%;background:var(--gold);width:0%;transition:width 0.2s;}
-.upload-prog-text{font-size:0.7rem;color:var(--gold-light);margin-top:3px;text-align:center;}
-.admin-drawer-footer{padding:14px 24px;border-top:1px solid var(--admin-border);background:var(--admin-surface);display:flex;justify-content:space-between;align-items:center;}
-.admin-user-info{font-size:0.72rem;color:rgba(255,255,255,0.35);}
-.admin-user-info strong{color:var(--gold-light);display:block;margin-bottom:1px;font-size:0.78rem;}
-.admin-empty{text-align:center;padding:28px 16px;color:rgba(255,255,255,0.25);font-size:0.82rem;}
-.admin-divider{border:none;border-top:1px solid var(--admin-border);margin:16px 0;}
-
-/* ═══ MODALS ═══ */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;justify-content:center;align-items:center;padding:20px;animation:fadeOv 0.3s ease;}
-.modal-overlay.active{display:flex;}
-.modal-box{background:white;border-radius:6px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:modalIn 0.4s ease;}
-@keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
-.modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;border:1px solid #eee;background:white;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all 0.2s;z-index:10;}
-.modal-close:hover{border-color:var(--red);color:var(--red);}
-
-/* Image viewer */
-.img-modal-inner{background:transparent;max-width:90vw;max-height:90vh;display:flex;align-items:center;justify-content:center;}
-.img-modal-inner img{max-width:85vw;max-height:85vh;object-fit:contain;border-radius:3px;box-shadow:0 30px 80px rgba(0,0,0,0.6);}
-
-/* Story modal */
-.story-modal-box{max-width:900px;}
-.story-modal-hero{width:100%;height:280px;object-fit:cover;display:block;border-radius:6px 6px 0 0;}
-.story-modal-body{padding:40px;}
-.story-eyebrow{font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
-.story-modal-body h2{font-size:2rem;font-weight:400;margin-bottom:24px;color:var(--charcoal);}
-.story-section{margin-bottom:28px;}
-.story-section h4{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:var(--gold-dark);border-left:3px solid var(--gold);padding-left:12px;margin-bottom:10px;}
-.story-section p{font-size:0.92rem;line-height:1.8;color:var(--muted);}
-.story-imgs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0;}
-.story-imgs.single{grid-template-columns:1fr;}
-.story-imgs img{width:100%;height:180px;object-fit:cover;border-radius:3px;}
-.story-quote{background:var(--cream);border-left:3px solid var(--gold);padding:20px 24px;margin:24px 0;border-radius:0 4px 4px 0;}
-.story-quote p{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-style:italic;color:var(--charcoal);line-height:1.5;}
-
-/* Order + commission modal shared */
-.modal-body-pad{padding:32px;}
-.modal-body-pad h3{font-size:1.5rem;font-weight:500;margin-bottom:6px;}
-.order-artwork-name{font-size:0.85rem;color:var(--gold-dark);font-weight:600;margin-bottom:24px;}
-.form-group{margin-bottom:16px;}
-.form-group label{display:block;font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-.form-group input,.form-group textarea,.form-group select{width:100%;padding:11px 14px;border:1px solid #e0e0e0;border-radius:3px;font-size:0.9rem;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:border-color 0.3s;background:white;}
-.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,0.1);}
-.form-group textarea{resize:vertical;min-height:80px;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.channel-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0;}
-.channel-btn{padding:11px 7px;border:1px solid #e0e0e0;border-radius:4px;background:white;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.76rem;font-weight:600;color:var(--muted);transition:all 0.25s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;}
-.channel-btn .icon{font-size:1.3rem;}
-.channel-btn:hover,.channel-btn.active{border-color:var(--gold);background:rgba(201,168,76,0.06);color:var(--charcoal);}
-.channel-btn.wa:hover,.channel-btn.wa.active{border-color:#25D366;background:rgba(37,211,102,0.06);}
-.channel-btn.email:hover,.channel-btn.email.active{border-color:var(--blue);background:rgba(37,99,235,0.06);}
-.channel-btn.sms:hover,.channel-btn.sms.active{border-color:var(--orange);background:rgba(234,88,12,0.06);}
-.channel-label{font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:4px;}
-.btn-send{width:100%;padding:13px;border:none;border-radius:3px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.3s;margin-top:8px;position:relative;overflow:hidden;}
-.btn-send::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.3),transparent);animation:shimmer 2s infinite;}
-.btn-send-wa{background:var(--green-bright);color:white;}
-.btn-send-wa:hover{background:#128C7E;}
-.btn-send-email{background:var(--blue);color:white;}
-.btn-send-email:hover{background:#1d4ed8;}
-.btn-send-sms{background:var(--orange);color:white;}
-.btn-send-sms:hover{background:#c2410c;}
-.comm-eyebrow{font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
-.comm-subtitle{font-size:0.85rem;color:var(--muted);margin-bottom:24px;line-height:1.5;}
-
-/* Admin login modal */
-.admin-login-modal{max-width:400px;}
-.admin-login-body{padding:32px;}
-.admin-login-body h3{font-size:1.4rem;font-weight:500;margin-bottom:6px;}
-.admin-login-body .subtitle{font-size:0.82rem;color:var(--muted);margin-bottom:24px;}
-.admin-error{color:var(--red);font-size:0.82rem;margin-top:8px;display:none;}
-.btn-admin-login{width:100%;padding:12px;background:var(--charcoal);color:var(--gold);border:none;border-radius:3px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.3s;margin-top:4px;}
-.btn-admin-login:hover{background:#2c2c2c;}
-
-/* Commission FAB */
-.commission-fab-wrap{position:fixed;bottom:24px;right:24px;z-index:1400;}
-.commission-fab{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);color:white;padding:13px 20px;border-radius:50px;font-weight:700;font-size:0.82rem;letter-spacing:0.04em;cursor:pointer;box-shadow:0 8px 24px rgba(154,122,46,0.4);transition:all 0.35s;display:flex;align-items:center;gap:8px;border:none;font-family:'DM Sans',sans-serif;position:relative;overflow:hidden;}
-.commission-fab::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.4),transparent);animation:shimmer 2s infinite;}
-.commission-fab:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 14px 36px rgba(154,122,46,0.5);}
-
-/* Social + footer */
-.social-section{background:var(--charcoal);padding:60px 8%;text-align:center;}
-.social-section h3{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:white;margin-bottom:8px;}
-.social-section p{font-size:0.85rem;color:rgba(255,255,255,0.45);margin-bottom:32px;}
-.social-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;}
-.social-link{padding:10px 22px;border:1px solid rgba(201,168,76,0.4);color:rgba(255,255,255,0.75);text-decoration:none;border-radius:3px;font-size:0.82rem;font-weight:500;transition:all 0.3s;letter-spacing:0.05em;}
-.social-link:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(201,168,76,0.08);}
-footer{text-align:center;padding:20px;font-size:0.75rem;color:#aaa;background:var(--charcoal);border-top:1px solid rgba(255,255,255,0.06);}
-
-/* Toast */
-.toast{position:fixed;bottom:90px;right:24px;background:var(--charcoal);color:white;padding:12px 20px;border-radius:4px;font-size:0.85rem;z-index:5000;transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);pointer-events:none;border-left:3px solid var(--gold);}
-.toast.show{transform:translateY(0);opacity:1;}
-
-/* ═══ RESPONSIVE ═══ */
-@media(max-width:900px){
-  .canvas-section{grid-template-columns:1fr;gap:40px;padding:60px 6%;}
-  .canvas-right{order:-1;}
-  .gallery-grid{grid-template-columns:1fr;}
-  .gallery-section{padding:50px 6%;}
-  .form-row{grid-template-columns:1fr;}
-  .story-imgs{grid-template-columns:1fr;}
-  .hero-content{padding:4% 6% 8%;}
-  .hero{height:75vh;}
-  .identity-band{display:none;}
-  #adminDrawer{width:100%;}
+#crownBtn {
+  font-size:20px;
+  cursor:pointer;
 }
-@media(max-width:480px){
-  .header-brand{font-size:0.85rem;}
-  .gallery-header{flex-direction:column;align-items:flex-start;gap:8px;}
-  .channel-selector{grid-template-columns:1fr;}
-  .admin-stats{grid-template-columns:1fr;}
-  .aform-row{grid-template-columns:1fr;}
+
+#gallery {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+  padding:10px;
+}
+
+.card {
+  background:#1a1a1a;
+  padding:10px;
+  border-radius:10px;
+}
+
+.card img {
+  width:100%;
+  border-radius:10px;
+}
+
+.badge {
+  display:inline-block;
+  padding:3px 6px;
+  background:green;
+  font-size:12px;
+}
+
+button {
+  margin-top:5px;
+  width:100%;
+  padding:8px;
+  background:#ffcc00;
+  border:none;
+  cursor:pointer;
+}
+
+/* CART */
+#cart {
+  position:fixed;
+  right:10px;
+  bottom:10px;
+  background:#222;
+  padding:10px;
+  border-radius:10px;
+}
+
+/* ADMIN */
+#adminOverlay {
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+}
+
+#adminDrawer {
+  position:fixed;
+  right:-400px;
+  top:0;
+  width:400px;
+  height:100%;
+  background:#111;
+  transition:0.3s;
+  padding:10px;
+}
+
+#adminDrawer.open {
+  right:0;
 }
 </style>
 </head>
+
 <body>
 
-<!-- HEADER -->
 <header>
-  <div class="header-brand">ART IS LIFE <span>FOUNDATION</span></div>
-  <div class="header-right">
-    <div id="crownTrigger" title="Crown Admin">👑</div>
-    <div class="cart-icon" id="cartBtn">🛒 <span id="cartCount">0</span></div>
+  <h2>ART IS LIFE</h2>
+  <div>
+    🛒 Cart
+    <span id="crownBtn">👑</span>
   </div>
 </header>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-bg">
-    <img src="cover.jpg" alt="Art is Life" onerror="this.style.display='none'">
-  </div>
-  <div class="hero-content">
-    <div class="hero-eyebrow">Lewis Gitonga · Nairobi, Kenya</div>
-    <h1 class="hero-title">Art is<br><em>evidence of life.</em></h1>
-    <p class="hero-sub">One-time creations. Rarely reproduced. Each piece is a conversation between the soul and the canvas.</p>
-    <div class="hero-cta">
-      <button class="btn-hero-primary" id="heroExploreBtn">Explore the Collection</button>
-      <button class="btn-hero-secondary" id="heroStoryBtn">Enter The Untold Canvas</button>
-    </div>
-  </div>
-</section>
-
-<!-- IDENTITY BAND -->
-<div class="identity-band">
-  <div class="identity-band-text">
-    Original · Emotional · One of a Kind &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;
-    Original · Emotional · One of a Kind &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;
-    Original · Emotional · One of a Kind &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;
-    Original · Emotional · One of a Kind &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;
-    Original · Emotional · One of a Kind &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;
-    Original · Emotional · One of a Kind &nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;
-  </div>
-</div>
-
-<!-- CANVAS SECTION -->
-<section class="canvas-section">
-  <div class="canvas-left">
-    <div class="section-eyebrow">The Artist's Journey</div>
-    <h2>The <em>Untold Canvas</em> — My Origin</h2>
-    <p>From a young age, I was drawn to creativity in a way I could not fully explain. I didn't just want to draw — I wanted to express feeling, emotion, and meaning through every line.</p>
-    <p>Everything changed when I attended the African Kidpreneur Summit. I met young creatives turning their ideas into real opportunities. That experience opened my mind: art is not just passion — it can become purpose, identity, and livelihood.</p>
-    <div class="canvas-quote">"Art for me is not just life — it is evidence of life itself."</div>
-    <button class="btn-canvas" id="canvasStoryBtn">✦ Explore the Artist's Journey</button>
-  </div>
-  <div class="canvas-right">
-    <div class="canvas-img-frame">
-      <img src="Story 1.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation"
-           onerror="this.style.background='linear-gradient(135deg,#c9a84c22,#1a1a1a11)';this.style.height='420px'">
-      <div class="canvas-img-overlay">
-        <span>Lewis Gitonga · CEO &amp; Founder, Art Is Life Foundation</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SEARCH -->
-<div class="search-section">
-  <label class="search-label" for="searchInput">Search the Collection</label>
-  <div class="search-inner">
-    <input type="text" id="searchInput" placeholder="e.g. resilience, nature, hope, emotion…" autocomplete="off">
-    <span class="search-icon">🔍</span>
-  </div>
-</div>
-
 <!-- GALLERY -->
-<section class="gallery-section" id="gallery-section">
-  <div class="gallery-header">
-    <h2>The <span>Collection</span></h2>
-    <span class="gallery-count" id="galleryCount">Loading…</span>
-  </div>
-  <div class="gallery-grid" id="gallery"></div>
-</section>
+<div id="gallery"></div>
 
-<!-- SOCIAL + FOOTER -->
-<div class="social-section">
-  <h3>Follow the Journey</h3>
-  <p>Stay connected with new works, stories, and creative moments.</p>
-  <div class="social-links">
-    <a class="social-link" href="https://instagram.com/lewis_art.is.life" target="_blank" rel="noopener">📸 Instagram</a>
-    <a class="social-link" href="https://facebook.com/lewis_art.is.life" target="_blank" rel="noopener">📘 Facebook</a>
-    <a class="social-link" href="https://wa.me/254704708178" target="_blank" rel="noopener">💬 WhatsApp</a>
-  </div>
-</div>
-<footer>© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved. Each artwork is an original, one-time creation.</footer>
-
-<!-- ═══════════════════════ CART DRAWER ═══════════════════════ -->
-<div class="side-overlay" id="cartOverlay"></div>
-<div class="side-drawer" id="cartDrawer">
-  <div class="drawer-header">
-    <h3>🛒 Your Cart</h3>
-    <button class="drawer-close" id="cartCloseBtn">✕</button>
-  </div>
-  <div class="cart-items" id="cartItems"></div>
-  <div class="cart-footer" id="cartFooter" style="display:none;">
-    <div class="cart-subtotal"><span>Total</span><span id="cartTotal"></span></div>
-    <button class="btn-checkout" id="checkoutBtn">Proceed to Order →</button>
-  </div>
+<!-- CART -->
+<div id="cart">
+  <h4>Cart</h4>
+  <div id="cartItems"></div>
+  <button onclick="checkout()">Checkout</button>
 </div>
 
-<!-- ═══════════════════════ 👑 CROWN ADMIN DRAWER ═══════════════════════ -->
-<div class="side-overlay" id="adminOverlay"></div>
+<!-- ADMIN OVERLAY -->
+<div id="adminOverlay" onclick="closeAdmin()"></div>
+
+<!-- ADMIN DRAWER -->
 <div id="adminDrawer">
-  <div class="admin-drawer-header">
-    <div class="admin-title">👑 <span>Crown Admin</span></div>
-    <button class="drawer-close" id="adminCloseBtn" style="color:rgba(255,255,255,0.45);">✕</button>
-  </div>
-  <div class="admin-tabs">
-    <button class="admin-tab active" data-tab="dashboard">Dashboard</button>
-    <button class="admin-tab" data-tab="artworks">Artworks</button>
-    <button class="admin-tab" data-tab="orders">Orders</button>
-    <button class="admin-tab" data-tab="commissions">Commissions</button>
-  </div>
-  <div class="admin-body">
-
-    <!-- DASHBOARD -->
-    <div class="admin-panel active" id="panel-dashboard">
-      <div class="admin-stats">
-        <div class="admin-stat"><div class="admin-stat-val" id="stat-artworks">—</div><div class="admin-stat-label">Artworks</div></div>
-        <div class="admin-stat"><div class="admin-stat-val" id="stat-orders">—</div><div class="admin-stat-label">Orders</div></div>
-        <div class="admin-stat"><div class="admin-stat-val" id="stat-commissions">—</div><div class="admin-stat-label">Commissions</div></div>
-        <div class="admin-stat"><div class="admin-stat-val" id="stat-revenue">—</div><div class="admin-stat-label">Est. Revenue</div></div>
-      </div>
-      <div class="admin-section-title">Recent Orders</div>
-      <div id="admin-recent-orders"><div class="admin-empty">Loading…</div></div>
-    </div>
-
-    <!-- ARTWORKS -->
-    <div class="admin-panel" id="panel-artworks">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <div class="admin-section-title" style="margin:0;">Manage Artworks</div>
-        <button class="abtn abtn-primary" id="showAddArtworkBtn" style="font-size:0.72rem;padding:7px 12px;">+ Add New</button>
-      </div>
-      <!-- Artwork form -->
-      <div id="artworkForm" class="admin-form-wrap">
-        <div class="admin-form-title" id="artworkFormTitle">ADD ARTWORK</div>
-        <input type="hidden" id="editArtworkId">
-        <!-- Image upload -->
-        <div class="aform-group">
-          <label>Image</label>
-          <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">🖼️</div>
-            <p><strong>Tap to upload</strong> or drag &amp; drop</p>
-            <p>JPG / PNG · Camera supported on mobile</p>
-            <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
-          </div>
-          <img class="upload-preview" id="uploadPreview" alt="Preview">
-          <div class="upload-prog-wrap" id="uploadProgWrap">
-            <div class="upload-prog-bar"><div class="upload-prog-fill" id="uploadProgFill"></div></div>
-            <div class="upload-prog-text" id="uploadProgText">Uploading…</div>
-          </div>
-          <input type="hidden" id="artworkImageUrl">
-        </div>
-        <div class="aform-row">
-          <div class="aform-group"><label>Title</label><input type="text" id="artworkTitle" placeholder="Artwork title"></div>
-          <div class="aform-group"><label>Price (KES)</label><input type="number" id="artworkPrice" placeholder="1000" min="0"></div>
-        </div>
-        <div class="aform-group"><label>Description</label><textarea id="artworkDesc" placeholder="What emotion does this piece carry?"></textarea></div>
-        <div class="aform-group">
-          <label>Status</label>
-          <select id="artworkStatus">
-            <option value="available">Available</option>
-            <option value="sold">Sold</option>
-            <option value="featured">Featured</option>
-          </select>
-        </div>
-        <div class="aform-btns">
-          <button class="abtn abtn-primary abtn-full" id="saveArtworkBtn">Save Artwork</button>
-          <button class="abtn abtn-secondary" id="cancelArtworkBtn" style="padding:9px 14px;">Cancel</button>
-        </div>
-      </div>
-      <div id="admin-artworks-list"><div class="admin-empty">Loading…</div></div>
-    </div>
-
-    <!-- ORDERS -->
-    <div class="admin-panel" id="panel-orders">
-      <div class="admin-section-title">All Orders</div>
-      <div id="admin-orders-list"><div class="admin-empty">Loading…</div></div>
-    </div>
-
-    <!-- COMMISSIONS -->
-    <div class="admin-panel" id="panel-commissions">
-      <div class="admin-section-title">Commission Requests</div>
-      <div id="admin-commissions-list"><div class="admin-empty">Loading…</div></div>
-    </div>
-
-  </div>
-  <div class="admin-drawer-footer">
-    <div class="admin-user-info"><strong id="adminUserEmail">—</strong>Crown Admin</div>
-    <button class="abtn abtn-secondary" id="adminLogoutBtn" style="font-size:0.7rem;padding:6px 10px;">Sign Out</button>
-  </div>
+  <h3>Admin Panel</h3>
+  <p>Upload, Edit, Orders, Status Control</p>
+  <button onclick="closeAdmin()">Close</button>
 </div>
 
-<!-- ═══ IMAGE VIEWER ═══ -->
-<div class="modal-overlay" id="imageModal">
-  <div class="img-modal-inner">
-    <button class="modal-close" id="imageModalClose" style="position:fixed;top:20px;right:20px;background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white;">✕</button>
-    <img id="modalImg" src="" alt="">
-  </div>
-</div>
-
-<!-- ═══ STORY MODAL ═══ -->
-<div class="modal-overlay" id="storyModal">
-  <div class="modal-box story-modal-box">
-    <button class="modal-close" id="storyModalClose">✕</button>
-    <img class="story-modal-hero" src="Story 1.jpg" alt="Lewis Gitonga" onerror="this.style.display='none'">
-    <div class="story-modal-body">
-      <div class="story-eyebrow">Lewis Gitonga · Art Is Life Foundation</div>
-      <h2>How It All Started — My Untold Story</h2>
-      <div class="story-section">
-        <h4>My Identity — CEO of Art Is Life</h4>
-        <p>Art Is Life Foundation is not just a brand — it is my identity, my voice, and my purpose. As its CEO and founder, every decision I make, every stroke I paint, carries the weight of who I am and who I am becoming.</p>
-      </div>
-      <div class="story-imgs single"><img src="Story 1.jpg" alt="Lewis Gitonga" onerror="this.style.background='#f0ead6';this.style.height='220px'"></div>
-      <div class="story-section">
-        <h4>The Beginning — Early Artworks &amp; Foundation</h4>
-        <p>From a young age, I wanted something deeper — to express feeling, emotion, and meaning through every line. These early works represent the raw, honest foundation of my creative journey.</p>
-      </div>
-      <div class="story-imgs single"><img src="Story 2.jpg" alt="Early artworks" onerror="this.style.background='#e8d48b33';this.style.height='220px'"></div>
-      <div class="story-section">
-        <h4>The Turning Point — Kitmanua Summit &amp; Elvis</h4>
-        <p>At the Kitmanua Summit, Elvis influenced and guided my artistic growth. He introduced the foundations of painting — how to blend colors, control the brush, and express emotion. A mentor who believed in the art before I fully did.</p>
-      </div>
-      <div class="story-imgs">
-        <img src="Story 3.jpg" alt="Kitmanua Summit" onerror="this.style.background='#c9a84c22';this.style.height='180px'">
-        <img src="Elvis_teaching.jpg" alt="Elvis teaching" onerror="this.style.background='#1a1a1a11';this.style.height='180px'">
-      </div>
-      <div class="story-quote"><p>"That moment changed how I saw creativity — it was no longer just a skill, but a language."</p></div>
-      <div class="story-section">
-        <h4>The Vision — What I Aim to Build</h4>
-        <p>I see a future where my art reaches the world — galleries, collections, conversations across continents. Art Is Life Foundation is my dream institution: one that uplifts artists across Kenya and proves African art belongs everywhere.</p>
-      </div>
-      <div class="story-imgs single"><img src="Story 4.jpg" alt="Vision" onerror="this.style.background='#c9a84c22';this.style.height='220px'"></div>
-      <div class="story-section">
-        <h4>Current Work — Present Skill &amp; Maturity</h4>
-        <p>This is where I stand today. The progress is real. The artistry more mature. Each piece carries not just emotion, but mastery — telling human stories that words cannot fully capture.</p>
-      </div>
-      <div class="story-imgs single"><img src="Story 5.jpg" alt="Current work" onerror="this.style.background='#1aa34a11';this.style.height='220px'"></div>
-      <div class="story-quote"><p>"Art for me is not just life — it is evidence of life itself."</p></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ ORDER MODAL ═══ -->
-<div class="modal-overlay" id="orderModal">
-  <div class="modal-box" style="max-width:520px;">
-    <button class="modal-close" id="orderModalClose">✕</button>
-    <div class="modal-body-pad">
-      <h3>Order Artwork</h3>
-      <div class="order-artwork-name" id="orderArtworkName"></div>
-      <div class="form-group"><label for="orderName">Your Name</label><input type="text" id="orderName" placeholder="Full name" autocomplete="name"></div>
-      <div class="form-group"><label for="orderAddress">Delivery Address</label><input type="text" id="orderAddress" placeholder="Your address or area" autocomplete="street-address"></div>
-      <div class="form-group"><label for="orderPhone">Phone (optional)</label><input type="tel" id="orderPhone" placeholder="+254…" autocomplete="tel"></div>
-      <div class="channel-label">Choose how to send your order:</div>
-      <div class="channel-selector" id="orderChannelSelector">
-        <div class="channel-btn wa active" data-channel="wa"><span class="icon">💬</span> WhatsApp</div>
-        <div class="channel-btn email" data-channel="email"><span class="icon">📧</span> Email</div>
-        <div class="channel-btn sms" data-channel="sms"><span class="icon">📩</span> SMS</div>
-      </div>
-      <button class="btn-send btn-send-wa" id="sendOrderBtn">Send via WhatsApp</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ COMMISSION MODAL ═══ -->
-<div class="modal-overlay" id="commissionModal">
-  <div class="modal-box" style="max-width:580px;">
-    <button class="modal-close" id="commissionModalClose">✕</button>
-    <div class="modal-body-pad">
-      <div class="comm-eyebrow">Custom Commission</div>
-      <h3>Create Your Vision</h3>
-      <p class="comm-subtitle">Can't find exactly what you're looking for? Let Lewis create something uniquely yours.</p>
-      <div class="form-row">
-        <div class="form-group"><label for="cName">Your Name</label><input type="text" id="cName" placeholder="Full name" autocomplete="name"></div>
-        <div class="form-group"><label for="cPhone">Phone</label><input type="tel" id="cPhone" placeholder="+254…" autocomplete="tel"></div>
-      </div>
-      <div class="form-group"><label for="cDesc">Describe Your Vision</label><textarea id="cDesc" placeholder="What do you want to feel when you look at this artwork?"></textarea></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="cMood">Mood / Emotion</label>
-          <select id="cMood">
-            <option value="">Select mood…</option>
-            <option>Peaceful &amp; Calm</option><option>Bold &amp; Energetic</option>
-            <option>Melancholic &amp; Deep</option><option>Joyful &amp; Vibrant</option>
-            <option>Mysterious &amp; Dark</option><option>Romantic &amp; Warm</option>
-            <option>Spiritual &amp; Transcendent</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="cSize">Size</label>
-          <select id="cSize">
-            <option value="">Select size…</option>
-            <option>Small (A4 / 8×10 in)</option><option>Medium (A3 / 12×16 in)</option>
-            <option>Large (18×24 in)</option><option>Extra Large (24×36 in)</option>
-            <option>Custom — specify in description</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group"><label for="cColors">Color Preferences</label><input type="text" id="cColors" placeholder="e.g. warm earth tones, deep blues…"></div>
-      <div class="form-group"><label for="cAddress">Delivery Address</label><input type="text" id="cAddress" placeholder="Your address" autocomplete="street-address"></div>
-      <div class="channel-label">Send commission request via:</div>
-      <div class="channel-selector" id="commChannelSelector">
-        <div class="channel-btn wa active" data-channel="wa"><span class="icon">💬</span> WhatsApp</div>
-        <div class="channel-btn email" data-channel="email"><span class="icon">📧</span> Email</div>
-        <div class="channel-btn sms" data-channel="sms"><span class="icon">📩</span> SMS</div>
-      </div>
-      <button class="btn-send btn-send-wa" id="sendCommissionBtn">Send Commission Request</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ ADMIN LOGIN MODAL ═══ -->
-<div class="modal-overlay" id="adminLoginModal">
-  <div class="modal-box admin-login-modal">
-    <button class="modal-close" id="adminLoginClose">✕</button>
-    <div class="admin-login-body">
-      <h3>👑 Crown Access</h3>
-      <p class="subtitle">Firebase authentication required. Role verified via Firestore.</p>
-      <div class="form-group"><label for="adminEmail">Email</label><input type="email" id="adminEmail" placeholder="Admin email" autocomplete="email"></div>
-      <div class="form-group"><label for="adminPassword">Password</label><input type="password" id="adminPassword" placeholder="Password" autocomplete="current-password"></div>
-      <div class="admin-error" id="adminError"></div>
-      <button class="btn-admin-login" id="adminLoginBtn">🔐 Sign In with Firebase</button>
-    </div>
-  </div>
-</div>
-
-<!-- COMMISSION FAB -->
-<div class="commission-fab-wrap">
-  <button class="commission-fab" id="commissionFab">🎨 Commission a Piece</button>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-<!-- ═══════════════════════════════════════
-     FIREBASE + APP LOGIC
-═══════════════════════════════════════ -->
-<script type="module">
-import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAnalytics }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, doc, getDoc, collection, addDoc, getDocs,
-  updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-/* ─── FIREBASE ─── */
-const app  = initializeApp({
-  apiKey:"AIzaSyD3EHTs5MJO1614T6VfDZF31CANhAMzQbw",
-  authDomain:"artislife-44968.firebaseapp.com",
-  projectId:"artislife-44968",
-  storageBucket:"artislife-44968.firebasestorage.app",
-  messagingSenderId:"634431592292",
-  appId:"1:634431592292:web:7e88d54be7291310f74c71",
-  measurementId:"G-G0NN8SHKMR"
-});
-getAnalytics(app);
-const auth    = getAuth(app);
-const db      = getFirestore(app);
-const storage = getStorage(app);
-
-/* ─── CONTACT ─── */
-const WA_NUM = '254704708178';
-const PHONE  = '0704708178';
-const EMAIL  = 'gitongewis190@gmail.com';
-
-/* ─── HELPERS ─── */
-function sanitize(s){ const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML; }
-function sanitizeVal(s){ return String(s||'').trim().replace(/[<>"'`]/g,''); }
-function track(ev,d={}){ try{ gtag('event',ev,d); }catch(e){} }
-function debounce(fn,ms){ let t; return(...a)=>{ clearTimeout(t);t=setTimeout(()=>fn(...a),ms); }; }
-
-let toastTimer;
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
-}
-
-/* ─── STATE ─── */
-let cart      = JSON.parse(localStorage.getItem('ail_cart')  || '[]');
-let likes     = JSON.parse(localStorage.getItem('ail_likes') || '[]');
-let artworks  = [];
-let isAdmin   = false;
-let orderArtId   = null;
-let orderCh      = 'wa';
-let commCh       = 'wa';
-let currentSearch = '';
-function saveCart()  { localStorage.setItem('ail_cart',  JSON.stringify(cart));  }
-function saveLikes() { localStorage.setItem('ail_likes', JSON.stringify(likes)); }
-
-/* ═══════════════ GALLERY ═══════════════ */
-function renderSkeletons(){
-  document.getElementById('gallery').innerHTML=Array(6).fill(`
-    <div class="skeleton-card">
-      <div class="skeleton skeleton-img"></div>
-      <div class="skeleton skeleton-text"></div>
-      <div class="skeleton skeleton-text-sm"></div>
-    </div>`).join('');
-}
-
-function renderGallery(filter=''){
-  const grid=document.getElementById('gallery');
-  const term=filter.toLowerCase().trim();
-  const filtered=artworks.filter(a=>!term||(a.title||'').toLowerCase().includes(term)||(a.desc||a.description||'').toLowerCase().includes(term));
-  document.getElementById('galleryCount').textContent=
-    filtered.length===artworks.length?`${artworks.length} works`:`${filtered.length} of ${artworks.length} works`;
-
-  if(!filtered.length){
-    grid.innerHTML=`<div class="no-results"><h3>No artworks found</h3><p>Try a different search term.</p><button id="clearSearchBtn">Show All Works</button></div>`;
-    document.getElementById('clearSearchBtn')?.addEventListener('click',clearSearch);
-    return;
-  }
-  grid.innerHTML=filtered.map((a,i)=>{
-    const st=a.status||'available';
-    const isSold=st==='sold', isFeat=st==='featured';
-    const badge=isSold?'badge-sold':isFeat?'badge-featured':'badge-available';
-    const label=isSold?'✕ Sold':isFeat?'✦ Featured':'✦ Available';
-    const cls=isSold?'art-card sold-card':isFeat?'art-card featured-card':'art-card';
-    const liked=likes.includes(a.id);
-    const priceStr=a.price||(a.priceNum?`${a.priceNum} KES`:'');
-    const desc=a.desc||a.description||'';
-    return `
-    <div class="${cls}" style="animation-delay:${i*0.07}s">
-      <div class="art-img-wrap">
-        <img src="${sanitize(a.imageUrl||a.image||'')}" alt="${sanitize(a.title)}"
-          data-action="view" data-src="${sanitize(a.imageUrl||a.image||'')}" data-title="${sanitize(a.title)}"
-          loading="lazy" onerror="this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='260px'">
-        <div class="badge ${badge}">${label}</div>
-        <button class="like-btn${liked?' liked':''}" data-action="like" data-id="${sanitize(a.id)}" aria-label="Like">
-          ${liked?'❤️':'🤍'}
-        </button>
-      </div>
-      <div class="art-info">
-        <div class="art-title">${sanitize(a.title)}</div>
-        <div class="art-price">${sanitize(priceStr)}</div>
-        <div class="art-desc">${sanitize(desc)}</div>
-      </div>
-      <div class="art-actions">
-        <button class="art-btn art-btn-order" data-action="order" data-id="${sanitize(a.id)}" ${isSold?'disabled':''}>💬 Order This</button>
-        <button class="art-btn art-btn-cart"  data-action="cart"  data-id="${sanitize(a.id)}" ${isSold?'disabled':''}>🛒 Cart</button>
-        <button class="art-btn art-btn-call"  data-action="call"  data-title="${sanitize(a.title)}">📞 Call</button>
-      </div>
-    </div>`;
-  }).join('');
-  track('gallery_render',{count:filtered.length,filter:term});
-}
-
-// Delegated gallery clicks
-document.getElementById('gallery').addEventListener('click',e=>{
-  const el=e.target.closest('[data-action]'); if(!el) return;
-  const {action,id,src,title}=el.dataset;
-  if(action==='view')  openImage(src,title);
-  if(action==='like')  toggleLike(id);
-  if(action==='order') openOrder(id);
-  if(action==='cart')  addToCart(id);
-  if(action==='call')  { track('call_clicked',{title}); window.location.href=`tel:${PHONE}`; }
-});
-
-const handleSearch=debounce(v=>{ currentSearch=v; renderGallery(v); },240);
-document.getElementById('searchInput').addEventListener('input',e=>handleSearch(e.target.value));
-function clearSearch(){ document.getElementById('searchInput').value=''; currentSearch=''; renderGallery(''); }
-
-// Firestore real-time subscribe
-function subscribeGallery(){
-  renderSkeletons();
-  const q=query(collection(db,'artworks'),orderBy('createdAt','desc'));
-  onSnapshot(q,snap=>{
-    artworks=snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderGallery(currentSearch);
-    if(isAdmin) renderAdminArtworksList();
-  },err=>{
-    console.error('Gallery error:',err);
-    document.getElementById('gallery').innerHTML='<div class="no-results"><h3>Could not load artworks</h3><p>Check your connection.</p></div>';
-  });
-}
-
-/* ═══════════════ LIKES ═══════════════ */
-function toggleLike(id){
-  if(likes.includes(id)){ likes=likes.filter(l=>l!==id); }
-  else{ likes.push(id); showToast('❤️ Added to favourites'); track('like_clicked',{artwork_id:id}); }
-  saveLikes(); renderGallery(currentSearch);
-}
-
-/* ═══════════════ CART ═══════════════ */
-function addToCart(id){
-  const a=artworks.find(x=>x.id===id); if(!a) return;
-  if(a.status==='sold'){ showToast('This piece has been sold.'); return; }
-  if(cart.find(c=>c.id===id)){ showToast(`Already in cart`); return; }
-  const priceNum=a.priceNum||parseInt(String(a.price||'0').replace(/\D/g,''))||0;
-  cart.push({id:a.id,title:a.title,price:a.price||`${priceNum} KES`,priceNum});
-  saveCart(); updateCartCount(); showToast(`🛒 "${a.title}" added`);
-  track('cart_add',{artwork_id:id,title:a.title});
-}
-function removeFromCart(id){ cart=cart.filter(c=>c.id!==id); saveCart(); updateCartCount(); renderCartDrawer(); }
-function updateCartCount(){ document.getElementById('cartCount').textContent=cart.length; }
-function renderCartDrawer(){
-  const ci=document.getElementById('cartItems'), cf=document.getElementById('cartFooter');
-  if(!cart.length){
-    ci.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🖼️</div><p>Your cart is empty.</p></div>';
-    cf.style.display='none'; return;
-  }
-  const total=cart.reduce((s,c)=>s+(c.priceNum||0),0);
-  ci.innerHTML=cart.map(c=>`
-    <div class="cart-item">
-      <div class="cart-item-title"><strong>${sanitize(c.title)}</strong><span>${sanitize(c.price)}</span></div>
-      <button class="cart-item-remove" data-id="${sanitize(c.id)}">✕</button>
-    </div>`).join('');
-  document.getElementById('cartTotal').textContent=`${total.toLocaleString()} KES`;
-  cf.style.display='block';
-  ci.querySelectorAll('.cart-item-remove').forEach(b=>b.addEventListener('click',()=>removeFromCart(b.dataset.id)));
-}
-function openCart(){ renderCartDrawer(); document.getElementById('cartOverlay').style.display='block'; document.getElementById('cartDrawer').classList.add('open'); }
-function closeCart(){ document.getElementById('cartOverlay').style.display='none'; document.getElementById('cartDrawer').classList.remove('open'); }
-
-/* ═══════════════ IMAGE VIEWER ═══════════════ */
-function openImage(src,title){ document.getElementById('modalImg').src=src; document.getElementById('imageModal').classList.add('active'); track('art_view',{title}); }
-function closeImageModal(){ document.getElementById('imageModal').classList.remove('active'); }
-
-/* ═══════════════ STORY ═══════════════ */
-function openStory()  { document.getElementById('storyModal').classList.add('active'); track('story_opened'); }
-function closeStory() { document.getElementById('storyModal').classList.remove('active'); }
-
-/* ═══════════════ ORDER ═══════════════ */
-function openOrder(id){
-  const a=artworks.find(x=>x.id===id); if(!a) return;
-  orderArtId=id;
-  document.getElementById('orderArtworkName').textContent=`🖼️ ${a.title}${a.price?' — '+a.price:''}`;
-  ['orderName','orderAddress','orderPhone'].forEach(f=>document.getElementById(f).value='');
-  orderCh='wa'; updateOrderUI();
-  document.getElementById('orderModal').classList.add('active');
-  track('order_clicked',{artwork_id:id,title:a.title});
-}
-function openOrderFromCart(){
-  if(!cart.length){ showToast('Your cart is empty'); return; }
-  orderArtId=null;
-  document.getElementById('orderArtworkName').textContent=`🛒 Cart: ${cart.length} item(s)`;
-  ['orderName','orderAddress','orderPhone'].forEach(f=>document.getElementById(f).value='');
-  orderCh='wa'; updateOrderUI();
-  document.getElementById('orderModal').classList.add('active');
-}
-function closeOrder(){ document.getElementById('orderModal').classList.remove('active'); }
-
-function updateOrderUI(){
-  document.querySelectorAll('#orderChannelSelector .channel-btn').forEach(b=>b.classList.toggle('active',b.dataset.channel===orderCh));
-  const btn=document.getElementById('sendOrderBtn');
-  if(orderCh==='wa')    { btn.textContent='Send via WhatsApp'; btn.className='btn-send btn-send-wa'; }
-  if(orderCh==='email') { btn.textContent='Send via Email';    btn.className='btn-send btn-send-email'; }
-  if(orderCh==='sms')   { btn.textContent='Send via SMS';      btn.className='btn-send btn-send-sms'; }
-}
-document.querySelectorAll('#orderChannelSelector .channel-btn').forEach(b=>
-  b.addEventListener('click',()=>{ orderCh=b.dataset.channel; updateOrderUI(); })
-);
-
-function sendOrder(){
-  const name=sanitizeVal(document.getElementById('orderName').value);
-  const addr=sanitizeVal(document.getElementById('orderAddress').value);
-  const ph  =sanitizeVal(document.getElementById('orderPhone').value);
-  if(!name||!addr){ showToast('⚠️ Please fill in name and address'); return; }
-  let artLine='', totalNum=0;
-  if(orderArtId!==null){
-    const a=artworks.find(x=>x.id===orderArtId);
-    artLine=`🖼️ ${a.title}${a.price?' — '+a.price:''}`;
-    totalNum=a.priceNum||parseInt(String(a.price||'0').replace(/\D/g,''))||0;
-  } else {
-    artLine=cart.map(c=>`🖼️ ${c.title} — ${c.price}`).join('\n');
-    totalNum=cart.reduce((s,c)=>s+(c.priceNum||0),0);
-    if(totalNum) artLine+=`\n💰 Total: ${totalNum.toLocaleString()} KES`;
-  }
-  const msg=`Hello, I'm ${name}\n\nI would like to order:\n${artLine}\n\n📍 Address: ${addr}${ph?`\n📱 Phone: ${ph}`:''}\n\nKindly confirm availability.`;
-  const enc=encodeURIComponent(msg);
-  if(orderCh==='wa')    window.open(`https://wa.me/${WA_NUM}?text=${enc}`,'_blank');
-  if(orderCh==='email') window.open(`mailto:${EMAIL}?subject=${encodeURIComponent('Art Order')}&body=${enc}`,'_blank');
-  if(orderCh==='sms')   window.open(`sms:${PHONE}?body=${enc}`,'_blank');
-  addDoc(collection(db,'orders'),{
-    customerInfo:{name,address:addr,phone:ph},
-    items:orderArtId?[artworks.find(x=>x.id===orderArtId)]:cart,
-    totalPrice:totalNum, channel:orderCh, status:'pending', createdAt:serverTimestamp()
-  }).catch(e=>console.error('Order save:',e));
-  track('order_sent',{channel:orderCh});
-  closeOrder(); showToast('✅ Order sent! Lewis will be in touch soon.');
-}
-
-/* ═══════════════ COMMISSION ═══════════════ */
-function openCommission()  { document.getElementById('commissionModal').classList.add('active'); track('commission_opened'); }
-function closeCommission() { document.getElementById('commissionModal').classList.remove('active'); }
-
-function updateCommUI(){
-  document.querySelectorAll('#commChannelSelector .channel-btn').forEach(b=>b.classList.toggle('active',b.dataset.channel===commCh));
-  const btn=document.getElementById('sendCommissionBtn');
-  if(commCh==='wa')    { btn.textContent='Send via WhatsApp'; btn.className='btn-send btn-send-wa'; }
-  if(commCh==='email') { btn.textContent='Send via Email';    btn.className='btn-send btn-send-email'; }
-  if(commCh==='sms')   { btn.textContent='Send via SMS';      btn.className='btn-send btn-send-sms'; }
-}
-document.querySelectorAll('#commChannelSelector .channel-btn').forEach(b=>
-  b.addEventListener('click',()=>{ commCh=b.dataset.channel; updateCommUI(); })
-);
-
-function sendCommission(){
-  const name=sanitizeVal(document.getElementById('cName').value);
-  const desc=sanitizeVal(document.getElementById('cDesc').value);
-  if(!name||!desc){ showToast('⚠️ Please fill in name and vision'); return; }
-  const ph   =sanitizeVal(document.getElementById('cPhone').value);
-  const mood =sanitizeVal(document.getElementById('cMood').value);
-  const size =sanitizeVal(document.getElementById('cSize').value);
-  const cols =sanitizeVal(document.getElementById('cColors').value);
-  const addr =sanitizeVal(document.getElementById('cAddress').value);
-  const msg=`🎨 COMMISSION REQUEST — ART IS LIFE FOUNDATION\n\nName: ${name}${ph?`\nPhone: ${ph}`:''}${addr?`\nAddress: ${addr}`:''}\n\nVision:\n${desc}\n\nMood: ${mood||'Not specified'}\nSize: ${size||'Not specified'}\nColors: ${cols||"Artist's choice"}`;
-  const enc=encodeURIComponent(msg);
-  if(commCh==='wa')    window.open(`https://wa.me/${WA_NUM}?text=${enc}`,'_blank');
-  if(commCh==='email') window.open(`mailto:${EMAIL}?subject=${encodeURIComponent('Commission Request — '+name)}&body=${enc}`,'_blank');
-  if(commCh==='sms')   window.open(`sms:${PHONE}?body=${enc}`,'_blank');
-  addDoc(collection(db,'commissions'),{
-    name,phone:ph,description:desc,mood,size,colors:cols,address:addr,
-    status:'pending',createdAt:serverTimestamp()
-  }).catch(e=>console.error('Commission save:',e));
-  track('commission_sent',{channel:commCh});
-  closeCommission(); showToast('🎨 Commission request sent!');
-}
-
-/* ═══════════════════════
-   👑 CROWN ADMIN — AUTH FLOW
-   Role: users/{uid}.role === "crown"
-═══════════════════════ */
-async function checkCrownRole(uid){
-  const snap=await getDoc(doc(db,'users',uid));
-  if(!snap.exists()) return false;
-  return snap.data().role==='crown';
-}
-
-onAuthStateChanged(auth,async user=>{
-  if(user){
-    const ok=await checkCrownRole(user.uid);
-    if(ok){
-      isAdmin=true;
-      document.getElementById('crownTrigger').classList.add('visible');
-      document.getElementById('adminUserEmail').textContent=user.email;
-    } else {
-      isAdmin=false;
-      await signOut(auth);
-    }
-  } else {
-    isAdmin=false;
-    document.getElementById('crownTrigger').classList.remove('visible');
-  }
-});
-
-/* Crown click */
-document.getElementById('crownTrigger').addEventListener('click',()=>{
-  if(!auth.currentUser){ openAdminLogin(); return; }
-  checkCrownRole(auth.currentUser.uid).then(ok=>ok?openAdminDrawer():denyAccess());
-});
-
-function openAdminLogin()  { document.getElementById('adminLoginModal').classList.add('active'); }
-function closeAdminLogin() { document.getElementById('adminLoginModal').classList.remove('active'); document.getElementById('adminError').style.display='none'; }
-function openAdminDrawer() { document.getElementById('adminOverlay').style.display='block'; document.getElementById('adminDrawer').classList.add('open'); loadAdminData(); track('admin_opened'); }
-function closeAdmin()      { document.getElementById('adminOverlay').style.display='none'; document.getElementById('adminDrawer').classList.remove('open'); }
-function denyAccess()      { showToast('⛔ Access denied'); signOut(auth).catch(()=>{}); }
-
-/* Admin login */
-document.getElementById('adminLoginBtn').addEventListener('click',async()=>{
-  const email=sanitizeVal(document.getElementById('adminEmail').value);
-  const pass =document.getElementById('adminPassword').value;
-  const errEl=document.getElementById('adminError');
-  errEl.style.display='none';
-  if(!email||!pass){ errEl.textContent='Please enter email and password.'; errEl.style.display='block'; return; }
-  try{
-    const cred=await signInWithEmailAndPassword(auth,email,pass);
-    const ok=await checkCrownRole(cred.user.uid);
-    if(!ok){ await signOut(auth); errEl.textContent='Access denied. Crown role required.'; errEl.style.display='block'; return; }
-    isAdmin=true;
-    document.getElementById('crownTrigger').classList.add('visible');
-    document.getElementById('adminUserEmail').textContent=cred.user.email;
-    closeAdminLogin(); openAdminDrawer(); showToast('👑 Crown access granted');
-  } catch(err){
-    errEl.textContent=err.message; errEl.style.display='block';
-  }
-});
-
-/* Admin logout */
-document.getElementById('adminLogoutBtn').addEventListener('click',async()=>{
-  await signOut(auth); isAdmin=false; closeAdmin();
-  document.getElementById('crownTrigger').classList.remove('visible');
-  showToast('Signed out');
-});
-
-document.getElementById('adminOverlay').addEventListener('click',closeAdmin);
-document.getElementById('adminCloseBtn').addEventListener('click',closeAdmin);
-
-/* ═══ ADMIN TABS ═══ */
-document.querySelectorAll('.admin-tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
-    if(tab.dataset.tab==='orders')      loadOrdersFull();
-    if(tab.dataset.tab==='commissions') loadCommissions();
-  });
-});
-
-/* ═══ ADMIN DATA ═══ */
-async function loadAdminData(){
-  if(!isAdmin) return;
-  await Promise.all([loadStats(),loadRecentOrders()]);
-  renderAdminArtworksList();
-}
-
-async function loadStats(){
-  const [as,os,cs]=await Promise.all([
-    getDocs(collection(db,'artworks')),
-    getDocs(collection(db,'orders')),
-    getDocs(collection(db,'commissions'))
-  ]);
-  const rev=os.docs.reduce((s,d)=>s+(d.data().totalPrice||0),0);
-  document.getElementById('stat-artworks').textContent=as.size;
-  document.getElementById('stat-orders').textContent=os.size;
-  document.getElementById('stat-commissions').textContent=cs.size;
-  document.getElementById('stat-revenue').textContent=rev>0?`${(rev/1000).toFixed(1)}K`:'0';
-}
-
-async function loadRecentOrders(){
-  const q=query(collection(db,'orders'),orderBy('createdAt','desc'));
-  const snap=await getDocs(q);
-  const el=document.getElementById('admin-recent-orders');
-  if(snap.empty){ el.innerHTML='<div class="admin-empty">No orders yet.</div>'; return; }
-  el.innerHTML=snap.docs.slice(0,5).map(d=>{
-    const o=d.data(),name=o.customerInfo?.name||'Unknown';
-    const date=o.createdAt?.toDate?o.createdAt.toDate().toLocaleDateString():'';
-    const tot=o.totalPrice?`${o.totalPrice.toLocaleString()} KES`:'';
-    return `<div class="admin-row"><div class="admin-row-head">
-      <div><div class="admin-row-name">${sanitize(name)}</div><div class="admin-row-sub">${date}${tot?' · '+tot:''}</div></div>
-      <span class="sbadge s-${o.status||'pending'}">${o.status||'pending'}</span>
-    </div></div>`;
-  }).join('');
-}
-
-async function loadOrdersFull(){
-  const q=query(collection(db,'orders'),orderBy('createdAt','desc'));
-  const snap=await getDocs(q);
-  const el=document.getElementById('admin-orders-list');
-  if(snap.empty){ el.innerHTML='<div class="admin-empty">No orders yet.</div>'; return; }
-  el.innerHTML=snap.docs.map(d=>{
-    const o=d.data();
-    const name=o.customerInfo?.name||'Unknown', addr=o.customerInfo?.address||'', ph=o.customerInfo?.phone||'';
-    const date=o.createdAt?.toDate?o.createdAt.toDate().toLocaleDateString():'';
-    const tot=o.totalPrice?`${o.totalPrice.toLocaleString()} KES`:'';
-    const items=Array.isArray(o.items)?o.items.map(i=>i.title||'').filter(Boolean).join(', '):'';
-    return `<div class="admin-row">
-      <div class="admin-row-head">
-        <div><div class="admin-row-name">${sanitize(name)}</div><div class="admin-row-sub">${sanitize(addr)}${ph?' · '+sanitize(ph):''}</div></div>
-        <span class="sbadge s-${o.status||'pending'}">${o.status||'pending'}</span>
-      </div>
-      ${items?`<div class="admin-row-body">${sanitize(items)}</div>`:''}
-      <div class="admin-row-meta">${tot} · ${date}</div>
-      <div class="admin-row-actions">
-        ${['pending','processing','completed'].map(s=>`<button class="abtn abtn-secondary" style="font-size:0.66rem;padding:4px 8px;" data-order-id="${d.id}" data-status="${s}">${s}</button>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-  el.querySelectorAll('[data-order-id]').forEach(btn=>btn.addEventListener('click',async()=>{
-    await updateDoc(doc(db,'orders',btn.dataset.orderId),{status:btn.dataset.status});
-    showToast(`Order → ${btn.dataset.status}`); loadOrdersFull(); loadStats();
-  }));
-}
-
-async function loadCommissions(){
-  const q=query(collection(db,'commissions'),orderBy('createdAt','desc'));
-  const snap=await getDocs(q);
-  const el=document.getElementById('admin-commissions-list');
-  if(snap.empty){ el.innerHTML='<div class="admin-empty">No commission requests yet.</div>'; return; }
-  el.innerHTML=snap.docs.map(d=>{
-    const c=d.data();
-    const date=c.createdAt?.toDate?c.createdAt.toDate().toLocaleDateString():'';
-    return `<div class="admin-row">
-      <div class="admin-row-head">
-        <div><div class="admin-row-name">${sanitize(c.name||'Unknown')}</div><div class="admin-row-sub">${sanitize(c.phone||'')} · ${date}</div></div>
-        <span class="sbadge s-${c.status||'pending'}">${c.status||'pending'}</span>
-      </div>
-      <div class="admin-row-body">${sanitize(c.description||'')}</div>
-      <div class="admin-row-meta">Mood: ${sanitize(c.mood||'—')} · Size: ${sanitize(c.size||'—')}</div>
-      <div class="admin-row-actions">
-        ${['pending','reviewed','accepted','rejected'].map(s=>`<button class="abtn abtn-secondary" style="font-size:0.66rem;padding:4px 8px;" data-comm-id="${d.id}" data-status="${s}">${s}</button>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-  el.querySelectorAll('[data-comm-id]').forEach(btn=>btn.addEventListener('click',async()=>{
-    await updateDoc(doc(db,'commissions',btn.dataset.commId),{status:btn.dataset.status});
-    showToast(`Commission → ${btn.dataset.status}`); loadCommissions();
-  }));
-}
-
-/* ═══ ADMIN ARTWORKS ═══ */
-function renderAdminArtworksList(){
-  const el=document.getElementById('admin-artworks-list');
-  if(!artworks.length){ el.innerHTML='<div class="admin-empty">No artworks yet. Add one above.</div>'; return; }
-  el.innerHTML=artworks.map(a=>`
-    <div class="admin-art-row">
-      <img class="admin-art-img" src="${sanitize(a.imageUrl||a.image||'')}" alt="${sanitize(a.title)}" onerror="this.style.background='rgba(201,168,76,0.1)'">
-      <div class="admin-art-info"><strong>${sanitize(a.title)}</strong><span>${sanitize(a.price||'')} · <span class="sbadge s-${a.status||'available'}">${a.status||'available'}</span></span></div>
-      <div class="admin-art-controls">
-        <select class="inline-status" data-art-id="${a.id}">
-          <option value="available"${a.status==='available'?' selected':''}>Available</option>
-          <option value="sold"${a.status==='sold'?' selected':''}>Sold</option>
-          <option value="featured"${a.status==='featured'?' selected':''}>Featured</option>
-        </select>
-        <button class="ico-btn" data-edit-id="${a.id}" title="Edit">✏️</button>
-        <button class="ico-btn del" data-del-id="${a.id}" title="Delete">🗑️</button>
-      </div>
-    </div>`).join('');
-  el.querySelectorAll('.inline-status').forEach(sel=>sel.addEventListener('change',async()=>{
-    await updateDoc(doc(db,'artworks',sel.dataset.artId),{status:sel.value});
-    showToast(`Status → ${sel.value}`);
-  }));
-  el.querySelectorAll('[data-edit-id]').forEach(b=>b.addEventListener('click',()=>startEditArtwork(b.dataset.editId)));
-  el.querySelectorAll('[data-del-id]').forEach(b=>b.addEventListener('click',async()=>{
-    if(!confirm('Delete this artwork permanently?')) return;
-    await deleteDoc(doc(db,'artworks',b.dataset.delId));
-    showToast('Artwork deleted'); loadStats();
-  }));
-}
-
-function startEditArtwork(id){
-  const a=artworks.find(x=>x.id===id); if(!a) return;
-  document.getElementById('artworkFormTitle').textContent='EDIT ARTWORK';
-  document.getElementById('editArtworkId').value=id;
-  document.getElementById('artworkTitle').value=a.title||'';
-  document.getElementById('artworkPrice').value=a.priceNum||parseInt(String(a.price||'0').replace(/\D/g,''))||'';
-  document.getElementById('artworkDesc').value=a.desc||a.description||'';
-  document.getElementById('artworkStatus').value=a.status||'available';
-  document.getElementById('artworkImageUrl').value=a.imageUrl||a.image||'';
-  const prev=document.getElementById('uploadPreview');
-  if(a.imageUrl||a.image){ prev.src=a.imageUrl||a.image; prev.style.display='block'; }
-  else prev.style.display='none';
-  document.getElementById('artworkForm').style.display='block';
-  document.getElementById('artworkForm').scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-
-document.getElementById('showAddArtworkBtn').addEventListener('click',()=>{
-  document.getElementById('artworkFormTitle').textContent='ADD ARTWORK';
-  ['editArtworkId','artworkTitle','artworkPrice','artworkDesc','artworkImageUrl'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('artworkStatus').value='available';
-  document.getElementById('uploadPreview').style.display='none';
-  document.getElementById('uploadProgWrap').style.display='none';
-  document.getElementById('artworkForm').style.display='block';
-});
-document.getElementById('cancelArtworkBtn').addEventListener('click',()=>{ document.getElementById('artworkForm').style.display='none'; });
-
-document.getElementById('saveArtworkBtn').addEventListener('click',async()=>{
-  if(!isAdmin) return;
-  const editId =document.getElementById('editArtworkId').value.trim();
-  const title  =sanitizeVal(document.getElementById('artworkTitle').value);
-  const priceN =parseInt(document.getElementById('artworkPrice').value)||0;
-  const desc   =sanitizeVal(document.getElementById('artworkDesc').value);
-  const status =document.getElementById('artworkStatus').value;
-  const imgUrl =document.getElementById('artworkImageUrl').value;
-  if(!title){ showToast('⚠️ Title required'); return; }
-  const data={title,priceNum:priceN,price:`${priceN} KES`,desc,status,imageUrl:imgUrl};
-  if(editId){ await updateDoc(doc(db,'artworks',editId),data); showToast('✅ Artwork updated'); }
-  else       { await addDoc(collection(db,'artworks'),{...data,createdAt:serverTimestamp()}); showToast('✅ Artwork added'); }
-  document.getElementById('artworkForm').style.display='none';
-  loadStats();
-});
-
-/* ═══ IMAGE UPLOAD ═══ */
-const uploadArea=document.getElementById('uploadArea');
-const fileInput=document.getElementById('imageFileInput');
-uploadArea.addEventListener('click',()=>fileInput.click());
-uploadArea.addEventListener('dragover',e=>{ e.preventDefault(); uploadArea.classList.add('drag-over'); });
-uploadArea.addEventListener('dragleave',()=>uploadArea.classList.remove('drag-over'));
-uploadArea.addEventListener('drop',e=>{ e.preventDefault(); uploadArea.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener('change',e=>handleFile(e.target.files[0]));
-
-function handleFile(file){
-  if(!file) return;
-  if(!file.type.startsWith('image/')){ showToast('⚠️ Please select an image'); return; }
-  const pw=document.getElementById('uploadProgWrap');
-  const pf=document.getElementById('uploadProgFill');
-  const pt=document.getElementById('uploadProgText');
-  pw.style.display='block'; pf.style.width='0%'; pt.textContent='Uploading…';
-  const sRef=storageRef(storage,`artworks/${Date.now()}_${file.name}`);
-  const task=uploadBytesResumable(sRef,file);
-  task.on('state_changed',
-    snap=>{ const p=Math.round(snap.bytesTransferred/snap.totalBytes*100); pf.style.width=p+'%'; pt.textContent=p+'%'; },
-    err=>{ console.error(err); showToast('⚠️ Upload failed'); pw.style.display='none'; },
-    async()=>{
-      const url=await getDownloadURL(task.snapshot.ref);
-      document.getElementById('artworkImageUrl').value=url;
-      const prev=document.getElementById('uploadPreview');
-      prev.src=url; prev.style.display='block';
-      pt.textContent='✅ Uploaded'; showToast('✅ Image uploaded');
-    }
-  );
-}
-
-/* ═══ WIRE-UP BUTTONS ═══ */
-document.getElementById('heroExploreBtn').addEventListener('click',()=>document.getElementById('gallery-section').scrollIntoView({behavior:'smooth'}));
-document.getElementById('heroStoryBtn').addEventListener('click',openStory);
-document.getElementById('canvasStoryBtn').addEventListener('click',openStory);
-document.getElementById('cartBtn').addEventListener('click',openCart);
-document.getElementById('cartOverlay').addEventListener('click',closeCart);
-document.getElementById('cartCloseBtn').addEventListener('click',closeCart);
-document.getElementById('checkoutBtn').addEventListener('click',()=>{ closeCart(); openOrderFromCart(); });
-document.getElementById('commissionFab').addEventListener('click',openCommission);
-document.getElementById('commissionModalClose').addEventListener('click',closeCommission);
-document.getElementById('commissionModal').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeCommission(); });
-document.getElementById('imageModalClose').addEventListener('click',closeImageModal);
-document.getElementById('imageModal').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeImageModal(); });
-document.getElementById('storyModalClose').addEventListener('click',closeStory);
-document.getElementById('storyModal').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeStory(); });
-document.getElementById('orderModalClose').addEventListener('click',closeOrder);
-document.getElementById('orderModal').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeOrder(); });
-document.getElementById('sendOrderBtn').addEventListener('click',sendOrder);
-document.getElementById('sendCommissionBtn').addEventListener('click',sendCommission);
-document.getElementById('adminLoginClose').addEventListener('click',closeAdminLogin);
-document.getElementById('adminLoginModal').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeAdminLogin(); });
-
-document.addEventListener('keydown',e=>{
-  if(e.key!=='Escape') return;
-  closeImageModal(); closeStory(); closeOrder();
-  closeCommission(); closeCart(); closeAdmin(); closeAdminLogin();
-});
-
-/* ═══ INIT ═══ */
-updateCartCount();
-subscribeGallery();
-track('page_view');
-console.log('🔥 Art Is Life — Production build. Crown Admin: role="crown" in Firestore.');
-</script>
 </body>
 </html>
