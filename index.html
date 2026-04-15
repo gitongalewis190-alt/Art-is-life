@@ -56,47 +56,37 @@ header{
     z-index:1000;
 }
 
-/* HERO WRAPPER */
+/* HERO */
 .hero-wrapper{
     display:flex;
     height:75vh;
 }
 
-/* HERO IMAGE (85%) */
+/* 85% IMAGE SECTION */
 .hero-logo{
     flex:8.5;
-    position:relative;
-    overflow:hidden;
-    background:#fff;
     display:flex;
     justify-content:center;
     align-items:center;
+    background:#fff;
+    overflow:hidden;
 }
 
-.hero-logo::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:url('cover.jpg') center/contain no-repeat;
-    animation:heroZoom 2.8s ease-out forwards;
-    transform:scale(1.1);
-    opacity:0;
+/* REAL IMAGE (FIX) */
+.hero-logo img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    animation:heroFade 1.5s ease-in-out;
 }
 
-@keyframes heroZoom{
-    0%{
-        transform:scale(1.15);
-        opacity:0;
-        filter:blur(12px);
-    }
-    100%{
-        transform:scale(1);
-        opacity:1;
-        filter:blur(0px);
-    }
+/* animation */
+@keyframes heroFade{
+    from{opacity:0; transform:scale(0.95);}
+    to{opacity:1; transform:scale(1);}
 }
 
-/* TEXT (15%) */
+/* TEXT 15% */
 .hero-text{
     flex:1.5;
     display:flex;
@@ -107,26 +97,7 @@ header{
 }
 
 .hero-text h1{
-    font-size:1.9rem;
-    font-weight:800;
-    color:var(--deep-blue);
-    animation:fadeText 2s ease-out forwards;
-}
-
-.hero-text p{
-    opacity:0;
-    animation:fadeText 2.5s ease-out forwards;
-}
-
-@keyframes fadeText{
-    from{
-        opacity:0;
-        transform:translateY(20px);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
+    font-size:1.6rem;
 }
 
 /* STORY */
@@ -148,9 +119,12 @@ header{
     line-height:1.7;
 }
 
-/* ANALYTICS BAR (HIDDEN VISUALLY BUT SCRIPT STILL RUNS) */
+/* ANALYTICS BAR */
 .analytics-bar{
-    display:none;
+    text-align:center;
+    padding:18px;
+    font-size:0.9rem;
+    background:#f5f5f5;
 }
 
 /* GALLERY */
@@ -211,20 +185,9 @@ header{
 
 .art-info{padding:18px;}
 
-.art-title{
-    font-weight:800;
-    color:var(--accent);
-}
-
-.art-price{
-    color:#4da6ff;
-    font-weight:900;
-    text-shadow:0 0 6px rgba(77,166,255,0.4);
-}
-
-.art-card:hover .art-price{
-    text-shadow:0 0 14px rgba(77,166,255,0.8);
-}
+.art-title{font-weight:800;color:var(--accent);}
+.art-price{color:#4da6ff;font-weight:900;text-shadow:0 0 6px rgba(77,166,255,0.4);}
+.art-card:hover .art-price{ text-shadow:0 0 14px rgba(77,166,255,0.8); }
 
 .art-desc{
     font-size:0.88rem;
@@ -273,9 +236,7 @@ header{
     align-items:center;
 }
 
-.image-modal img{
-    max-width:90%;
-}
+.image-modal img{max-width:90%;}
 
 .socials{
     text-align:center;
@@ -289,9 +250,7 @@ header{
     color:#111;
 }
 
-.socials a:hover{
-    color:var(--accent);
-}
+.socials a:hover{color:var(--accent);}
 
 .footer{
     text-align:center;
@@ -301,18 +260,9 @@ header{
 }
 
 @media(max-width:900px){
-    .hero-wrapper{
-        flex-direction:column;
-        height:auto;
-    }
-
-    .hero-logo{
-        height:300px;
-    }
-
-    .gallery-container{
-        grid-template-columns:1fr;
-    }
+    .hero-wrapper{flex-direction:column;height:auto;}
+    .hero-logo{height:300px;}
+    .gallery-container{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -324,25 +274,25 @@ header{
 </header>
 
 <section class="hero-wrapper">
-<div class="hero-logo"></div>
+
+<div class="hero-logo">
+    <img src="cover.jpg" alt="Art Is Life Logo">
+</div>
 
 <div class="hero-text">
 <h1>Art is emotional evidence.</h1>
 <p>One-time creations. Rarely reproduced.</p>
 </div>
+
 </section>
 
 <div class="analytics-bar">
-Visitors hidden (tracking active)
+Visitors: <span id="visitorCount">0</span> | Source: <span id="trafficSource">Direct</span>
 </div>
 
 <div class="story-box">
 <h2>HOW IT ALL STARTED – BY LEWIS THE CEO</h2>
-<p>From a young age, I found myself deeply drawn to creativity and crafting. In school, while many of my peers focused on competitive drawing—especially cars—I developed a strong desire not only to participate, but to improve, excel, and master skill through dedication.</p>
-<p>My turning point came when I met Elvis, who introduced painting as expression. That moment changed everything.</p>
-<p>I began self-teaching beyond structure, focusing on emotion, not just technique.</p>
-<p>A breakthrough came at the African Kidpreneur Summit where I saw art become opportunity.</p>
-<p>That moment marked the birth of Art Is Life Foundation.</p>
+<p>From a young age, I found myself deeply drawn to creativity and crafting...</p>
 <p><strong>Today, I create not just to paint—but to build a future where art becomes identity and life itself.</strong></p>
 </div>
 
@@ -366,65 +316,13 @@ Visitors hidden (tracking active)
 let count = localStorage.getItem("visits") || 0;
 count++;
 localStorage.setItem("visits", count);
+document.getElementById("visitorCount").innerText = count;
 
 let ref = document.referrer;
 let source = "Direct";
 if(ref.includes("instagram")) source="Instagram";
 if(ref.includes("facebook")) source="Facebook";
-
-const artworks = [
-{title:"Resonant Rhythms",price:"800 KES",image:"resonant.jpg",desc:"A vibrant expression of emotional frequency merging human feeling with nature."},
-{title:"Dawn of the Gentle Giant",price:"700 KES",image:"giant.jpg",desc:"A symbolic reflection of wisdom, endurance, and silent strength."},
-{title:"The Sovereign Silence",price:"650 KES",image:"sovereign.jpg",desc:"A deep exploration of identity formed in stillness."},
-{title:"Kinship of the Canopy",price:"600 KES",image:"canopy.jpg",desc:"A story of coexistence between nature and human belonging."},
-{title:"Solace in Grey",price:"1000 KES",image:"solace.jpg",desc:"A portrayal of emotional refuge in a disconnected world."},
-{title:"Resilience",price:"900 KES",image:"resilience.jpg",desc:"Strength shaped through adversity and transformation."},
-{title:"Kingship & Kindness",price:"1500 KES",image:"kingship.jpg",desc:"Leadership grounded in empathy and emotional intelligence."},
-{title:"Chic & Shadow",price:"1200 KES",image:"chic_shadow.jpg",desc:"Duality between external identity and internal truth."},
-{title:"Neck to Neck",price:"1100 KES",image:"neck_to_neck.jpg",desc:"Balance between opposing emotional forces."},
-{title:"Joyful Blooms",price:"1000 KES",image:"joyful_blooms.jpg",desc:"A celebration of growth and emotional renewal."},
-{title:"Sunset Nomad",price:"1300 KES",image:"sunset_nomad.jpg",desc:"A journey between endings and new beginnings."},
-{title:"Color of Light",price:"1400 KES",image:"color_of_light.jpg",desc:"Light as a metaphor for hope and clarity."}
-];
-
-const container = document.getElementById("gallery");
-
-function openModal(src,title){
-document.getElementById("imageModal").style.display="flex";
-document.getElementById("modalImg").src=src;
-trackArtView(title);
-}
-
-document.getElementById("imageModal").onclick=()=>{ 
-document.getElementById("imageModal").style.display="none";
-};
-
-function whatsappLink(title,price){
-return `https://wa.me/254704708178?text=${encodeURIComponent(title+" "+price)}`;
-}
-
-function render(){
-container.innerHTML = artworks.map(a=>`
-<div class="art-card" onclick="trackArtClick('${a.title}')">
-<div class="banner">AVAILABLE</div>
-
-<img src="${a.image}" onclick="openModal('${a.image}','${a.title}')">
-
-<div class="art-info">
-<div class="art-title">${a.title}</div>
-<div class="art-price">${a.price}</div>
-<div class="art-desc">${a.desc}</div>
-
-<a class="buy-btn"
-href="${whatsappLink(a.title,a.price)}"
-onclick="trackWhatsApp('${a.title}')"
-target="_blank">Secure via WhatsApp</a>
-</div>
-</div>
-`).join("");
-}
-
-render();
+document.getElementById("trafficSource").innerText = source;
 </script>
 
 </body>
