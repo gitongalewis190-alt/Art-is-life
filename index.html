@@ -8,7 +8,7 @@
 
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces available via WhatsApp.">
 
-<!-- GOOGLE ANALYTICS (TRACKING - TOP LEVEL) -->
+<!-- GOOGLE ANALYTICS -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
 <script>
 window.dataLayer = window.dataLayer || [];
@@ -16,7 +16,7 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-MPX5MMNRB2');
 
-/* TRACKING EVENTS */
+/* TRACKING */
 function trackWhatsApp(art){ gtag('event','whatsapp_click',{art}); }
 function trackInstagram(){ gtag('event','instagram_click'); }
 function trackFacebook(){ gtag('event','facebook_click'); }
@@ -62,7 +62,6 @@ header{
     height:75vh;
 }
 
-/* IMAGE SIDE */
 .hero-logo{
     flex:8.5;
     display:flex;
@@ -84,7 +83,6 @@ header{
     to{opacity:1; transform:scale(1);}
 }
 
-/* TEXT SIDE */
 .hero-text{
     flex:1.5;
     display:flex;
@@ -92,10 +90,6 @@ header{
     justify-content:center;
     padding:30px;
     border-left:4px solid var(--deep-blue);
-}
-
-.hero-text h1{
-    font-size:1.6rem;
 }
 
 /* STORY */
@@ -154,7 +148,7 @@ header{
     transform:scale(1.05);
 }
 
-/* AVAILABLE BADGE */
+/* AVAILABLE BANNER (GLITTER) */
 .banner{
     position:absolute;
     top:8px;
@@ -180,7 +174,7 @@ header{
 .art-price{color:#4da6ff;font-weight:900;text-shadow:0 0 6px rgba(77,166,255,0.4);}
 .art-desc{font-size:0.88rem;color:#555;margin:10px 0;}
 
-/* BUTTON */
+/* WHATSAPP BUTTON (GLITTER) */
 .buy-btn{
     display:block;
     text-align:center;
@@ -190,6 +184,25 @@ header{
     border-radius:6px;
     text-decoration:none;
     font-weight:800;
+    position:relative;
+    overflow:hidden;
+}
+
+/* glitter shine */
+.buy-btn::after{
+    content:"";
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:-100%;
+    background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);
+    animation:btnGlow 2s infinite;
+}
+
+@keyframes btnGlow{
+    0%{left:-100%;}
+    100%{left:100%;}
 }
 
 /* MODAL */
@@ -241,7 +254,6 @@ header{
 
 <body>
 
-<!-- HEADER -->
 <header>
 <div>ART IS LIFE FOUNDATION — Lewis Gitonga</div>
 </header>
@@ -249,7 +261,7 @@ header{
 <!-- HERO -->
 <section class="hero-wrapper">
 <div class="hero-logo">
-    <img src="cover.jpg" alt="Art Is Life Logo">
+    <img src="cover.jpg">
 </div>
 
 <div class="hero-text">
@@ -258,11 +270,25 @@ header{
 </div>
 </section>
 
-<!-- STORY -->
+<!-- STORY (FULL) -->
 <div class="story-box">
 <h2>HOW IT ALL STARTED – BY LEWIS THE CEO</h2>
-<p>From a young age, I found myself deeply drawn to creativity...</p>
-<p><strong>Today, I create not just to paint—but to build a future where art becomes identity and life itself.</strong></p>
+
+<p>From a young age, I was drawn to creativity in a way I could not fully explain. While others around me focused on structured competition in drawing—especially cars and technical sketches—I found myself wanting something deeper. I didn’t just want to draw; I wanted to express feeling, emotion, and meaning through every line.</p>
+
+<p>My journey began in a simple school environment where curiosity slowly turned into discipline. I pushed myself not only to participate in art, but to improve constantly. Every sketch became a lesson in patience, observation, and self-belief.</p>
+
+<p>A defining moment came when I met Elvis, who introduced me and other children to the foundations of painting. He taught us how to blend colors, control the brush, and most importantly, how to express emotion through art. That moment changed how I saw creativity—it was no longer just a skill, but a language.</p>
+
+<p>As I grew, I continued learning through structured pencil training, but I soon realized I wanted more freedom than technical drawing alone could offer. I began teaching myself through observation, experimentation, online learning, and continuous practice. My focus shifted from perfection to expression.</p>
+
+<p>Everything changed again when I attended the African Kidpreneur Summit. There, I met young creatives turning their ideas into real opportunities. That experience opened my mind to the idea that art is not just passion—it can also become purpose, identity, and livelihood.</p>
+
+<p>After that summit, I received encouragement and support that allowed me to fully pursue my artistic journey. I invested in materials, committed myself deeply, and began building what is now known as Art Is Life Foundation.</p>
+
+<p>Today, my work is not just about painting images—it is about telling human stories. Each piece reflects emotion, nature, identity, struggle, peace, and connection. I create to express what words cannot fully capture.</p>
+
+<p><strong>Art for me is not just life—it is evidence of life itself.</strong></p>
 </div>
 
 <!-- GALLERY -->
@@ -275,14 +301,14 @@ header{
 
 <!-- SOCIAL -->
 <div class="socials">
-<a href="https://instagram.com/lewis_art.is.life" target="_blank">Instagram</a>
-<a href="https://facebook.com/lewis_art.is.life" target="_blank">Facebook</a>
-<a href="https://wa.me/254704708178" target="_blank">WhatsApp</a>
+<a href="https://instagram.com/lewis_art.is.life">Instagram</a>
+<a href="https://facebook.com/lewis_art.is.life">Facebook</a>
+<a href="https://wa.me/254704708178">WhatsApp</a>
 </div>
 
 <!-- FOOTER -->
 <div class="footer">
-© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved. No reproduction without permission.
+© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.
 </div>
 
 <script>
@@ -309,12 +335,17 @@ function render(){
 container.innerHTML = artworks.map(a=>`
 <div class="art-card">
 <div class="banner">AVAILABLE</div>
+
 <img src="${a.image}" onclick="openModal('${a.image}')">
 <div class="art-info">
 <div class="art-title">${a.title}</div>
 <div class="art-price">${a.price}</div>
 <div class="art-desc">${a.desc}</div>
-<a class="buy-btn" href="https://wa.me/254704708178" target="_blank">Secure via WhatsApp</a>
+
+<a class="buy-btn"
+href="https://wa.me/254704708178"
+onclick="trackWhatsApp('${a.title}')"
+target="_blank">Secure via WhatsApp</a>
 </div>
 </div>
 `).join("");
@@ -330,7 +361,6 @@ document.getElementById("imageModal").style.display="none";
 };
 
 render();
-
 </script>
 
 </body>
