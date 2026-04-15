@@ -56,39 +56,31 @@ header{
     z-index:1000;
 }
 
-/* LOGO */
-.logo{
-    font-weight:800;
-    letter-spacing:1px;
-}
-.logo span{
-    color:var(--accent);
-}
-
-/* HERO */
+/* HERO (UPDATED STRUCTURE) */
 .hero-wrapper{
     display:flex;
     height:75vh;
 }
 
-.hero-image{
-    flex:7;
-    background:
-    linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.4)),
-    url('cover.jpg') center/cover no-repeat;
+/* LOGO IMAGE 85% */
+.hero-logo{
+    flex:8.5;
+    background:url('cover.jpg') center/contain no-repeat;
+    background-color:#fff;
 }
 
+/* TEXT 15% */
 .hero-text{
-    flex:3;
+    flex:1.5;
     display:flex;
     flex-direction:column;
     justify-content:center;
-    padding:40px;
+    padding:30px;
     border-left:4px solid var(--deep-blue);
 }
 
 .hero-text h1{
-    font-size:2rem;
+    font-size:1.6rem;
 }
 
 /* STORY */
@@ -102,6 +94,7 @@ header{
 .story-box h2{
     color:var(--accent);
     margin-bottom:20px;
+    text-decoration:underline;
 }
 
 .story-box p{
@@ -155,7 +148,7 @@ header{
     transform:scale(1.05);
 }
 
-/* ✨ SLIMMER LUXURY BANNER */
+/* BANNER */
 .banner{
     position:absolute;
     top:8px;
@@ -183,7 +176,6 @@ header{
     color:var(--accent);
 }
 
-/* PRICE */
 .art-price{
     color:#4da6ff;
     font-weight:900;
@@ -200,7 +192,7 @@ header{
     margin:10px 0;
 }
 
-/* 💚 ELITE WHATSAPP BUTTON */
+/* WHATSAPP BUTTON */
 .buy-btn{
     display:block;
     text-align:center;
@@ -214,7 +206,6 @@ header{
     overflow:hidden;
 }
 
-/* glow pulse */
 .buy-btn::after{
     content:"";
     position:absolute;
@@ -265,11 +256,23 @@ header{
     color:var(--accent);
 }
 
-/* 📱 MOBILE OPTIMIZATION */
+/* FOOTER */
+.footer{
+    text-align:center;
+    padding:20px;
+    font-size:0.8rem;
+    color:#777;
+}
+
+/* MOBILE */
 @media(max-width:900px){
     .hero-wrapper{
         flex-direction:column;
         height:auto;
+    }
+
+    .hero-logo{
+        height:300px;
     }
 
     .gallery-container{
@@ -282,12 +285,11 @@ header{
 <body>
 
 <header>
-<div class="logo">ART <span>IS LIFE</span></div>
-<div>Lewis Gitonga</div>
+<div>ART IS LIFE FOUNDATION — Lewis Gitonga</div>
 </header>
 
 <section class="hero-wrapper">
-<div class="hero-image"></div>
+<div class="hero-logo"></div>
 <div class="hero-text">
 <h1>Art is emotional evidence.</h1>
 <p>One-time creations. Rarely reproduced.</p>
@@ -318,6 +320,10 @@ Visitors: <span id="visitorCount">0</span> | Source: <span id="trafficSource">Di
 <a href="https://instagram.com/lewis_art.is.life" onclick="trackInstagram()" target="_blank">Instagram</a>
 <a href="https://facebook.com/lewis_art.is.life" onclick="trackFacebook()" target="_blank">Facebook</a>
 <a href="https://wa.me/254704708178" onclick="trackWhatsApp('footer')" target="_blank">WhatsApp</a>
+</div>
+
+<div class="footer">
+© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.
 </div>
 
 <script>
