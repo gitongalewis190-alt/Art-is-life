@@ -84,6 +84,7 @@ function track(event, data={}){ gtag('event', event, data); }
   onAuthStateChanged(auth, async (user)=>{
     if(!user){
       window.isAdmin=false;
+      document.getElementById('adminPanelTrigger')?.classList.remove('visible');
       return;
     }
 
@@ -206,8 +207,6 @@ body{
   overflow-x:hidden;
 }
 h1,h2,h3{font-family:'Cormorant Garamond',serif;}
-
-/* FULL ORIGINAL CSS CONTINUES EXACTLY AS PROVIDED */
 </style>
 </head>
 
@@ -215,6 +214,12 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;}
 
 <header>
   <div class="header-brand">ART IS LIFE <span>FOUNDATION</span></div>
+
+  <!-- ✅ ADMIN CROWN ADDED -->
+  <div id="adminPanelTrigger" onclick="window.location.href='admin.html'" style="display:none;cursor:pointer;margin-left:10px;">
+    👑
+  </div>
+
   <div class="header-right">
     <div class="cart-icon" onclick="openCart()">🛒 <span id="cartCount">0</span></div>
   </div>
