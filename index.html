@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
@@ -7,1401 +6,1386 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ART IS LIFE FOUNDATION — Lewis Gitonga</title>
 
-<!-- Google Fonts -->
-
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
-
-<!-- Firebase SDKs -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import {
-    getFirestore, collection, doc, addDoc, setDoc, getDoc, getDocs,
-    updateDoc, deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp, increment
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import {
-    getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, addDoc, setDoc, getDoc, getDocs,
+  updateDoc, deleteDoc, onSnapshot, query, where, orderBy,
+  serverTimestamp, increment, runTransaction
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getStorage, ref as sRef, uploadBytesResumable, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-  /* ============================================================
-     🔧 FIREBASE CONFIG — Replace with your project credentials
-  ============================================================ */
-  const firebaseConfig = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_PROJECT.firebaseapp.com",
-    projectId:         "YOUR_PROJECT_ID",
-    storageBucket:     "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId:             "YOUR_APP_ID"
+/* ─────────────────────────────────────────
+   FIREBASE CONFIG  ← replace with yours
+───────────────────────────────────────── */
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+const app     = initializeApp(firebaseConfig);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
+
+/* ─────────────────────────────────────────
+   STATE
+───────────────────────────────────────── */
+let currentUser     = null;
+let currentUserRole = null;
+let cartItems       = [];
+let likedArtworks   = new Set();
+let artworksCache   = {};
+let commentsCache   = {};
+let unsubscribers   = [];
+let zoomTarget      = null;
+
+try { cartItems = JSON.parse(localStorage.getItem("alf_cart") || "[]"); } catch {}
+
+/* ─────────────────────────────────────────
+   TOAST
+───────────────────────────────────────── */
+function toast(msg, type = "info", dur = 3200) {
+  const wrap = document.getElementById("toastContainer");
+  const t = document.createElement("div");
+  t.className = `toast toast--${type}`;
+  const icons = {
+    success: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    info:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg>`
   };
+  t.innerHTML = `<span class="toast__icon">${icons[type]||icons.info}</span><span class="toast__msg">${msg}</span>`;
+  wrap.appendChild(t);
+  requestAnimationFrame(() => t.classList.add("toast--show"));
+  setTimeout(() => {
+    t.classList.remove("toast--show");
+    t.addEventListener("transitionend", () => t.remove(), {once:true});
+  }, dur);
+}
 
-  /* ============================================================
-     FIREBASE INIT
-  ============================================================ */
-  const app     = initializeApp(firebaseConfig);
-  const auth    = getAuth(app);
-  const db      = getFirestore(app);
-  const storage = getStorage(app);
+/* ─────────────────────────────────────────
+   LOADER
+───────────────────────────────────────── */
+function showLoader(id) { const el=document.getElementById(id); if(el) el.style.display="flex"; }
+function hideLoader(id) { const el=document.getElementById(id); if(el) el.style.display="none"; }
 
-  /* ============================================================
-     STATE
-  ============================================================ */
-  let currentUser     = null;
-  let currentUserRole = null;
-  let cartItems       = [];
-  let likedArtworks   = new Set();
-  let artworksCache   = {};
-  let unsubscribers   = [];
+/* ─────────────────────────────────────────
+   AUTH DENIED MODAL
+───────────────────────────────────────── */
+function showAccessDenied() {
+  const m = document.getElementById("accessDeniedModal");
+  m.classList.add("modal--open");
+  setTimeout(() => m.classList.remove("modal--open"), 4500);
+}
 
-  // Restore cart from localStorage cache
-  try { cartItems = JSON.parse(localStorage.getItem("alf_cart") || "[]"); } catch {}
-
-  /* ============================================================
-     UTILITY — Toast
-  ============================================================ */
-  function toast(msg, type = "info", duration = 3500) {
-    const wrap = document.getElementById("toastContainer");
-    const t = document.createElement("div");
-    t.className = `toast toast--${type}`;
-    const icons = {
-      success: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`,
-      error:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
-      info:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>`
-    };
-    t.innerHTML = `<span class="toast__icon">${icons[type] || icons.info}</span><span class="toast__msg">${msg}</span>`;
-    wrap.appendChild(t);
-    requestAnimationFrame(() => t.classList.add("toast--show"));
-    setTimeout(() => {
-      t.classList.remove("toast--show");
-      t.addEventListener("transitionend", () => t.remove());
-    }, duration);
-  }
-
-  /* ============================================================
-     UTILITY — Loader
-  ============================================================ */
-  function showLoader(id) {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "flex";
-  }
-  function hideLoader(id) {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  }
-
-  /* ============================================================
-     AUTH
-  ============================================================ */
-  async function login(email, password) {
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Role check
-      const snap = await getDoc(doc(db, "users", cred.user.uid));
-      if (!snap.exists()) {
-        await signOut(auth);
-        toast("Access restricted. Admin system is for Lewis Gitonga only.", "error", 5000);
-        showView("home");
-        return;
-      }
-      const role = snap.data().role;
-      if (!["crown","admin","editor","viewer"].includes(role)) {
-        await signOut(auth);
-        toast("Access restricted. Admin system is for Lewis Gitonga only.", "error", 5000);
-        showView("home");
-        return;
-      }
-      toast("Welcome back.", "success");
-      showView("admin");
-    } catch (e) {
-      toast("Access restricted. Admin system is for Lewis Gitonga only.", "error", 5000);
+/* ─────────────────────────────────────────
+   AUTH
+───────────────────────────────────────── */
+async function login(email, password) {
+  const btn = document.getElementById("loginBtn");
+  if(btn) { btn.disabled=true; btn.textContent="Signing in…"; }
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const snap = await getDoc(doc(db, "users", cred.user.uid));
+    if (!snap.exists() || !["crown","admin","editor","viewer"].includes(snap.data().role)) {
+      await signOut(auth);
+      if(btn) { btn.disabled=false; btn.textContent="Sign In"; }
+      showAccessDenied();
       showView("home");
-    }
-  }
-
-  async function logout() {
-    unsubAll();
-    await signOut(auth);
-    currentUser = null; currentUserRole = null;
-    showView("home");
-    toast("Signed out.", "info");
-  }
-
-  onAuthStateChanged(auth, async (user) => {
-    currentUser = user;
-    if (user) {
-      try {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        currentUserRole = snap.exists() ? snap.data().role : null;
-        updateAdminUI();
-      } catch {}
-    } else {
-      currentUserRole = null;
-      updateAdminUI();
-    }
-  });
-
-  function updateAdminUI() {
-    const bar = document.getElementById("adminBar");
-    if (!bar) return;
-    if (currentUser && currentUserRole) {
-      bar.innerHTML = `
-        <span class="admin-bar__role">${currentUserRole.toUpperCase()}</span>
-        <span class="admin-bar__email">${currentUser.email}</span>
-        <button class="btn btn--ghost btn--sm" onclick="window._alf.logout()">Sign Out</button>
-      `;
-      // Crown-only user management tab
-      document.querySelectorAll(".tab--users").forEach(el => {
-        el.style.display = currentUserRole === "crown" ? "" : "none";
-      });
-    } else {
-      bar.innerHTML = `<button class="btn btn--primary btn--sm" onclick="window._alf.showView('login')">Admin Login</button>`;
-    }
-  }
-
-  /* ============================================================
-     VIEWS
-  ============================================================ */
-  function showView(name) {
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
-    const target = document.getElementById(`view-${name}`);
-    if (target) target.classList.add("view--active");
-    closeSidebar();
-    if (name === "gallery")  initGallery();
-    if (name === "admin")    initAdmin();
-    if (name === "cart")     renderCart();
-    if (name === "login")    document.getElementById("loginEmail")?.focus();
-    window.scrollTo(0,0);
-  }
-
-  /* ============================================================
-     SIDEBAR
-  ============================================================ */
-  function openSidebar() {
-    document.getElementById("sidebar").classList.add("sidebar--open");
-    document.getElementById("sidebarOverlay").classList.add("overlay--show");
-  }
-  function closeSidebar() {
-    document.getElementById("sidebar").classList.remove("sidebar--open");
-    document.getElementById("sidebarOverlay").classList.remove("overlay--show");
-  }
-
-  /* ============================================================
-     GALLERY — REAL-TIME
-  ============================================================ */
-  function initGallery() {
-    unsubAll();
-    showLoader("galleryLoader");
-    const q = query(collection(db, "artworks"), orderBy("createdAt","desc"));
-    const unsub = onSnapshot(q, async (snap) => {
-      hideLoader("galleryLoader");
-      // Update cache
-      snap.docChanges().forEach(change => {
-        if (change.type === "removed") {
-          delete artworksCache[change.doc.id];
-        } else {
-          artworksCache[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
-        }
-      });
-      await loadLikes();
-      renderGallery(Object.values(artworksCache));
-    }, (err) => {
-      hideLoader("galleryLoader");
-      toast("Failed to load gallery: " + err.message, "error");
-    });
-    unsubscribers.push(unsub);
-  }
-
-  async function loadLikes() {
-    if (!currentUser) { likedArtworks.clear(); return; }
-    try {
-      const q = query(collection(db, "likes"), where("userId","==",currentUser.uid));
-      const snap = await getDocs(q);
-      likedArtworks.clear();
-      snap.forEach(d => likedArtworks.add(d.data().artworkId));
-    } catch {}
-  }
-
-  function renderGallery(artworks) {
-    const grid = document.getElementById("galleryGrid");
-    const existing = {};
-    grid.querySelectorAll(".artwork-card").forEach(el => {
-      existing[el.dataset.id] = el;
-    });
-    const ids = new Set(artworks.map(a => a.id));
-    // Remove deleted
-    Object.keys(existing).forEach(id => {
-      if (!ids.has(id)) existing[id].remove();
-    });
-    // Add/update
-    artworks.forEach((art, i) => {
-      if (existing[art.id]) {
-        updateArtworkCard(existing[art.id], art);
-      } else {
-        const card = createArtworkCard(art, i);
-        grid.appendChild(card);
-      }
-    });
-    if (artworks.length === 0) {
-      grid.innerHTML = `<div class="gallery-empty"><span>No artworks yet.</span></div>`;
-    }
-  }
-
-  function createArtworkCard(art, i) {
-    const card = document.createElement("div");
-    card.className = "artwork-card";
-    card.dataset.id = art.id;
-    card.style.animationDelay = `${i * 60}ms`;
-    card.innerHTML = artworkCardHTML(art);
-    return card;
-  }
-
-  function updateArtworkCard(card, art) {
-    card.innerHTML = artworkCardHTML(art);
-  }
-
-  function artworkCardHTML(art) {
-    const liked = likedArtworks.has(art.id);
-    const sold  = art.status === "sold";
-    return `
-      <div class="artwork-card__img-wrap">
-        <img class="artwork-card__img" src="${art.imageUrl || ''}" alt="${art.title}" loading="lazy" />
-        ${sold ? `<div class="artwork-card__sold-badge">SOLD</div>` : ""}
-        <button class="artwork-card__like ${liked ? 'artwork-card__like--active' : ''}"
-          onclick="window._alf.toggleLike('${art.id}')" aria-label="Like">
-          <svg viewBox="0 0 24 24" fill="${liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
-      </div>
-      <div class="artwork-card__info">
-        <h3 class="artwork-card__title">${art.title}</h3>
-        <p class="artwork-card__desc">${art.desc || ''}</p>
-        <div class="artwork-card__footer">
-          <span class="artwork-card__price">${art.price || ''}</span>
-          ${!sold ? `<button class="btn btn--primary btn--sm" onclick="window._alf.addToCart('${art.id}')">Add to Cart</button>` : `<span class="artwork-card__unavailable">Unavailable</span>`}
-        </div>
-      </div>
-    `;
-  }
-
-  /* ============================================================
-     LIKES
-  ============================================================ */
-  async function toggleLike(artworkId) {
-    if (!currentUser) { toast("Sign in to like artworks.", "info"); return; }
-    const likeId = `${currentUser.uid}_${artworkId}`;
-    const wasLiked = likedArtworks.has(artworkId);
-    // Optimistic UI
-    if (wasLiked) likedArtworks.delete(artworkId);
-    else          likedArtworks.add(artworkId);
-    // Update card immediately
-    const card = document.querySelector(`.artwork-card[data-id="${artworkId}"]`);
-    if (card && artworksCache[artworkId]) updateArtworkCard(card, artworksCache[artworkId]);
-    try {
-      const ref = doc(db, "likes", likeId);
-      if (wasLiked) {
-        await deleteDoc(ref);
-      } else {
-        await setDoc(ref, { userId: currentUser.uid, artworkId });
-      }
-    } catch (e) {
-      // Rollback
-      if (wasLiked) likedArtworks.add(artworkId);
-      else          likedArtworks.delete(artworkId);
-      if (card && artworksCache[artworkId]) updateArtworkCard(card, artworksCache[artworkId]);
-      toast("Like failed: " + e.message, "error");
-    }
-  }
-
-  /* ============================================================
-     CART
-  ============================================================ */
-  function addToCart(artworkId) {
-    const art = artworksCache[artworkId];
-    if (!art) return;
-    const existing = cartItems.find(i => i.id === artworkId);
-    if (existing) {
-      existing.quantity = (existing.quantity || 1) + 1;
-    } else {
-      cartItems.push({ id: art.id, title: art.title, price: art.price, priceNum: art.priceNum || 0, imageUrl: art.imageUrl, quantity: 1 });
-    }
-    persistCart();
-    updateCartBadge();
-    toast(`"${art.title}" added to cart.`, "success");
-  }
-
-  function persistCart() {
-    localStorage.setItem("alf_cart", JSON.stringify(cartItems));
-    if (currentUser) {
-      setDoc(doc(db, "carts", currentUser.uid), {
-        userId: currentUser.uid, items: cartItems, updatedAt: serverTimestamp()
-      }).catch(e => toast("Cart sync error: " + e.message, "error"));
-    }
-  }
-
-  function updateCartBadge() {
-    const total = cartItems.reduce((s, i) => s + (i.quantity || 1), 0);
-    document.querySelectorAll(".cart-badge").forEach(el => {
-      el.textContent = total > 0 ? total : "";
-      el.style.display = total > 0 ? "flex" : "none";
-    });
-  }
-
-  function renderCart() {
-    const wrap = document.getElementById("cartItems");
-    const sumEl = document.getElementById("cartTotal");
-    if (!wrap) return;
-    if (cartItems.length === 0) {
-      wrap.innerHTML = `<div class="cart-empty"><p>Your cart is empty.</p></div>`;
-      sumEl.textContent = "KES 0";
       return;
     }
-    wrap.innerHTML = cartItems.map(item => `
-      <div class="cart-item" data-id="${item.id}">
-        <img class="cart-item__img" src="${item.imageUrl || ''}" alt="${item.title}" />
-        <div class="cart-item__info">
-          <span class="cart-item__title">${item.title}</span>
-          <span class="cart-item__price">${item.price}</span>
-        </div>
-        <div class="cart-item__qty">
-          <button class="qty-btn" onclick="window._alf.changeQty('${item.id}',-1)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <span class="qty-val">${item.quantity || 1}</span>
-          <button class="qty-btn" onclick="window._alf.changeQty('${item.id}',1)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-        </div>
-        <button class="cart-item__remove" onclick="window._alf.removeFromCart('${item.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    toast("Welcome back.", "success");
+    showView("admin");
+  } catch {
+    showAccessDenied();
+    showView("home");
+  } finally {
+    if(btn) { btn.disabled=false; btn.textContent="Sign In"; }
+  }
+}
+
+async function logout() {
+  unsubAll();
+  await signOut(auth);
+  currentUser=null; currentUserRole=null;
+  showView("home");
+  toast("Signed out.", "info");
+}
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) {
+    try {
+      const snap = await getDoc(doc(db,"users",user.uid));
+      currentUserRole = snap.exists() ? snap.data().role : null;
+    } catch { currentUserRole = null; }
+  } else { currentUserRole = null; }
+  updateAdminBar();
+});
+
+function updateAdminBar() {
+  const bar = document.getElementById("adminBar");
+  if (!bar) return;
+  if (currentUser && currentUserRole) {
+    bar.innerHTML = `
+      <span class="admin-bar__pill">${currentUserRole.toUpperCase()}</span>
+      <span class="admin-bar__email">${currentUser.email}</span>
+      <button class="btn btn--ghost btn--sm" onclick="window._alf.logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>`;
+    document.querySelectorAll(".tab--users").forEach(el => el.style.display = currentUserRole==="crown"?"":"none");
+  } else {
+    bar.innerHTML = `<button class="btn btn--gold btn--sm" onclick="window._alf.showView('login')">Admin Login</button>`;
+  }
+}
+
+/* ─────────────────────────────────────────
+   VIEWS
+───────────────────────────────────────── */
+function showView(name) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
+  const t = document.getElementById(`view-${name}`);
+  if (t) t.classList.add("view--active");
+  closeSidebar();
+  if (name==="gallery") initGallery();
+  if (name==="admin")   initAdmin();
+  if (name==="cart")    renderCart();
+  if (name==="login")   { const el=document.getElementById("loginEmail"); if(el) setTimeout(()=>el.focus(),100); }
+  window.scrollTo(0,0);
+}
+
+/* ─────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────── */
+function openSidebar()  { document.getElementById("sidebar").classList.add("sidebar--open"); document.getElementById("sidebarOverlay").classList.add("overlay--show"); }
+function closeSidebar() { document.getElementById("sidebar").classList.remove("sidebar--open"); document.getElementById("sidebarOverlay").classList.remove("overlay--show"); }
+
+/* ─────────────────────────────────────────
+   GALLERY — REAL-TIME
+───────────────────────────────────────── */
+function initGallery() {
+  unsubAll();
+  showLoader("galleryLoader");
+  const q = query(collection(db,"artworks"), orderBy("likesCount","desc"), orderBy("createdAt","desc"));
+  const unsub = onSnapshot(q, async snap => {
+    hideLoader("galleryLoader");
+    snap.docChanges().forEach(c => {
+      if (c.type==="removed") delete artworksCache[c.doc.id];
+      else artworksCache[c.doc.id] = {id:c.doc.id,...c.doc.data()};
+    });
+    await loadLikes();
+    renderGallery(Object.values(artworksCache).sort((a,b)=>(b.likesCount||0)-(a.likesCount||0)));
+  }, err => { hideLoader("galleryLoader"); toast("Gallery error: "+err.message,"error"); });
+  unsubscribers.push(unsub);
+}
+
+async function loadLikes() {
+  if (!currentUser) { likedArtworks.clear(); return; }
+  try {
+    const q = query(collection(db,"likes"),where("userId","==",currentUser.uid));
+    const snap = await getDocs(q);
+    likedArtworks.clear();
+    snap.forEach(d => likedArtworks.add(d.data().artworkId));
+  } catch {}
+}
+
+function renderGallery(artworks) {
+  const grid = document.getElementById("galleryGrid");
+  const existing = {};
+  grid.querySelectorAll(".artwork-card").forEach(el => existing[el.dataset.id]=el);
+  const ids = new Set(artworks.map(a=>a.id));
+  Object.keys(existing).forEach(id => { if(!ids.has(id)) existing[id].remove(); });
+  artworks.forEach((art,i) => {
+    if (existing[art.id]) { existing[art.id].innerHTML = artworkCardHTML(art); }
+    else {
+      const card = document.createElement("div");
+      card.className="artwork-card"; card.dataset.id=art.id;
+      card.style.animationDelay=`${i*55}ms`;
+      card.innerHTML=artworkCardHTML(art);
+      grid.appendChild(card);
+    }
+  });
+  if (artworks.length===0) grid.innerHTML=`<div class="gallery-empty"><span>No artworks yet.</span></div>`;
+}
+
+function artworkCardHTML(art) {
+  const liked = likedArtworks.has(art.id);
+  const sold  = art.status==="sold";
+  const featured = art.status==="featured";
+  return `
+    <div class="artwork-card__img-wrap" onclick="window._alf.openZoom('${art.imageUrl||''}')">
+      <img class="artwork-card__img" src="${art.imageUrl||''}" alt="${art.title}" loading="lazy" />
+      ${sold?`<div class="artwork-card__badge artwork-card__badge--sold">SOLD</div>`:""}
+      ${featured?`<div class="artwork-card__badge artwork-card__badge--featured">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        FEATURED</div>`:""}
+      <button class="artwork-card__like ${liked?"artwork-card__like--active":""}" onclick="event.stopPropagation();window._alf.toggleLike('${art.id}')" aria-label="Like artwork">
+        <svg viewBox="0 0 24 24" fill="${liked?"currentColor":"none"}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span class="like-count">${art.likesCount||0}</span>
+      </button>
+      <div class="artwork-card__zoom-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      </div>
+    </div>
+    <div class="artwork-card__info">
+      <div class="artwork-card__meta">
+        <h3 class="artwork-card__title">${art.title}</h3>
+        <button class="comment-btn" onclick="window._alf.openComments('${art.id}')" aria-label="Comments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>${art.commentsCount||0}</span>
         </button>
       </div>
-    `).join("");
-    const total = cartItems.reduce((s, i) => s + (i.priceNum || 0) * (i.quantity || 1), 0);
-    sumEl.textContent = `KES ${total.toLocaleString()}`;
-  }
-
-  function changeQty(id, delta) {
-    const item = cartItems.find(i => i.id === id);
-    if (!item) return;
-    item.quantity = Math.max(0, (item.quantity || 1) + delta);
-    if (item.quantity === 0) cartItems = cartItems.filter(i => i.id !== id);
-    persistCart(); updateCartBadge(); renderCart();
-  }
-
-  function removeFromCart(id) {
-    cartItems = cartItems.filter(i => i.id !== id);
-    persistCart(); updateCartBadge(); renderCart();
-  }
-
-  function clearCart() {
-    cartItems = [];
-    persistCart(); updateCartBadge(); renderCart();
-    toast("Cart cleared.", "info");
-  }
-
-  /* ============================================================
-     CHECKOUT / ORDERS
-  ============================================================ */
-  async function placeOrder(channel) {
-    if (cartItems.length === 0) { toast("Cart is empty.", "error"); return; }
-    const name    = document.getElementById("checkoutName")?.value?.trim();
-    const address = document.getElementById("checkoutAddress")?.value?.trim();
-    const phone   = document.getElementById("checkoutPhone")?.value?.trim();
-    if (!name || !address || !phone) { toast("Please fill all fields.", "error"); return; }
-    try {
-      const total = cartItems.reduce((s, i) => s + (i.priceNum || 0) * (i.quantity || 1), 0);
-      await addDoc(collection(db, "orders"), {
-        customerInfo: { name, address, phone },
-        items: cartItems,
-        totalPrice: total,
-        status: "pending",
-        channel,
-        createdAt: serverTimestamp()
-      });
-      toast("Order placed! We'll be in touch.", "success");
-      clearCart();
-      showView("gallery");
-    } catch (e) {
-      toast("Order failed: " + e.message, "error");
-    }
-  }
-
-  /* ============================================================
-     ADMIN — INIT
-  ============================================================ */
-  function initAdmin() {
-    if (!currentUser || !currentUserRole) { showView("login"); return; }
-    switchAdminTab("artworks");
-    listenAdminArtworks();
-    listenAdminOrders();
-    if (currentUserRole === "crown") listenAdminUsers();
-  }
-
-  function switchAdminTab(tab) {
-    document.querySelectorAll(".admin-tab-pane").forEach(p => p.classList.remove("admin-tab-pane--active"));
-    document.querySelectorAll(".admin-tab-btn").forEach(b => b.classList.remove("admin-tab-btn--active"));
-    document.getElementById(`admin-pane-${tab}`)?.classList.add("admin-tab-pane--active");
-    document.querySelector(`[data-tab="${tab}"]`)?.classList.add("admin-tab-btn--active");
-  }
-
-  /* ============================================================
-     ADMIN — ARTWORKS
-  ============================================================ */
-  function listenAdminArtworks() {
-    const q = query(collection(db, "artworks"), orderBy("createdAt","desc"));
-    const unsub = onSnapshot(q, snap => {
-      snap.docChanges().forEach(change => {
-        if (change.type === "removed") delete artworksCache[change.doc.id];
-        else artworksCache[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
-      });
-      renderAdminArtworks(Object.values(artworksCache));
-    }, e => toast("Admin artworks error: " + e.message, "error"));
-    unsubscribers.push(unsub);
-  }
-
-  function renderAdminArtworks(artworks) {
-    const wrap = document.getElementById("adminArtworksList");
-    if (!wrap) return;
-    if (artworks.length === 0) { wrap.innerHTML = `<p class="admin-empty">No artworks yet.</p>`; return; }
-    wrap.innerHTML = artworks.map(art => `
-      <div class="admin-row" data-id="${art.id}">
-        <img class="admin-row__thumb" src="${art.imageUrl || ''}" alt="${art.title}" />
-        <div class="admin-row__info">
-          <strong>${art.title}</strong>
-          <span>${art.price || ''} — <em class="status-badge status-badge--${art.status}">${art.status}</em></span>
-        </div>
-        <div class="admin-row__actions">
-          <button class="btn btn--ghost btn--sm" onclick="window._alf.openEditArtwork('${art.id}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit
-          </button>
-          <button class="btn btn--danger btn--sm" onclick="window._alf.deleteArtwork('${art.id}','${art.imageUrl || ''}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            Delete
-          </button>
-        </div>
+      <p class="artwork-card__desc">${art.desc||""}</p>
+      <div class="artwork-card__footer">
+        <span class="artwork-card__price">${art.price||""}</span>
+        ${!sold?`<button class="btn btn--primary btn--sm" onclick="window._alf.addToCart('${art.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Add to Cart</button>`:`<span class="artwork-card__unavailable">Unavailable</span>`}
       </div>
-    `).join("");
+    </div>`;
+}
+
+/* ─────────────────────────────────────────
+   IMAGE ZOOM
+───────────────────────────────────────── */
+function openZoom(url) {
+  if (!url) return;
+  const modal = document.getElementById("zoomModal");
+  const img   = document.getElementById("zoomImg");
+  img.src = url;
+  img.style.transform="scale(1)";
+  img.dataset.scale="1";
+  modal.classList.add("modal--open");
+  zoomTarget = img;
+}
+function closeZoom() {
+  document.getElementById("zoomModal").classList.remove("modal--open");
+  zoomTarget = null;
+}
+
+// Desktop scroll zoom
+document.addEventListener("wheel", e => {
+  if (!zoomTarget) return;
+  e.preventDefault();
+  let s = parseFloat(zoomTarget.dataset.scale||1);
+  s = Math.min(4, Math.max(1, s - e.deltaY * 0.004));
+  zoomTarget.dataset.scale = s;
+  zoomTarget.style.transform = `scale(${s})`;
+},{passive:false});
+
+// Mobile pinch
+let pinchStart = 0;
+document.addEventListener("touchstart", e => {
+  if (!zoomTarget) return;
+  if (e.touches.length===2) pinchStart = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+});
+document.addEventListener("touchmove", e => {
+  if (!zoomTarget || e.touches.length!==2) return;
+  e.preventDefault();
+  const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+  let s = parseFloat(zoomTarget.dataset.scale||1) * (dist/pinchStart);
+  s = Math.min(4, Math.max(1, s));
+  zoomTarget.dataset.scale = s;
+  zoomTarget.style.transform = `scale(${s})`;
+  pinchStart = dist;
+},{passive:false});
+
+/* ─────────────────────────────────────────
+   LIKES
+───────────────────────────────────────── */
+async function toggleLike(artworkId) {
+  if (!currentUser) { toast("Sign in to like artworks.", "info"); return; }
+  const likeId = `${currentUser.uid}_${artworkId}`;
+  const wasLiked = likedArtworks.has(artworkId);
+  if (wasLiked) likedArtworks.delete(artworkId);
+  else          likedArtworks.add(artworkId);
+  const card = document.querySelector(`.artwork-card[data-id="${artworkId}"]`);
+  if (card && artworksCache[artworkId]) {
+    artworksCache[artworkId].likesCount = Math.max(0,(artworksCache[artworkId].likesCount||0)+(wasLiked?-1:1));
+    card.innerHTML = artworkCardHTML(artworksCache[artworkId]);
   }
-
-  function openAddArtwork() {
-    document.getElementById("artworkModalTitle").textContent = "Add Artwork";
-    document.getElementById("artworkForm").reset();
-    document.getElementById("artworkEditId").value = "";
-    document.getElementById("artworkModal").classList.add("modal--open");
-  }
-
-  function openEditArtwork(id) {
-    const art = artworksCache[id];
-    if (!art) return;
-    document.getElementById("artworkModalTitle").textContent = "Edit Artwork";
-    document.getElementById("artworkEditId").value = id;
-    document.getElementById("artworkTitle").value   = art.title || "";
-    document.getElementById("artworkPrice").value   = art.price || "";
-    document.getElementById("artworkPriceNum").value = art.priceNum || "";
-    document.getElementById("artworkDesc").value    = art.desc || "";
-    document.getElementById("artworkStatus").value  = art.status || "available";
-    document.getElementById("artworkModal").classList.add("modal--open");
-  }
-
-  function closeArtworkModal() {
-    document.getElementById("artworkModal").classList.remove("modal--open");
-  }
-
-  async function saveArtwork() {
-    const id      = document.getElementById("artworkEditId").value;
-    const title   = document.getElementById("artworkTitle").value.trim();
-    const price   = document.getElementById("artworkPrice").value.trim();
-    const priceNum = parseFloat(document.getElementById("artworkPriceNum").value) || 0;
-    const desc    = document.getElementById("artworkDesc").value.trim();
-    const status  = document.getElementById("artworkStatus").value;
-    const file    = document.getElementById("artworkImage").files[0];
-
-    if (!title || !price) { toast("Title and price are required.", "error"); return; }
-
-    showLoader("artworkSaveLoader");
-    try {
-      let imageUrl = id ? (artworksCache[id]?.imageUrl || "") : "";
-      if (file) {
-        const path = `artworks/${Date.now()}_${file.name}`;
-        const sRef = storageRef(storage, path);
-        await new Promise((resolve, reject) => {
-          const task = uploadBytesResumable(sRef, file);
-          task.on("state_changed",
-            snap => {
-              const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
-              document.getElementById("uploadProgress").textContent = `Uploading… ${pct}%`;
-            },
-            reject,
-            async () => { imageUrl = await getDownloadURL(task.snapshot.ref); resolve(); }
-          );
-        });
-        document.getElementById("uploadProgress").textContent = "";
-      }
-
-      const data = { title, price, priceNum, desc, status, imageUrl, updatedAt: serverTimestamp() };
-      if (id) {
-        await updateDoc(doc(db, "artworks", id), data);
-        toast("Artwork updated.", "success");
-      } else {
-        data.createdAt = serverTimestamp();
-        await addDoc(collection(db, "artworks"), data);
-        toast("Artwork added.", "success");
-      }
-      closeArtworkModal();
-    } catch (e) {
-      toast("Save failed: " + e.message, "error");
-    } finally {
-      hideLoader("artworkSaveLoader");
+  try {
+    const likeRef  = doc(db,"likes",likeId);
+    const artRef   = doc(db,"artworks",artworkId);
+    if (wasLiked) {
+      await deleteDoc(likeRef);
+      await updateDoc(artRef,{likesCount:increment(-1)});
+    } else {
+      await setDoc(likeRef,{userId:currentUser.uid,artworkId});
+      await updateDoc(artRef,{likesCount:increment(1)});
     }
+  } catch(e) {
+    if (wasLiked) likedArtworks.add(artworkId); else likedArtworks.delete(artworkId);
+    if (card && artworksCache[artworkId]) card.innerHTML=artworkCardHTML(artworksCache[artworkId]);
+    toast("Like failed: "+e.message,"error");
   }
+}
 
-  async function deleteArtwork(id, imageUrl) {
-    if (!confirm("Delete this artwork permanently?")) return;
-    try {
-      await deleteDoc(doc(db, "artworks", id));
-      if (imageUrl) {
-        try { await deleteObject(storageRef(storage, imageUrl)); } catch {}
-      }
-      toast("Artwork deleted.", "info");
-    } catch (e) {
-      toast("Delete failed: " + e.message, "error");
-    }
-  }
-
-  /* ============================================================
-     ADMIN — ORDERS
-  ============================================================ */
-  function listenAdminOrders() {
-    const q = query(collection(db, "orders"), orderBy("createdAt","desc"));
-    const unsub = onSnapshot(q, snap => {
-      const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderAdminOrders(orders);
-    }, e => toast("Orders error: " + e.message, "error"));
-    unsubscribers.push(unsub);
-  }
-
-  function renderAdminOrders(orders) {
-    const wrap = document.getElementById("adminOrdersList");
-    if (!wrap) return;
-    if (orders.length === 0) { wrap.innerHTML = `<p class="admin-empty">No orders yet.</p>`; return; }
-    wrap.innerHTML = orders.map(o => `
-      <div class="admin-row admin-row--order" data-id="${o.id}">
-        <div class="admin-row__info" style="flex:1">
-          <strong>${o.customerInfo?.name || "—"}</strong>
-          <span>${o.customerInfo?.phone || ""} · ${o.customerInfo?.address || ""}</span>
-          <span class="order-items">${(o.items||[]).map(i=>`${i.title} ×${i.quantity||1}`).join(", ")}</span>
-          <span><b>KES ${(o.totalPrice||0).toLocaleString()}</b> via <em>${o.channel||""}</em>
-            — <em class="status-badge status-badge--${o.status}">${o.status}</em>
-          </span>
-        </div>
-        <div class="admin-row__actions">
-          ${o.status !== "completed" ? `<button class="btn btn--primary btn--sm" onclick="window._alf.completeOrder('${o.id}')">Complete</button>` : ""}
-          <button class="btn btn--danger btn--sm" onclick="window._alf.deleteOrder('${o.id}')">Delete</button>
-        </div>
+/* ─────────────────────────────────────────
+   COMMENTS
+───────────────────────────────────────── */
+let commentsUnsub = null;
+function openComments(artworkId) {
+  const modal = document.getElementById("commentsModal");
+  document.getElementById("commentsArtworkId").value = artworkId;
+  document.getElementById("commentsInput").value = "";
+  document.getElementById("commentsList").innerHTML = `<div class="comments-loading"><div class="loader"></div></div>`;
+  modal.classList.add("modal--open");
+  if (commentsUnsub) commentsUnsub();
+  const q = query(collection(db,"comments"),where("artworkId","==",artworkId),orderBy("createdAt","asc"));
+  commentsUnsub = onSnapshot(q, snap => {
+    const comments = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderComments(comments);
+  }, err => toast("Comments error: "+err.message,"error"));
+}
+function closeComments() {
+  document.getElementById("commentsModal").classList.remove("modal--open");
+  if (commentsUnsub) { commentsUnsub(); commentsUnsub=null; }
+}
+function renderComments(comments) {
+  const list = document.getElementById("commentsList");
+  if (comments.length===0) { list.innerHTML=`<p class="comments-empty">No comments yet. Be first!</p>`; return; }
+  list.innerHTML = comments.map(c=>`
+    <div class="comment-item">
+      <div class="comment-item__avatar">${(c.authorName||"A")[0].toUpperCase()}</div>
+      <div class="comment-item__body">
+        <span class="comment-item__name">${c.authorName||"Anonymous"}</span>
+        <p class="comment-item__text">${c.text}</p>
       </div>
-    `).join("");
+    </div>`).join("");
+  list.scrollTop = list.scrollHeight;
+}
+async function submitComment() {
+  if (!currentUser) { toast("Sign in to comment.","info"); return; }
+  const artworkId = document.getElementById("commentsArtworkId").value;
+  const text = document.getElementById("commentsInput").value.trim();
+  if (!text) return;
+  try {
+    await addDoc(collection(db,"comments"),{
+      artworkId, text,
+      authorName: currentUser.displayName||currentUser.email?.split("@")[0]||"User",
+      userId: currentUser.uid,
+      createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db,"artworks",artworkId),{commentsCount:increment(1)});
+    document.getElementById("commentsInput").value="";
+  } catch(e) { toast("Comment failed: "+e.message,"error"); }
+}
+
+/* ─────────────────────────────────────────
+   CART
+───────────────────────────────────────── */
+function addToCart(artworkId) {
+  const art = artworksCache[artworkId]; if(!art) return;
+  const ex = cartItems.find(i=>i.id===artworkId);
+  if(ex) ex.quantity=(ex.quantity||1)+1;
+  else cartItems.push({id:art.id,title:art.title,price:art.price,priceNum:art.priceNum||0,imageUrl:art.imageUrl,quantity:1});
+  persistCart(); updateCartBadge();
+  toast(`"${art.title}" added to cart.`,"success");
+}
+function persistCart() {
+  localStorage.setItem("alf_cart",JSON.stringify(cartItems));
+  if (currentUser) {
+    setDoc(doc(db,"carts",currentUser.uid),{userId:currentUser.uid,items:cartItems,updatedAt:serverTimestamp()})
+    .catch(e=>toast("Cart sync error: "+e.message,"error"));
   }
-
-  async function completeOrder(id) {
-    try {
-      await updateDoc(doc(db, "orders", id), { status: "completed" });
-      toast("Order marked complete.", "success");
-    } catch (e) { toast("Error: " + e.message, "error"); }
-  }
-
-  async function deleteOrder(id) {
-    if (!confirm("Delete this order?")) return;
-    try {
-      await deleteDoc(doc(db, "orders", id));
-      toast("Order deleted.", "info");
-    } catch (e) { toast("Error: " + e.message, "error"); }
-  }
-
-  /* ============================================================
-     ADMIN — USERS (crown only)
-  ============================================================ */
-  function listenAdminUsers() {
-    const unsub = onSnapshot(collection(db, "users"), snap => {
-      const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderAdminUsers(users);
-    }, e => toast("Users error: " + e.message, "error"));
-    unsubscribers.push(unsub);
-  }
-
-  function renderAdminUsers(users) {
-    const wrap = document.getElementById("adminUsersList");
-    if (!wrap) return;
-    if (users.length === 0) { wrap.innerHTML = `<p class="admin-empty">No users.</p>`; return; }
-    wrap.innerHTML = users.map(u => `
-      <div class="admin-row" data-id="${u.id}">
-        <div class="admin-row__info" style="flex:1">
-          <strong>${u.email || u.id}</strong>
-          <em class="status-badge status-badge--${u.role}">${u.role || 'viewer'}</em>
-        </div>
-        <div class="admin-row__actions">
-          <select class="select--inline" onchange="window._alf.changeUserRole('${u.id}', this.value)">
-            ${["crown","admin","editor","viewer"].map(r =>
-              `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`
-            ).join("")}
-          </select>
-        </div>
-      </div>
-    `).join("");
-  }
-
-  async function changeUserRole(uid, role) {
-    try {
-      await updateDoc(doc(db, "users", uid), { role });
-      toast("Role updated.", "success");
-    } catch (e) { toast("Error: " + e.message, "error"); }
-  }
-
-  /* ============================================================
-     UNSUB ALL
-  ============================================================ */
-  function unsubAll() {
-    unsubscribers.forEach(u => u());
-    unsubscribers = [];
-  }
-
-  /* ============================================================
-     EXPOSE GLOBALS
-  ============================================================ */
-  window._alf = {
-    showView, openSidebar, closeSidebar,
-    login, logout,
-    toggleLike, addToCart, changeQty, removeFromCart, clearCart, placeOrder,
-    initAdmin, switchAdminTab,
-    openAddArtwork, openEditArtwork, closeArtworkModal, saveArtwork, deleteArtwork,
-    completeOrder, deleteOrder, changeUserRole
-  };
-
-  /* ============================================================
-     BOOT
-  ============================================================ */
-  document.addEventListener("DOMContentLoaded", () => {
-    updateCartBadge();
-    showView("home");
-    // Load gallery in background
-    initGallery();
+}
+function updateCartBadge() {
+  const total = cartItems.reduce((s,i)=>s+(i.quantity||1),0);
+  document.querySelectorAll(".cart-badge").forEach(el=>{
+    el.textContent=total>0?total:"";
+    el.style.display=total>0?"flex":"none";
   });
+}
+function renderCart() {
+  const wrap=document.getElementById("cartItems");
+  const sumEl=document.getElementById("cartTotal");
+  if(!wrap) return;
+  if(cartItems.length===0){
+    wrap.innerHTML=`<div class="cart-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><p>Your cart is empty.</p></div>`;
+    if(sumEl) sumEl.textContent="KES 0"; return;
+  }
+  wrap.innerHTML=cartItems.map(item=>`
+    <div class="cart-item" data-id="${item.id}">
+      <img class="cart-item__img" src="${item.imageUrl||''}" alt="${item.title}" />
+      <div class="cart-item__info">
+        <span class="cart-item__title">${item.title}</span>
+        <span class="cart-item__price">${item.price}</span>
+      </div>
+      <div class="cart-item__qty">
+        <button class="qty-btn" onclick="window._alf.changeQty('${item.id}',-1)" aria-label="Decrease">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="12" height="12"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <span class="qty-val">${item.quantity||1}</span>
+        <button class="qty-btn" onclick="window._alf.changeQty('${item.id}',1)" aria-label="Increase">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <button class="cart-item__remove" onclick="window._alf.removeFromCart('${item.id}')" aria-label="Remove">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>`).join("");
+  const total=cartItems.reduce((s,i)=>s+(i.priceNum||0)*(i.quantity||1),0);
+  if(sumEl) sumEl.textContent=`KES ${total.toLocaleString()}`;
+}
+function changeQty(id,delta) {
+  const item=cartItems.find(i=>i.id===id); if(!item) return;
+  item.quantity=Math.max(0,(item.quantity||1)+delta);
+  if(item.quantity===0) cartItems=cartItems.filter(i=>i.id!==id);
+  persistCart(); updateCartBadge(); renderCart();
+}
+function removeFromCart(id) { cartItems=cartItems.filter(i=>i.id!==id); persistCart(); updateCartBadge(); renderCart(); }
+function clearCart() { cartItems=[]; persistCart(); updateCartBadge(); renderCart(); toast("Cart cleared.","info"); }
 
+/* ─────────────────────────────────────────
+   ORDERS
+───────────────────────────────────────── */
+async function placeOrder(channel) {
+  if(cartItems.length===0){toast("Cart is empty.","error");return;}
+  const name=document.getElementById("checkoutName")?.value?.trim();
+  const address=document.getElementById("checkoutAddress")?.value?.trim();
+  const phone=document.getElementById("checkoutPhone")?.value?.trim();
+  if(!name||!address||!phone){toast("Please fill all fields.","error");return;}
+  try {
+    const total=cartItems.reduce((s,i)=>s+(i.priceNum||0)*(i.quantity||1),0);
+    await addDoc(collection(db,"orders"),{
+      customerInfo:{name,address,phone},
+      items:cartItems, totalPrice:total,
+      status:"pending", channel, createdAt:serverTimestamp()
+    });
+    toast("Order placed! We'll be in touch.","success");
+    clearCart(); showView("gallery");
+  } catch(e) { toast("Order failed: "+e.message,"error"); }
+}
+
+/* ─────────────────────────────────────────
+   ADMIN
+───────────────────────────────────────── */
+function initAdmin() {
+  if(!currentUser||!currentUserRole){showView("login");return;}
+  switchAdminTab("artworks");
+  listenAdminArtworks();
+  listenAdminOrders();
+  if(currentUserRole==="crown") listenAdminUsers();
+}
+function switchAdminTab(tab) {
+  document.querySelectorAll(".admin-tab-pane").forEach(p=>p.classList.remove("admin-tab-pane--active"));
+  document.querySelectorAll(".admin-tab-btn").forEach(b=>b.classList.remove("admin-tab-btn--active"));
+  document.getElementById(`admin-pane-${tab}`)?.classList.add("admin-tab-pane--active");
+  document.querySelector(`[data-tab="${tab}"]`)?.classList.add("admin-tab-btn--active");
+}
+
+/* admin artworks */
+function listenAdminArtworks() {
+  const q=query(collection(db,"artworks"),orderBy("likesCount","desc"),orderBy("createdAt","desc"));
+  const unsub=onSnapshot(q,snap=>{
+    snap.docChanges().forEach(c=>{
+      if(c.type==="removed") delete artworksCache[c.doc.id];
+      else artworksCache[c.doc.id]={id:c.doc.id,...c.doc.data()};
+    });
+    renderAdminArtworks(Object.values(artworksCache).sort((a,b)=>(b.likesCount||0)-(a.likesCount||0)));
+  },e=>toast("Admin artworks: "+e.message,"error"));
+  unsubscribers.push(unsub);
+}
+function renderAdminArtworks(artworks) {
+  const wrap=document.getElementById("adminArtworksList"); if(!wrap) return;
+  if(!artworks.length){wrap.innerHTML=`<p class="admin-empty">No artworks yet.</p>`;return;}
+  wrap.innerHTML=artworks.map((art,i)=>`
+    <div class="admin-row" data-id="${art.id}">
+      <span class="admin-row__rank">#${i+1}</span>
+      <img class="admin-row__thumb" src="${art.imageUrl||''}" alt="${art.title}" />
+      <div class="admin-row__info">
+        <strong>${art.title}</strong>
+        <span>${art.price||""} &mdash; <em class="status-badge status-badge--${art.status}">${art.status}</em></span>
+        <span class="admin-likes-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          ${art.likesCount||0} likes &nbsp;·&nbsp;
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          ${art.commentsCount||0} comments
+        </span>
+      </div>
+      <div class="admin-row__actions">
+        <button class="btn btn--ghost btn--sm" onclick="window._alf.openEditArtwork('${art.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn--danger btn--sm" onclick="window._alf.deleteArtwork('${art.id}','${art.imageUrl||''}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          Delete
+        </button>
+      </div>
+    </div>`).join("");
+}
+function openAddArtwork() {
+  document.getElementById("artworkModalTitle").textContent="Add Artwork";
+  document.getElementById("artworkForm").reset();
+  document.getElementById("artworkEditId").value="";
+  document.getElementById("artworkModal").classList.add("modal--open");
+}
+function openEditArtwork(id) {
+  const art=artworksCache[id]; if(!art) return;
+  document.getElementById("artworkModalTitle").textContent="Edit Artwork";
+  document.getElementById("artworkEditId").value=id;
+  document.getElementById("artworkTitle").value=art.title||"";
+  document.getElementById("artworkPrice").value=art.price||"";
+  document.getElementById("artworkPriceNum").value=art.priceNum||"";
+  document.getElementById("artworkDesc").value=art.desc||"";
+  document.getElementById("artworkStatus").value=art.status||"available";
+  document.getElementById("artworkModal").classList.add("modal--open");
+}
+function closeArtworkModal() { document.getElementById("artworkModal").classList.remove("modal--open"); }
+async function saveArtwork() {
+  const id=document.getElementById("artworkEditId").value;
+  const title=document.getElementById("artworkTitle").value.trim();
+  const price=document.getElementById("artworkPrice").value.trim();
+  const priceNum=parseFloat(document.getElementById("artworkPriceNum").value)||0;
+  const desc=document.getElementById("artworkDesc").value.trim();
+  const status=document.getElementById("artworkStatus").value;
+  const file=document.getElementById("artworkImage").files[0];
+  if(!title||!price){toast("Title and price required.","error");return;}
+  showLoader("artworkSaveLoader");
+  const saveBtn=document.getElementById("artworkSaveBtn");
+  if(saveBtn) saveBtn.disabled=true;
+  try {
+    let imageUrl=id?(artworksCache[id]?.imageUrl||""):"";
+    if(file){
+      const path=`artworks/${Date.now()}_${file.name}`;
+      const sr=sRef(storage,path);
+      await new Promise((res,rej)=>{
+        const task=uploadBytesResumable(sr,file);
+        task.on("state_changed",s=>{
+          const pct=Math.round(s.bytesTransferred/s.totalBytes*100);
+          const prog=document.getElementById("uploadProgress");
+          if(prog) prog.textContent=`Uploading… ${pct}%`;
+        },rej,async()=>{imageUrl=await getDownloadURL(task.snapshot.ref);res();});
+      });
+      const prog=document.getElementById("uploadProgress");
+      if(prog) prog.textContent="";
+    }
+    const data={title,price,priceNum,desc,status,imageUrl,updatedAt:serverTimestamp()};
+    if(id){
+      await updateDoc(doc(db,"artworks",id),data);
+      toast("Artwork updated.","success");
+    } else {
+      data.createdAt=serverTimestamp(); data.likesCount=0; data.commentsCount=0;
+      await addDoc(collection(db,"artworks"),data);
+      toast("Artwork added.","success");
+    }
+    closeArtworkModal();
+  } catch(e){toast("Save failed: "+e.message,"error");}
+  finally{hideLoader("artworkSaveLoader");if(saveBtn)saveBtn.disabled=false;}
+}
+async function deleteArtwork(id,imageUrl) {
+  if(!confirm("Delete this artwork permanently?")) return;
+  try {
+    await deleteDoc(doc(db,"artworks",id));
+    if(imageUrl){try{await deleteObject(sRef(storage,imageUrl));}catch{}}
+    toast("Artwork deleted.","info");
+  } catch(e){toast("Delete failed: "+e.message,"error");}
+}
+
+/* admin orders */
+function listenAdminOrders() {
+  const q=query(collection(db,"orders"),orderBy("createdAt","desc"));
+  const unsub=onSnapshot(q,snap=>{
+    renderAdminOrders(snap.docs.map(d=>({id:d.id,...d.data()})));
+  },e=>toast("Orders: "+e.message,"error"));
+  unsubscribers.push(unsub);
+}
+function renderAdminOrders(orders) {
+  const wrap=document.getElementById("adminOrdersList"); if(!wrap) return;
+  if(!orders.length){wrap.innerHTML=`<p class="admin-empty">No orders yet.</p>`;return;}
+  wrap.innerHTML=orders.map(o=>`
+    <div class="admin-row admin-row--order" data-id="${o.id}">
+      <div class="admin-row__info" style="flex:1">
+        <strong>${o.customerInfo?.name||"—"}</strong>
+        <span>${o.customerInfo?.phone||""} · ${o.customerInfo?.address||""}</span>
+        <span class="order-items">${(o.items||[]).map(i=>`${i.title} ×${i.quantity||1}`).join(", ")}</span>
+        <span><b>KES ${(o.totalPrice||0).toLocaleString()}</b> via <em>${o.channel||""}</em>
+          — <em class="status-badge status-badge--${o.status}">${o.status}</em></span>
+      </div>
+      <div class="admin-row__actions">
+        ${o.status!=="completed"?`<button class="btn btn--primary btn--sm" onclick="window._alf.completeOrder('${o.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+          Complete</button>`:""}
+        <button class="btn btn--danger btn--sm" onclick="window._alf.deleteOrder('${o.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          Delete</button>
+      </div>
+    </div>`).join("");
+}
+async function completeOrder(id){try{await updateDoc(doc(db,"orders",id),{status:"completed"});toast("Marked complete.","success");}catch(e){toast("Error: "+e.message,"error");}}
+async function deleteOrder(id){if(!confirm("Delete this order?"))return;try{await deleteDoc(doc(db,"orders",id));toast("Deleted.","info");}catch(e){toast("Error: "+e.message,"error");}}
+
+/* admin users */
+function listenAdminUsers(){
+  const unsub=onSnapshot(collection(db,"users"),snap=>{
+    renderAdminUsers(snap.docs.map(d=>({id:d.id,...d.data()})));
+  },e=>toast("Users: "+e.message,"error"));
+  unsubscribers.push(unsub);
+}
+function renderAdminUsers(users){
+  const wrap=document.getElementById("adminUsersList"); if(!wrap) return;
+  if(!users.length){wrap.innerHTML=`<p class="admin-empty">No users.</p>`;return;}
+  wrap.innerHTML=users.map(u=>`
+    <div class="admin-row" data-id="${u.id}">
+      <div class="admin-row__info" style="flex:1">
+        <strong>${u.email||u.id}</strong>
+        <em class="status-badge status-badge--${u.role}">${u.role||"viewer"}</em>
+      </div>
+      <div class="admin-row__actions">
+        <select class="select--inline" onchange="window._alf.changeUserRole('${u.id}',this.value)">
+          ${["crown","admin","editor","viewer"].map(r=>`<option value="${r}"${u.role===r?" selected":""}>${r}</option>`).join("")}
+        </select>
+      </div>
+    </div>`).join("");
+}
+async function changeUserRole(uid,role){try{await updateDoc(doc(db,"users",uid),{role});toast("Role updated.","success");}catch(e){toast("Error: "+e.message,"error");}}
+
+/* ─────────────────────────────────────────
+   UNSUB
+───────────────────────────────────────── */
+function unsubAll(){unsubscribers.forEach(u=>u());unsubscribers=[];}
+
+/* ─────────────────────────────────────────
+   GLOBALS
+───────────────────────────────────────── */
+window._alf = {
+  showView, openSidebar, closeSidebar,
+  login, logout,
+  openZoom, closeZoom,
+  toggleLike, openComments, closeComments, submitComment,
+  addToCart, changeQty, removeFromCart, clearCart, placeOrder,
+  initAdmin, switchAdminTab,
+  openAddArtwork, openEditArtwork, closeArtworkModal, saveArtwork, deleteArtwork,
+  completeOrder, deleteOrder, changeUserRole
+};
+
+/* ─────────────────────────────────────────
+   BOOT
+───────────────────────────────────────── */
+document.addEventListener("DOMContentLoaded", () => {
+  updateCartBadge();
+  showView("home");
+});
 </script>
 
 <style>
-/* ============================================================
-   CSS CUSTOM PROPERTIES
-============================================================ */
+/* ════════════════════════════════════════
+   TOKENS
+════════════════════════════════════════ */
 :root {
-  --ink:     #0d0d0d;
-  --paper:   #f7f4ef;
-  --cream:   #ede9e2;
-  --gold:    #b8913a;
-  --gold-lt: #d4ab58;
-  --rust:    #8b3a2a;
-  --muted:   #8a8478;
-  --border:  rgba(13,13,13,.12);
-  --radius:  3px;
-  --shadow:  0 4px 24px rgba(13,13,13,.10);
-  --font-display: "Cormorant Garamond", serif;
-  --font-ui:      "Syne", sans-serif;
-  --font-mono:    "DM Mono", monospace;
+  --ink:       #0d0d0d;
+  --paper:     #f7f4ef;
+  --cream:     #ede9e2;
+  --gold:      #b8913a;
+  --gold-lt:   #d4ab58;
+  --gold-dk:   #9a7830;
+  --rust:      #8b3a2a;
+  --muted:     #8a8478;
+  --border:    rgba(13,13,13,.10);
+  --radius:    3px;
+  --shadow-sm: 0 2px 12px rgba(13,13,13,.08);
+  --shadow:    0 8px 32px rgba(13,13,13,.12);
+  --shadow-lg: 0 20px 64px rgba(13,13,13,.18);
+  --font-serif: "Cormorant Garamond", serif;
+  --font-ui:    "Syne", sans-serif;
+  --font-mono:  "DM Mono", monospace;
+  --nav-h: 64px;
   --sidebar-w: 280px;
-  --nav-h:     64px;
-  --transition: 220ms cubic-bezier(.4,0,.2,1);
+  --ease: cubic-bezier(.4,0,.2,1);
+  --dur: 220ms;
 }
 
-/* ============================================================
+/* ════════════════════════════════════════
    RESET
-============================================================ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; scroll-behavior: smooth; }
-body {
-  font-family: var(--font-ui);
-  background: var(--paper);
-  color: var(--ink);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-img { display: block; max-width: 100%; height: auto; }
-button { cursor: pointer; border: none; background: none; font-family: inherit; }
-input, select, textarea { font-family: inherit; }
-a { color: inherit; text-decoration: none; }
+════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:var(--font-ui);background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden;}
+img{display:block;max-width:100%;height:auto;}
+button{cursor:pointer;border:none;background:none;font-family:inherit;color:inherit;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;text-decoration:none;}
+h1,h2,h3,h4{font-family:var(--font-serif);font-weight:300;line-height:1.1;}
 
-/* ============================================================
-   TYPOGRAPHY
-============================================================ */
-h1, h2, h3 { font-family: var(--font-display); font-weight: 300; }
-
-/* ============================================================
+/* ════════════════════════════════════════
    VIEWS
-============================================================ */
-.view { display: none; min-height: 100vh; }
-.view--active { display: block; }
+════════════════════════════════════════ */
+.view{display:none;min-height:100vh;}
+.view--active{display:block;}
+#view-login.view--active{display:flex;}
+#view-home.view--active{display:block;}
 
-/* ============================================================
+/* ════════════════════════════════════════
    NAVBAR
-============================================================ */
-.navbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: var(--nav-h);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px;
-  background: rgba(247,244,239,.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+════════════════════════════════════════ */
+.navbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--nav-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;
+  background:rgba(247,244,239,.94);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
 }
-.navbar__left { display: flex; align-items: center; gap: 16px; }
-.navbar__logo {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 500;
-  letter-spacing: .04em;
-  cursor: pointer;
-  white-space: nowrap;
+.navbar__left{display:flex;align-items:center;gap:14px;}
+.navbar__logo{
+  font-family:var(--font-serif);font-size:1.2rem;font-weight:500;
+  letter-spacing:.05em;cursor:pointer;white-space:nowrap;
+  transition:opacity var(--dur) var(--ease);
 }
-.navbar__logo span { color: var(--gold); }
-.navbar__right { display: flex; align-items: center; gap: 8px; }
+.navbar__logo:hover{opacity:.7;}
+.navbar__logo span{color:var(--gold);}
+.navbar__right{display:flex;align-items:center;gap:6px;}
 
-.hamburger {
-  display: flex; flex-direction: column; justify-content: center;
-  gap: 5px; width: 36px; height: 36px; padding: 6px;
-  border-radius: var(--radius); transition: background var(--transition);
+.hamburger{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:5px;width:38px;height:38px;padding:8px;
+  border-radius:var(--radius);
+  transition:background var(--dur) var(--ease);
 }
-.hamburger:hover { background: var(--cream); }
-.hamburger span {
-  display: block; height: 1.5px; background: var(--ink);
-  transition: transform var(--transition);
-}
+.hamburger:hover{background:var(--cream);}
+.hamburger span{display:block;width:18px;height:1.5px;background:var(--ink);transition:transform var(--dur) var(--ease);}
 
-.cart-btn {
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  border-radius: var(--radius);
-  transition: background var(--transition);
+.cart-btn{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:var(--radius);
+  transition:background var(--dur) var(--ease);
 }
-.cart-btn:hover { background: var(--cream); }
-.cart-badge {
-  position: absolute; top: 2px; right: 2px;
-  background: var(--gold); color: #fff;
-  font-family: var(--font-mono); font-size: .65rem;
-  min-width: 16px; height: 16px;
-  border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  padding: 0 3px;
+.cart-btn:hover{background:var(--cream);}
+.cart-badge{
+  position:absolute;top:2px;right:2px;
+  background:var(--gold);color:#fff;
+  font-family:var(--font-mono);font-size:.6rem;
+  min-width:16px;height:16px;
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  padding:0 3px;font-weight:500;
 }
 
-/* ============================================================
+/* ════════════════════════════════════════
    SIDEBAR
-============================================================ */
-.sidebar-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(13,13,13,.45);
-  opacity: 0; pointer-events: none;
-  transition: opacity var(--transition);
+════════════════════════════════════════ */
+.sidebar-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(13,13,13,.5);
+  opacity:0;pointer-events:none;
+  transition:opacity 300ms var(--ease);
 }
-.sidebar-overlay.overlay--show { opacity: 1; pointer-events: all; }
-
-.sidebar {
-  position: fixed; top: 0; left: 0; bottom: 0; z-index: 201;
-  width: var(--sidebar-w);
-  background: var(--ink);
-  color: var(--paper);
-  transform: translateX(-100%);
-  transition: transform 300ms cubic-bezier(.4,0,.2,1);
-  display: flex; flex-direction: column;
-  padding: 0;
+.sidebar-overlay.overlay--show{opacity:1;pointer-events:all;}
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;z-index:201;
+  width:var(--sidebar-w);
+  background:var(--ink);color:var(--paper);
+  transform:translateX(-100%);
+  transition:transform 320ms var(--ease);
+  display:flex;flex-direction:column;
 }
-.sidebar.sidebar--open { transform: translateX(0); }
-.sidebar__header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(247,244,239,.1);
+.sidebar.sidebar--open{transform:translateX(0);}
+.sidebar__header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 24px;
+  border-bottom:1px solid rgba(247,244,239,.08);
 }
-.sidebar__brand {
-  font-family: var(--font-display); font-size: 1.1rem; font-weight: 400;
+.sidebar__brand{font-family:var(--font-serif);font-size:1.1rem;letter-spacing:.06em;}
+.sidebar__close{
+  display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:50%;
+  opacity:.55;transition:opacity var(--dur) var(--ease);
 }
-.sidebar__close {
-  display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 50%;
-  color: var(--paper); opacity: .7; transition: opacity var(--transition);
+.sidebar__close:hover{opacity:1;}
+.sidebar__nav{padding:20px 0;flex:1;}
+.sidebar__link{
+  display:block;padding:13px 24px;
+  font-family:var(--font-serif);font-size:1.3rem;font-weight:300;
+  letter-spacing:.04em;color:var(--paper);opacity:.65;
+  cursor:pointer;border-left:2px solid transparent;
+  transition:opacity var(--dur) var(--ease),padding var(--dur) var(--ease),border-color var(--dur) var(--ease);
 }
-.sidebar__close:hover { opacity: 1; }
-.sidebar__nav { padding: 24px 0; flex: 1; }
-.sidebar__link {
-  display: block;
-  padding: 14px 24px;
-  font-family: var(--font-display); font-size: 1.3rem; font-weight: 300;
-  letter-spacing: .04em;
-  color: var(--paper); opacity: .75;
-  cursor: pointer;
-  transition: opacity var(--transition), padding var(--transition);
-  border-left: 2px solid transparent;
-}
-.sidebar__link:hover { opacity: 1; padding-left: 32px; border-left-color: var(--gold); }
-.sidebar__footer {
-  padding: 24px;
-  font-family: var(--font-mono); font-size: .7rem;
-  color: rgba(247,244,239,.35);
-  border-top: 1px solid rgba(247,244,239,.08);
+.sidebar__link:hover{opacity:1;padding-left:34px;border-left-color:var(--gold);}
+.sidebar__footer{
+  padding:20px 24px;
+  font-family:var(--font-mono);font-size:.65rem;
+  color:rgba(247,244,239,.28);
+  border-top:1px solid rgba(247,244,239,.06);
 }
 
-/* ============================================================
+/* ════════════════════════════════════════
    BUTTONS
-============================================================ */
-.btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 20px;
-  font-family: var(--font-ui); font-size: .8rem; font-weight: 600;
-  letter-spacing: .06em; text-transform: uppercase;
-  border-radius: var(--radius);
-  transition: all var(--transition);
-  cursor: pointer;
+════════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 22px;
+  font-family:var(--font-ui);font-size:.78rem;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;
+  border-radius:var(--radius);
+  transition:all var(--dur) var(--ease);
+  cursor:pointer;white-space:nowrap;
 }
-.btn--primary {
-  background: var(--ink); color: var(--paper);
-  border: 1px solid var(--ink);
-}
-.btn--primary:hover { background: #2a2a2a; }
-.btn--primary:active { transform: scale(.98); }
-.btn--ghost {
-  background: transparent; color: var(--ink);
-  border: 1px solid var(--border);
-}
-.btn--ghost:hover { border-color: var(--ink); background: var(--cream); }
-.btn--danger {
-  background: var(--rust); color: #fff;
-  border: 1px solid var(--rust);
-}
-.btn--danger:hover { background: #a04533; }
-.btn--gold {
-  background: var(--gold); color: #fff;
-  border: 1px solid var(--gold);
-}
-.btn--gold:hover { background: var(--gold-lt); }
-.btn--sm { padding: 6px 14px; font-size: .72rem; }
-.btn--lg { padding: 14px 32px; font-size: .9rem; }
+.btn--primary{background:var(--ink);color:var(--paper);border:1px solid var(--ink);}
+.btn--primary:hover{background:#222;}
+.btn--primary:active{transform:scale(.97);}
+.btn--ghost{background:transparent;color:var(--ink);border:1px solid var(--border);}
+.btn--ghost:hover{border-color:var(--ink);background:var(--cream);}
+.btn--danger{background:var(--rust);color:#fff;border:1px solid var(--rust);}
+.btn--danger:hover{background:#a04533;}
+.btn--gold{background:var(--gold);color:#fff;border:1px solid var(--gold);}
+.btn--gold:hover{background:var(--gold-lt);}
+.btn--sm{padding:6px 14px;font-size:.7rem;}
+.btn--lg{padding:15px 36px;font-size:.85rem;letter-spacing:.1em;}
+.btn:disabled{opacity:.5;pointer-events:none;}
 
-/* ============================================================
-   HOME VIEW
-============================================================ */
-#view-home {
-  background: var(--ink); color: var(--paper);
-  min-height: 100vh;
+/* ════════════════════════════════════════
+   HOME
+════════════════════════════════════════ */
+#view-home{background:var(--ink);color:var(--paper);}
+.hero{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;
+  padding:calc(var(--nav-h) + 60px) 24px 100px;
+  text-align:center;position:relative;overflow:hidden;
 }
-.hero {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 100vh;
-  padding: calc(var(--nav-h) + 48px) 24px 80px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
+.hero__bg{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 30%, rgba(184,145,58,.13) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 30% at 80% 70%, rgba(139,58,42,.08) 0%, transparent 60%);
 }
-.hero__bg {
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(184,145,58,.12) 0%, transparent 70%);
-  pointer-events: none;
+.hero__grain{
+  position:absolute;inset:0;pointer-events:none;opacity:.04;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
-.hero__eyebrow {
-  font-family: var(--font-mono); font-size: .7rem; letter-spacing: .2em;
-  color: var(--gold); text-transform: uppercase; margin-bottom: 24px;
-  opacity: 0; animation: fadeUp .7s .2s forwards;
+.hero__eyebrow{
+  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.25em;
+  color:var(--gold);text-transform:uppercase;margin-bottom:28px;
+  opacity:0;animation:fadeUp .8s .15s both;
 }
-.hero__title {
-  font-family: var(--font-display); font-size: clamp(3rem, 8vw, 7rem);
-  font-weight: 300; line-height: 1.05; letter-spacing: -.01em;
-  margin-bottom: 24px;
-  opacity: 0; animation: fadeUp .7s .35s forwards;
+.hero__title{
+  font-family:var(--font-serif);font-size:clamp(3.2rem,9vw,7.5rem);
+  font-weight:300;letter-spacing:-.01em;margin-bottom:28px;
+  opacity:0;animation:fadeUp .8s .3s both;
 }
-.hero__title em { font-style: italic; color: var(--gold); }
-.hero__sub {
-  font-family: var(--font-display); font-size: clamp(1rem, 2.5vw, 1.3rem);
-  font-weight: 300; color: rgba(247,244,239,.6); max-width: 500px;
-  margin-bottom: 48px;
-  opacity: 0; animation: fadeUp .7s .5s forwards;
+.hero__title em{font-style:italic;color:var(--gold);}
+.hero__sub{
+  font-family:var(--font-serif);font-size:clamp(.95rem,2vw,1.25rem);
+  font-weight:300;color:rgba(247,244,239,.55);
+  max-width:460px;line-height:1.7;margin-bottom:52px;
+  opacity:0;animation:fadeUp .8s .45s both;
 }
-.hero__cta {
-  display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
-  opacity: 0; animation: fadeUp .7s .65s forwards;
+.hero__cta{
+  display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
+  opacity:0;animation:fadeUp .8s .6s both;
 }
-.hero__scroll {
-  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  font-family: var(--font-mono); font-size: .65rem; letter-spacing: .15em;
-  color: rgba(247,244,239,.35);
-  animation: bob 2s ease-in-out infinite;
+.hero__scroll{
+  position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-family:var(--font-mono);font-size:.62rem;letter-spacing:.18em;
+  color:rgba(247,244,239,.28);
+  animation:bob 2.2s ease-in-out infinite;
 }
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes bob {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50%       { transform: translateX(-50%) translateY(6px); }
-}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(8px);}}
 
-/* ============================================================
-   GALLERY VIEW
-============================================================ */
-#view-gallery { padding-top: var(--nav-h); min-height: 100vh; }
-.gallery-header {
-  padding: 60px 24px 32px;
-  text-align: center;
+/* ════════════════════════════════════════
+   GALLERY
+════════════════════════════════════════ */
+#view-gallery{padding-top:var(--nav-h);}
+.gallery-header{
+  padding:64px 24px 36px;text-align:center;
+  border-bottom:1px solid var(--border);margin-bottom:0;
 }
-.gallery-header h2 {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 300; letter-spacing: -.01em;
+.gallery-header h2{font-size:clamp(2rem,5vw,3.5rem);}
+.gallery-header p{
+  font-family:var(--font-mono);font-size:.68rem;
+  color:var(--muted);margin-top:10px;letter-spacing:.16em;
 }
-.gallery-header p {
-  font-family: var(--font-mono); font-size: .75rem;
-  color: var(--muted); margin-top: 8px; letter-spacing: .1em;
+.gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:2px;padding:2px 2px 80px;
+  max-width:1440px;margin:0 auto;
 }
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2px;
-  padding: 0 2px 80px;
-  max-width: 1400px; margin: 0 auto;
+.artwork-card{background:#fff;overflow:hidden;animation:fadeUp .55s both;}
+.artwork-card__img-wrap{
+  position:relative;aspect-ratio:3/4;overflow:hidden;
+  background:var(--cream);cursor:zoom-in;
 }
-.artwork-card {
-  background: #fff;
-  overflow: hidden;
-  animation: fadeUp .5s both;
+.artwork-card__img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform 600ms var(--ease);
 }
-.artwork-card__img-wrap {
-  position: relative; aspect-ratio: 3/4; overflow: hidden;
-  background: var(--cream);
+.artwork-card:hover .artwork-card__img{transform:scale(1.045);}
+.artwork-card__zoom-hint{
+  position:absolute;bottom:12px;left:12px;
+  background:rgba(13,13,13,.65);color:#fff;
+  border-radius:50%;width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity var(--dur) var(--ease);
+  backdrop-filter:blur(4px);
 }
-.artwork-card__img {
-  width: 100%; height: 100%; object-fit: cover;
-  transition: transform 500ms cubic-bezier(.4,0,.2,1);
+.artwork-card__img-wrap:hover .artwork-card__zoom-hint{opacity:1;}
+.artwork-card__badge{
+  position:absolute;top:12px;left:12px;
+  font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;
+  padding:4px 10px;border-radius:2px;
+  display:flex;align-items:center;gap:5px;
 }
-.artwork-card:hover .artwork-card__img { transform: scale(1.04); }
-.artwork-card__sold-badge {
-  position: absolute; top: 12px; left: 12px;
-  background: var(--ink); color: var(--paper);
-  font-family: var(--font-mono); font-size: .65rem; letter-spacing: .15em;
-  padding: 4px 10px; border-radius: 2px;
+.artwork-card__badge--sold{background:var(--ink);color:var(--paper);}
+.artwork-card__badge--featured{background:var(--gold);color:#fff;}
+.artwork-card__like{
+  position:absolute;top:12px;right:12px;
+  display:flex;align-items:center;gap:5px;
+  background:rgba(247,244,239,.92);
+  border-radius:20px;padding:6px 10px;
+  color:var(--muted);font-family:var(--font-mono);font-size:.65rem;
+  transition:all var(--dur) var(--ease);
+  backdrop-filter:blur(6px);
 }
-.artwork-card__like {
-  position: absolute; top: 12px; right: 12px;
-  display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  background: rgba(247,244,239,.9);
-  border-radius: 50%;
-  color: var(--muted);
-  transition: all var(--transition);
-  backdrop-filter: blur(4px);
+.artwork-card__like:hover,.artwork-card__like--active{color:#e04848;background:#fff;}
+.like-count{font-weight:500;}
+.artwork-card__info{padding:20px;}
+.artwork-card__meta{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.artwork-card__title{font-family:var(--font-serif);font-size:1.2rem;font-weight:400;}
+.comment-btn{
+  display:flex;align-items:center;gap:5px;
+  font-family:var(--font-mono);font-size:.65rem;color:var(--muted);
+  padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border);
+  transition:all var(--dur) var(--ease);white-space:nowrap;flex-shrink:0;
 }
-.artwork-card__like:hover,
-.artwork-card__like--active { color: #e05050; background: #fff; }
-.artwork-card__like svg { width: 16px; height: 16px; }
-.artwork-card__info { padding: 20px; }
-.artwork-card__title {
-  font-family: var(--font-display); font-size: 1.25rem; font-weight: 400;
-  margin-bottom: 6px;
+.comment-btn:hover{color:var(--ink);border-color:var(--ink);background:var(--cream);}
+.artwork-card__desc{
+  font-size:.78rem;color:var(--muted);line-height:1.55;margin-bottom:16px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
-.artwork-card__desc {
-  font-size: .8rem; color: var(--muted); margin-bottom: 16px;
-  line-height: 1.5; display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.artwork-card__footer {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-}
-.artwork-card__price {
-  font-family: var(--font-mono); font-size: .85rem; font-weight: 500;
-}
-.artwork-card__unavailable {
-  font-family: var(--font-mono); font-size: .7rem;
-  color: var(--muted); letter-spacing: .1em;
-}
-.gallery-empty {
-  grid-column: 1/-1; text-align: center;
-  padding: 80px 24px;
-  font-family: var(--font-display); font-size: 1.5rem; color: var(--muted);
+.artwork-card__footer{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.artwork-card__price{font-family:var(--font-mono);font-size:.82rem;font-weight:500;}
+.artwork-card__unavailable{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);letter-spacing:.1em;}
+.gallery-empty{
+  grid-column:1/-1;text-align:center;padding:100px 24px;
+  font-family:var(--font-serif);font-size:1.5rem;color:var(--muted);
 }
 
-/* ============================================================
+/* ════════════════════════════════════════
    LOADER
-============================================================ */
-.loader-wrap {
-  display: none; align-items: center; justify-content: center;
-  padding: 80px;
-  grid-column: 1/-1;
-}
-.loader {
-  width: 40px; height: 40px;
-  border: 2px solid var(--border);
-  border-top-color: var(--gold);
-  border-radius: 50%;
-  animation: spin .8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+════════════════════════════════════════ */
+.loader-wrap{display:none;align-items:center;justify-content:center;padding:80px;grid-column:1/-1;}
+.loader{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-/* ============================================================
-   CART VIEW
-============================================================ */
-#view-cart { padding-top: var(--nav-h); min-height: 100vh; }
-.cart-container {
-  max-width: 700px; margin: 0 auto;
-  padding: 48px 24px 80px;
+/* ════════════════════════════════════════
+   STORY
+════════════════════════════════════════ */
+#view-story{padding-top:var(--nav-h);}
+.story-container{max-width:680px;margin:0 auto;padding:72px 24px 100px;}
+.story-eyebrow{
+  font-family:var(--font-mono);font-size:.65rem;letter-spacing:.22em;
+  color:var(--gold);text-transform:uppercase;margin-bottom:16px;
 }
-.cart-container h2 {
-  font-size: 2.5rem; font-weight: 300; margin-bottom: 8px;
+.story-container h2{font-size:clamp(2rem,5vw,3.2rem);margin-bottom:32px;}
+.story-body p{
+  font-family:var(--font-serif);font-size:1.15rem;font-weight:300;
+  line-height:1.82;color:#2a2a2a;margin-bottom:20px;
 }
-.cart-container > p {
-  font-family: var(--font-mono); font-size: .75rem;
-  color: var(--muted); margin-bottom: 40px;
+.story-divider{width:48px;height:1px;background:var(--gold);margin:40px 0;}
+
+/* ════════════════════════════════════════
+   CART
+════════════════════════════════════════ */
+#view-cart{padding-top:var(--nav-h);}
+.cart-container{max-width:680px;margin:0 auto;padding:52px 24px 100px;}
+.cart-container h2{font-size:2.5rem;font-weight:300;margin-bottom:8px;}
+.cart-container>p{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);margin-bottom:40px;}
+.cart-item{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 0;border-bottom:1px solid var(--border);
+  animation:fadeUp .3s both;
 }
-.cart-item {
-  display: flex; align-items: center; gap: 16px;
-  padding: 16px 0; border-bottom: 1px solid var(--border);
-  animation: fadeUp .3s both;
+.cart-item__img{width:64px;height:80px;object-fit:cover;border-radius:var(--radius);background:var(--cream);flex-shrink:0;}
+.cart-item__info{flex:1;min-width:0;}
+.cart-item__title{font-family:var(--font-serif);font-size:1.05rem;display:block;margin-bottom:3px;}
+.cart-item__price{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);}
+.cart-item__qty{display:flex;align-items:center;gap:8px;}
+.qty-btn{
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);border-radius:var(--radius);
+  transition:all var(--dur) var(--ease);
 }
-.cart-item__img {
-  width: 64px; height: 80px; object-fit: cover;
-  border-radius: var(--radius); background: var(--cream); flex-shrink: 0;
+.qty-btn:hover{border-color:var(--ink);background:var(--cream);}
+.qty-val{font-family:var(--font-mono);font-size:.82rem;min-width:22px;text-align:center;}
+.cart-item__remove{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);transition:color var(--dur) var(--ease);
 }
-.cart-item__info { flex: 1; min-width: 0; }
-.cart-item__title { font-family: var(--font-display); font-size: 1.1rem; display: block; }
-.cart-item__price { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); }
-.cart-item__qty {
-  display: flex; align-items: center; gap: 8px;
+.cart-item__remove:hover{color:var(--rust);}
+.cart-empty{
+  text-align:center;padding:80px 0;color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;gap:20px;
 }
-.qty-btn {
-  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  transition: all var(--transition);
+.cart-empty p{font-family:var(--font-serif);font-size:1.4rem;}
+.cart-summary{margin-top:36px;padding:28px;background:var(--cream);border-radius:var(--radius);}
+.cart-total-line{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--font-mono);font-size:.82rem;margin-bottom:24px;
 }
-.qty-btn:hover { border-color: var(--ink); background: var(--cream); }
-.qty-btn svg { width: 14px; height: 14px; }
-.qty-val { font-family: var(--font-mono); font-size: .85rem; min-width: 20px; text-align: center; }
-.cart-item__remove {
-  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-  color: var(--muted); transition: color var(--transition);
+.cart-total-line strong{font-size:1.1rem;}
+.checkout-form{display:flex;flex-direction:column;gap:12px;}
+.checkout-form input{
+  padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);
+  background:#fff;font-size:.9rem;transition:border-color var(--dur) var(--ease);
 }
-.cart-item__remove:hover { color: var(--rust); }
-.cart-item__remove svg { width: 16px; height: 16px; }
-.cart-empty { text-align: center; padding: 60px 0; }
-.cart-empty p { font-family: var(--font-display); font-size: 1.5rem; color: var(--muted); }
-.cart-summary {
-  margin-top: 32px; padding: 24px;
-  background: var(--cream); border-radius: var(--radius);
+.checkout-form input:focus{outline:none;border-color:var(--ink);}
+.channel-label{
+  font-family:var(--font-mono);font-size:.65rem;color:var(--muted);
+  letter-spacing:.12em;margin-top:20px;margin-bottom:10px;
 }
-.cart-total-line {
-  display: flex; justify-content: space-between; align-items: center;
-  font-family: var(--font-mono); font-size: .85rem; margin-bottom: 20px;
+.checkout-channels{display:flex;gap:8px;flex-wrap:wrap;}
+.cart-actions{display:flex;justify-content:flex-end;margin-top:16px;}
+
+/* ════════════════════════════════════════
+   LOGIN
+════════════════════════════════════════ */
+#view-login{
+  padding-top:var(--nav-h);min-height:100vh;
+  align-items:center;justify-content:center;
+  background:var(--ink);
 }
-.cart-total-line strong { font-size: 1.1rem; }
-.checkout-form { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-.checkout-form input {
-  padding: 12px 16px;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  background: #fff; font-size: .9rem;
-  transition: border-color var(--transition);
+.login-card{
+  background:var(--paper);border-radius:4px;
+  padding:52px 44px;width:100%;max-width:420px;
+  box-shadow:var(--shadow-lg);
+  animation:fadeUp .4s both;
 }
-.checkout-form input:focus { outline: none; border-color: var(--ink); }
-.checkout-channels {
-  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+.login-card__eyebrow{
+  font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;
+  color:var(--gold);text-transform:uppercase;margin-bottom:10px;
 }
-.cart-actions {
-  display: flex; justify-content: flex-end; margin-top: 16px;
+.login-card h2{font-size:2rem;font-weight:300;margin-bottom:36px;}
+.form-field{margin-bottom:18px;}
+.form-field label{
+  display:block;font-size:.7rem;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  margin-bottom:7px;color:var(--muted);
+}
+.form-field input{
+  width:100%;padding:13px 16px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  font-size:.95rem;background:#fff;
+  transition:border-color var(--dur) var(--ease);
+}
+.form-field input:focus{outline:none;border-color:var(--ink);}
+.login-card .btn{width:100%;justify-content:center;margin-top:6px;}
+.login-back{
+  text-align:center;margin-top:22px;
+  font-family:var(--font-mono);font-size:.68rem;
+  color:var(--muted);cursor:pointer;
+  transition:color var(--dur) var(--ease);
+}
+.login-back:hover{color:var(--ink);}
+
+/* ════════════════════════════════════════
+   ACCESS DENIED MODAL
+════════════════════════════════════════ */
+#accessDeniedModal{
+  position:fixed;inset:0;z-index:9999;
+  display:none;align-items:center;justify-content:center;
+  padding:24px;
+  background:rgba(13,13,13,.75);
+  backdrop-filter:blur(8px);
+}
+#accessDeniedModal.modal--open{display:flex;}
+.access-denied-card{
+  background:var(--paper);
+  border-radius:6px;
+  padding:56px 48px;
+  max-width:480px;width:100%;
+  text-align:center;
+  box-shadow:var(--shadow-lg);
+  animation:deniedScale .35s var(--ease) both;
+  position:relative;overflow:hidden;
+}
+.access-denied-card::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,var(--rust),var(--gold));
+}
+@keyframes deniedScale{from{opacity:0;transform:scale(.88);}to{opacity:1;transform:scale(1);}}
+.access-denied-icon{
+  width:72px;height:72px;margin:0 auto 24px;
+  background:rgba(139,58,42,.08);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--rust);
+}
+.access-denied-card h2{
+  font-family:var(--font-serif);font-size:2.2rem;font-weight:400;
+  margin-bottom:16px;line-height:1.2;
+}
+.access-denied-card p{
+  font-family:var(--font-serif);font-size:1.1rem;font-weight:300;
+  color:var(--muted);line-height:1.65;
+}
+.access-denied-tag{
+  display:inline-block;margin-top:24px;
+  font-family:var(--font-mono);font-size:.62rem;letter-spacing:.15em;
+  color:var(--rust);border:1px solid rgba(139,58,42,.3);
+  padding:5px 14px;border-radius:2px;
+  text-transform:uppercase;
 }
 
-/* ============================================================
-   STORY VIEW
-============================================================ */
-#view-story { padding-top: var(--nav-h); min-height: 100vh; }
-.story-container {
-  max-width: 680px; margin: 0 auto; padding: 72px 24px 100px;
+/* ════════════════════════════════════════
+   ADMIN
+════════════════════════════════════════ */
+#view-admin{padding-top:var(--nav-h);}
+.admin-bar{
+  background:var(--ink);color:var(--paper);
+  padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
 }
-.story-eyebrow {
-  font-family: var(--font-mono); font-size: .7rem; letter-spacing: .2em;
-  color: var(--gold); text-transform: uppercase; margin-bottom: 16px;
+.admin-bar__pill{
+  font-family:var(--font-mono);font-size:.6rem;letter-spacing:.16em;
+  background:var(--gold);color:#fff;padding:3px 9px;border-radius:2px;
 }
-.story-container h2 {
-  font-size: clamp(2rem,5vw,3.2rem); font-weight: 300; margin-bottom: 32px;
-  line-height: 1.1;
+.admin-bar__email{font-family:var(--font-mono);font-size:.72rem;opacity:.6;flex:1;}
+.admin-container{max-width:1120px;margin:0 auto;padding:44px 24px 80px;}
+.admin-container h2{font-size:2.2rem;font-weight:300;margin-bottom:32px;}
+.admin-tabs{
+  display:flex;border-bottom:1px solid var(--border);margin-bottom:32px;
+  overflow-x:auto;
 }
-.story-body p {
-  font-family: var(--font-display); font-size: 1.15rem; font-weight: 300;
-  line-height: 1.8; color: #2a2a2a; margin-bottom: 20px;
+.admin-tab-btn{
+  padding:11px 22px;flex-shrink:0;
+  font-family:var(--font-ui);font-size:.75rem;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);border-bottom:2px solid transparent;
+  transition:all var(--dur) var(--ease);cursor:pointer;margin-bottom:-1px;
 }
-.story-divider {
-  width: 48px; height: 1px; background: var(--gold);
-  margin: 40px 0;
+.admin-tab-btn:hover{color:var(--ink);}
+.admin-tab-btn--active{color:var(--ink);border-bottom-color:var(--gold);}
+.admin-tab-pane{display:none;}
+.admin-tab-pane--active{display:block;}
+.admin-toolbar{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:20px;flex-wrap:wrap;gap:12px;
 }
+.admin-toolbar h3{font-size:1.25rem;font-weight:400;}
+.admin-row{
+  display:flex;align-items:center;gap:14px;
+  padding:14px;border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:8px;background:#fff;
+  transition:box-shadow var(--dur) var(--ease);
+}
+.admin-row:hover{box-shadow:var(--shadow-sm);}
+.admin-row__rank{
+  font-family:var(--font-mono);font-size:.7rem;font-weight:500;
+  color:var(--gold);min-width:24px;text-align:center;
+}
+.admin-row__thumb{width:54px;height:68px;object-fit:cover;border-radius:var(--radius);background:var(--cream);flex-shrink:0;}
+.admin-row__info{display:flex;flex-direction:column;gap:4px;font-size:.83rem;flex:1;min-width:0;}
+.admin-row__info strong{font-size:.92rem;}
+.admin-row__actions{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;}
+.admin-likes-badge{
+  display:flex;align-items:center;gap:4px;
+  font-family:var(--font-mono);font-size:.68rem;color:var(--gold);
+}
+.admin-empty{
+  text-align:center;padding:48px;
+  font-family:var(--font-serif);font-size:1.2rem;color:var(--muted);
+}
+.status-badge{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.06em;}
+.status-badge--available{color:#2a7a2a;}
+.status-badge--sold{color:var(--rust);}
+.status-badge--featured{color:var(--gold);}
+.status-badge--pending{color:var(--gold);}
+.status-badge--completed{color:#2a7a2a;}
+.status-badge--crown{color:var(--gold);}
+.status-badge--admin{color:#2a4a8a;}
+.status-badge--editor{color:#5a2a7a;}
+.status-badge--viewer{color:var(--muted);}
+.select--inline{
+  padding:7px 10px;font-size:.78rem;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:#fff;cursor:pointer;
+}
+.admin-row--order{align-items:flex-start;}
+.order-items{font-size:.72rem;color:var(--muted);}
 
-/* ============================================================
-   LOGIN VIEW
-============================================================ */
-#view-login {
-  padding-top: var(--nav-h); min-height: 100vh;
-  display: none; /* overridden by .view--active */
-  align-items: center; justify-content: center;
-  background: var(--ink);
+/* ════════════════════════════════════════
+   MODALS
+════════════════════════════════════════ */
+.modal{
+  position:fixed;inset:0;z-index:300;
+  display:none;align-items:center;justify-content:center;
+  padding:24px;
+  background:rgba(13,13,13,.58);
+  backdrop-filter:blur(6px);
 }
-#view-login.view--active {
-  display: flex;
+.modal--open{display:flex;}
+.modal__card{
+  background:var(--paper);border-radius:4px;
+  width:100%;max-width:520px;
+  max-height:90vh;overflow-y:auto;
+  padding:36px;box-shadow:var(--shadow-lg);
+  animation:fadeUp .3s both;
 }
-.login-card {
-  background: var(--paper); border-radius: 4px;
-  padding: 48px 40px; width: 100%; max-width: 400px;
-  box-shadow: var(--shadow);
-  animation: fadeUp .4s both;
+.modal__header{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:28px;
 }
-.login-card__eyebrow {
-  font-family: var(--font-mono); font-size: .65rem; letter-spacing: .2em;
-  color: var(--gold); text-transform: uppercase; margin-bottom: 12px;
+.modal__header h3{font-size:1.6rem;font-weight:300;}
+.modal__close{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);transition:color var(--dur) var(--ease);flex-shrink:0;
 }
-.login-card h2 {
-  font-size: 2rem; font-weight: 300; margin-bottom: 32px;
+.modal__close:hover{color:var(--ink);}
+.modal-form{display:flex;flex-direction:column;gap:14px;}
+.modal-form input,.modal-form textarea,.modal-form select{
+  width:100%;padding:12px 14px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  font-size:.9rem;background:#fff;
+  transition:border-color var(--dur) var(--ease);
 }
-.form-field { margin-bottom: 16px; }
-.form-field label {
-  display: block; font-size: .75rem; font-weight: 600;
-  letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px;
-  color: var(--muted);
+.modal-form input:focus,.modal-form textarea:focus,.modal-form select:focus{outline:none;border-color:var(--ink);}
+.modal-form textarea{min-height:90px;resize:vertical;}
+.modal-form label{
+  font-size:.68rem;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;
 }
-.form-field input {
-  width: 100%; padding: 12px 16px;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  font-size: .95rem; background: #fff;
-  transition: border-color var(--transition);
-}
-.form-field input:focus { outline: none; border-color: var(--ink); }
-.login-card .btn { width: 100%; justify-content: center; margin-top: 8px; }
-.login-back {
-  text-align: center; margin-top: 20px;
-  font-family: var(--font-mono); font-size: .7rem;
-  color: var(--muted); cursor: pointer;
-  transition: color var(--transition);
-}
-.login-back:hover { color: var(--ink); }
+.modal-form .form-group{display:flex;flex-direction:column;}
+.upload-progress{font-family:var(--font-mono);font-size:.72rem;color:var(--gold);min-height:18px;}
+.modal-actions{display:flex;gap:10px;margin-top:8px;}
+.modal-actions .btn{flex:1;justify-content:center;}
 
-/* ============================================================
-   ADMIN VIEW
-============================================================ */
-#view-admin { padding-top: var(--nav-h); min-height: 100vh; }
-.admin-bar {
-  background: var(--ink); color: var(--paper);
-  padding: 12px 24px;
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+/* ZOOM MODAL */
+#zoomModal .modal__card{
+  background:transparent;box-shadow:none;padding:0;
+  max-width:90vw;max-height:90vh;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
 }
-.admin-bar__role {
-  font-family: var(--font-mono); font-size: .65rem; letter-spacing: .15em;
-  background: var(--gold); color: #fff; padding: 2px 8px; border-radius: 2px;
+#zoomModal .modal--open{background:rgba(13,13,13,.92);}
+#zoomImg{
+  max-width:90vw;max-height:90vh;object-fit:contain;
+  border-radius:var(--radius);
+  transition:transform .2s var(--ease);
+  cursor:grab;
+  transform-origin:center;
 }
-.admin-bar__email { font-family: var(--font-mono); font-size: .75rem; opacity: .7; flex: 1; }
-.admin-container { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
-.admin-container h2 {
-  font-size: 2.2rem; font-weight: 300; margin-bottom: 32px;
+#zoomImg:active{cursor:grabbing;}
+.zoom-close{
+  position:fixed;top:24px;right:24px;
+  width:44px;height:44px;border-radius:50%;
+  background:rgba(247,244,239,.12);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;transition:background var(--dur) var(--ease);
+  z-index:10;backdrop-filter:blur(4px);
 }
-.admin-tabs {
-  display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 32px;
-}
-.admin-tab-btn {
-  padding: 10px 20px;
-  font-family: var(--font-ui); font-size: .8rem; font-weight: 600;
-  letter-spacing: .06em; text-transform: uppercase;
-  color: var(--muted); border-bottom: 2px solid transparent;
-  transition: all var(--transition); cursor: pointer;
-  margin-bottom: -1px;
-}
-.admin-tab-btn:hover { color: var(--ink); }
-.admin-tab-btn--active { color: var(--ink); border-bottom-color: var(--gold); }
-.admin-tab-pane { display: none; }
-.admin-tab-pane--active { display: block; }
-.admin-toolbar {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
-}
-.admin-toolbar h3 { font-size: 1.3rem; font-weight: 400; }
-.admin-row {
-  display: flex; align-items: center; gap: 16px;
-  padding: 14px; border: 1px solid var(--border); border-radius: var(--radius);
-  margin-bottom: 8px; background: #fff;
-  transition: box-shadow var(--transition);
-}
-.admin-row:hover { box-shadow: var(--shadow); }
-.admin-row__thumb {
-  width: 56px; height: 70px; object-fit: cover;
-  border-radius: var(--radius); background: var(--cream); flex-shrink: 0;
-}
-.admin-row__info {
-  display: flex; flex-direction: column; gap: 4px;
-  font-size: .85rem; flex: 1; min-width: 0;
-}
-.admin-row__info strong { font-size: .95rem; }
-.admin-row__info em { font-size: .75rem; }
-.admin-row__actions { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
-.order-items { font-size: .75rem; color: var(--muted); }
-.admin-empty {
-  text-align: center; padding: 40px;
-  font-family: var(--font-display); font-size: 1.2rem; color: var(--muted);
-}
-.status-badge { font-family: var(--font-mono); font-size: .7rem; letter-spacing: .06em; }
-.status-badge--available { color: #2a7a2a; }
-.status-badge--sold      { color: var(--rust); }
-.status-badge--pending   { color: var(--gold); }
-.status-badge--completed { color: #2a7a2a; }
-.status-badge--crown     { color: var(--gold); }
-.status-badge--admin     { color: #2a4a8a; }
-.status-badge--editor    { color: #5a2a7a; }
-.status-badge--viewer    { color: var(--muted); }
-.select--inline {
-  padding: 6px 10px; font-size: .8rem;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  background: #fff; cursor: pointer;
-}
-.admin-row--order { align-items: flex-start; }
+.zoom-close:hover{background:rgba(247,244,239,.25);}
 
-/* ============================================================
-   MODAL
-============================================================ */
-.modal {
-  position: fixed; inset: 0; z-index: 300;
-  display: none; align-items: center; justify-content: center;
-  padding: 24px;
-  background: rgba(13,13,13,.6);
-  backdrop-filter: blur(4px);
+/* COMMENTS MODAL */
+#commentsModal .modal__card{max-width:460px;}
+.comments-list{
+  display:flex;flex-direction:column;gap:14px;
+  max-height:300px;overflow-y:auto;margin-bottom:20px;
+  padding-right:4px;
 }
-.modal--open { display: flex; }
-.modal__card {
-  background: var(--paper); border-radius: 4px;
-  width: 100%; max-width: 520px;
-  max-height: 90vh; overflow-y: auto;
-  padding: 36px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
-  animation: fadeUp .3s both;
+.comments-list::-webkit-scrollbar{width:3px;}
+.comments-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.comment-item{display:flex;gap:12px;align-items:flex-start;}
+.comment-item__avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:var(--gold);color:#fff;
+  font-family:var(--font-mono);font-size:.75rem;font-weight:500;
+  display:flex;align-items:center;justify-content:center;
 }
-.modal__header {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  margin-bottom: 28px;
+.comment-item__body{flex:1;}
+.comment-item__name{font-size:.72rem;font-weight:700;letter-spacing:.04em;display:block;margin-bottom:3px;}
+.comment-item__text{font-family:var(--font-serif);font-size:1rem;font-weight:300;line-height:1.5;}
+.comments-empty{font-family:var(--font-serif);font-size:1rem;color:var(--muted);text-align:center;padding:24px 0;}
+.comments-loading{display:flex;justify-content:center;padding:24px;}
+.comments-input-row{display:flex;gap:10px;}
+.comments-input-row input{
+  flex:1;padding:11px 14px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  font-size:.9rem;background:#fff;
+  transition:border-color var(--dur) var(--ease);
 }
-.modal__header h3 { font-size: 1.6rem; font-weight: 300; }
-.modal__close {
-  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-  color: var(--muted); transition: color var(--transition);
-  flex-shrink: 0;
-}
-.modal__close:hover { color: var(--ink); }
-.modal__close svg { width: 18px; height: 18px; }
-.modal-form { display: flex; flex-direction: column; gap: 14px; }
-.modal-form input,
-.modal-form textarea,
-.modal-form select {
-  width: 100%; padding: 11px 14px;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  font-size: .9rem; background: #fff;
-  transition: border-color var(--transition);
-}
-.modal-form input:focus,
-.modal-form textarea:focus,
-.modal-form select:focus { outline: none; border-color: var(--ink); }
-.modal-form textarea { min-height: 90px; resize: vertical; }
-.modal-form label {
-  font-size: .72rem; font-weight: 600; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;
-}
-.modal-form .form-group { display: flex; flex-direction: column; }
-.modal-form .btn { margin-top: 8px; justify-content: center; }
-.upload-progress {
-  font-family: var(--font-mono); font-size: .75rem;
-  color: var(--gold); min-height: 18px;
-}
-.modal-actions { display: flex; gap: 10px; margin-top: 8px; }
-.modal-actions .btn { flex: 1; justify-content: center; }
+.comments-input-row input:focus{outline:none;border-color:var(--ink);}
 
-/* ============================================================
+/* ════════════════════════════════════════
    TOAST
-============================================================ */
-#toastContainer {
-  position: fixed; bottom: 24px; right: 24px; z-index: 500;
-  display: flex; flex-direction: column; gap: 10px;
-  pointer-events: none;
+════════════════════════════════════════ */
+#toastContainer{
+  position:fixed;bottom:24px;right:24px;z-index:500;
+  display:flex;flex-direction:column;gap:10px;pointer-events:none;
 }
-.toast {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 18px;
-  background: var(--ink); color: var(--paper);
-  border-radius: var(--radius);
-  font-size: .82rem;
-  box-shadow: 0 4px 16px rgba(0,0,0,.25);
-  pointer-events: all;
-  transform: translateY(12px) scale(.97);
-  opacity: 0;
-  transition: all .25s cubic-bezier(.4,0,.2,1);
-  max-width: 320px;
+.toast{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 18px;
+  background:var(--ink);color:var(--paper);
+  border-radius:var(--radius);font-size:.8rem;
+  box-shadow:0 4px 20px rgba(0,0,0,.28);
+  pointer-events:all;
+  transform:translateY(14px) scale(.96);opacity:0;
+  transition:all .28s var(--ease);max-width:300px;
 }
-.toast--show { transform: none; opacity: 1; }
-.toast--success { border-left: 3px solid #4caf50; }
-.toast--error   { border-left: 3px solid var(--rust); }
-.toast--info    { border-left: 3px solid var(--gold); }
-.toast__icon    { width: 16px; height: 16px; flex-shrink: 0; }
-.toast__icon svg { width: 100%; height: 100%; }
+.toast--show{transform:none;opacity:1;}
+.toast--success{border-left:3px solid #4caf50;}
+.toast--error{border-left:3px solid var(--rust);}
+.toast--info{border-left:3px solid var(--gold);}
+.toast__icon{width:15px;height:15px;flex-shrink:0;}
+.toast__icon svg{width:100%;height:100%;}
 
-/* ============================================================
-   ADMIN BAR (navbar area)
-============================================================ */
-#adminBar { display: flex; align-items: center; gap: 10px; }
+/* ════════════════════════════════════════
+   ADMIN BAR (navbar)
+════════════════════════════════════════ */
+#adminBar{display:flex;align-items:center;gap:10px;}
 
-/* ============================================================
+/* ════════════════════════════════════════
    RESPONSIVE
-============================================================ */
-@media (max-width: 600px) {
-  .navbar { padding: 0 16px; }
-  .navbar__logo { font-size: 1rem; }
-  .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1px; }
-  .artwork-card__info { padding: 14px; }
-  .cart-container, .story-container, .admin-container { padding-left: 16px; padding-right: 16px; }
-  .login-card { padding: 32px 24px; }
-  .modal__card { padding: 24px; }
+════════════════════════════════════════ */
+@media(max-width:600px){
+  .navbar{padding:0 14px;}
+  .navbar__logo{font-size:1rem;}
+  .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;}
+  .artwork-card__info{padding:14px;}
+  .cart-container,.story-container,.admin-container{padding-left:16px;padding-right:16px;}
+  .login-card{padding:32px 22px;}
+  .modal__card{padding:24px;}
+  .access-denied-card{padding:40px 28px;}
+  .access-denied-card h2{font-size:1.7rem;}
 }
-
-/* ============================================================
-   MISC
-============================================================ */
-.section-pad { padding: calc(var(--nav-h) + 60px) 24px 80px; }
-.text-center { text-align: center; }
-.mt-16 { margin-top: 16px; }
-.mt-8 { margin-top: 8px; }
 </style>
 
 </head>
-
 <body>
 
-<!-- ============================================================
-     TOAST CONTAINER
-============================================================ -->
+<!-- TOAST -->
 
 <div id="toastContainer"></div>
 
-<!-- ============================================================
-     SIDEBAR OVERLAY
-============================================================ -->
+<!-- SIDEBAR OVERLAY -->
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="window._alf.closeSidebar()"></div>
 
-<!-- ============================================================
-     SIDEBAR
-============================================================ -->
+<!-- SIDEBAR -->
 
 <nav class="sidebar" id="sidebar">
   <div class="sidebar__header">
     <span class="sidebar__brand">ART IS LIFE</span>
-    <button class="sidebar__close" onclick="window._alf.closeSidebar()" aria-label="Close sidebar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
+    <button class="sidebar__close" onclick="window._alf.closeSidebar()" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
   <div class="sidebar__nav">
@@ -1410,77 +1394,63 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 300; }
     <a class="sidebar__link" onclick="window._alf.showView('story')">My Story</a>
     <a class="sidebar__link" onclick="window._alf.showView('cart')">Cart</a>
   </div>
-  <div class="sidebar__footer">
-    © Lewis Gitonga · Art Is Life Foundation
-  </div>
+  <div class="sidebar__footer">© Lewis Gitonga · Art Is Life Foundation</div>
 </nav>
 
-<!-- ============================================================
-     NAVBAR
-============================================================ -->
+<!-- NAVBAR -->
 
 <header class="navbar">
   <div class="navbar__left">
     <button class="hamburger" onclick="window._alf.openSidebar()" aria-label="Open menu">
       <span></span><span></span><span></span>
     </button>
-    <span class="navbar__logo" onclick="window._alf.showView('home')">
-      ART IS <span>LIFE</span>
-    </span>
+    <span class="navbar__logo" onclick="window._alf.showView('home')">ART IS <span>LIFE</span></span>
   </div>
   <div class="navbar__right">
     <div id="adminBar"></div>
     <button class="cart-btn" onclick="window._alf.showView('cart')" aria-label="Cart">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
-        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-        <line x1="3" y1="6" x2="21" y2="6"/>
-        <path d="M16 10a4 4 0 0 1-8 0"/>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
       <span class="cart-badge" style="display:none">0</span>
     </button>
   </div>
 </header>
 
-<!-- ============================================================
-     VIEW: HOME
-============================================================ -->
+<!-- ═══════════════ HOME ═══════════════ -->
 
 <div id="view-home" class="view">
   <div class="hero">
     <div class="hero__bg"></div>
+    <div class="hero__grain"></div>
     <p class="hero__eyebrow">Lewis Gitonga · Kenya</p>
     <h1 class="hero__title">Art Is<br /><em>Life</em> Foundation</h1>
     <p class="hero__sub">Original paintings that speak to the soul — each piece a conversation between colour and silence.</p>
     <div class="hero__cta">
-      <button class="btn btn--gold btn--lg" onclick="window._alf.showView('gallery')">Browse Collection</button>
-      <button class="btn btn--ghost btn--lg" style="color:#f7f4ef;border-color:rgba(247,244,239,.3)" onclick="window._alf.showView('story')">My Story</button>
+      <button class="btn btn--gold btn--lg" onclick="window._alf.showView('gallery')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Browse Collection
+      </button>
+      <button class="btn btn--lg" style="background:transparent;color:var(--paper);border:1px solid rgba(247,244,239,.28);" onclick="window._alf.showView('story')">My Story</button>
     </div>
     <div class="hero__scroll">
       <span>SCROLL</span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     VIEW: GALLERY
-============================================================ -->
+<!-- ═══════════════ GALLERY ═══════════════ -->
 
 <div id="view-gallery" class="view">
   <div class="gallery-header">
     <h2>The Collection</h2>
-    <p>ORIGINAL WORKS BY LEWIS GITONGA</p>
+    <p>ORIGINAL WORKS BY LEWIS GITONGA · SORTED BY POPULARITY</p>
   </div>
   <div class="gallery-grid" id="galleryGrid">
-    <div class="loader-wrap" id="galleryLoader">
-      <div class="loader"></div>
-    </div>
+    <div class="loader-wrap" id="galleryLoader"><div class="loader"></div></div>
   </div>
 </div>
 
-<!-- ============================================================
-     VIEW: STORY
-============================================================ -->
+<!-- ═══════════════ STORY ═══════════════ -->
 
 <div id="view-story" class="view">
   <div class="story-container">
@@ -1494,65 +1464,56 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 300; }
       <p>Every piece in this collection is original, hand-signed, and comes with a certificate of authenticity.</p>
     </div>
     <div class="story-divider"></div>
-    <button class="btn btn--primary" onclick="window._alf.showView('gallery')">View Collection →</button>
+    <button class="btn btn--primary" onclick="window._alf.showView('gallery')">
+      View Collection
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
   </div>
 </div>
 
-<!-- ============================================================
-     VIEW: CART
-============================================================ -->
+<!-- ═══════════════ CART ═══════════════ -->
 
 <div id="view-cart" class="view">
   <div class="cart-container">
     <h2>Your Cart</h2>
     <p>Review and complete your order below.</p>
-
-```
-<div id="cartItems"></div>
-
-<div class="cart-summary" id="cartSummary">
-  <div class="cart-total-line">
-    <span>Total</span>
-    <strong id="cartTotal">KES 0</strong>
-  </div>
-
-  <div class="checkout-form">
-    <input id="checkoutName"    type="text"  placeholder="Full name" />
-    <input id="checkoutAddress" type="text"  placeholder="Delivery address" />
-    <input id="checkoutPhone"   type="tel"   placeholder="Phone number" />
-  </div>
-
-  <p style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);margin-top:16px;letter-spacing:.05em;">COMPLETE ORDER VIA</p>
-  <div class="checkout-channels">
-    <button class="btn btn--primary" onclick="window._alf.placeOrder('wa')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      WhatsApp
-    </button>
-    <button class="btn btn--ghost" onclick="window._alf.placeOrder('email')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-      Email
-    </button>
-    <button class="btn btn--ghost" onclick="window._alf.placeOrder('sms')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      SMS
-    </button>
-  </div>
-
-  <div class="cart-actions">
-    <button class="btn btn--ghost btn--sm" onclick="window._alf.clearCart()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-      Clear Cart
-    </button>
-  </div>
-</div>
-```
-
+    <div id="cartItems"></div>
+    <div class="cart-summary" id="cartSummary">
+      <div class="cart-total-line">
+        <span>Total</span>
+        <strong id="cartTotal">KES 0</strong>
+      </div>
+      <div class="checkout-form">
+        <input id="checkoutName"    type="text" placeholder="Full name" autocomplete="name" />
+        <input id="checkoutAddress" type="text" placeholder="Delivery address" autocomplete="street-address" />
+        <input id="checkoutPhone"   type="tel"  placeholder="Phone number" autocomplete="tel" />
+      </div>
+      <p class="channel-label">COMPLETE ORDER VIA</p>
+      <div class="checkout-channels">
+        <button class="btn btn--primary" onclick="window._alf.placeOrder('whatsapp')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          WhatsApp
+        </button>
+        <button class="btn btn--ghost" onclick="window._alf.placeOrder('email')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        </button>
+        <button class="btn btn--ghost" onclick="window._alf.placeOrder('sms')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          SMS
+        </button>
+      </div>
+      <div class="cart-actions">
+        <button class="btn btn--ghost btn--sm" onclick="window._alf.clearCart()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          Clear Cart
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ============================================================
-     VIEW: LOGIN
-============================================================ -->
+<!-- ═══════════════ LOGIN ═══════════════ -->
 
 <div id="view-login" class="view">
   <div class="login-card">
@@ -1560,66 +1521,62 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 300; }
     <h2>Sign In</h2>
     <div class="form-field">
       <label for="loginEmail">Email</label>
-      <input id="loginEmail" type="email" placeholder="your@email.com"
+      <input id="loginEmail" type="email" placeholder="your@email.com" autocomplete="off"
         onkeydown="if(event.key==='Enter') document.getElementById('loginPassword').focus()" />
     </div>
     <div class="form-field">
       <label for="loginPassword">Password</label>
-      <input id="loginPassword" type="password" placeholder="••••••••"
-        onkeydown="if(event.key==='Enter') window._alf.login(document.getElementById('loginEmail').value, this.value)" />
+      <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="new-password"
+        onkeydown="if(event.key==='Enter') window._alf.login(document.getElementById('loginEmail').value,this.value)" />
     </div>
-    <button class="btn btn--primary" onclick="window._alf.login(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value)">
+    <button id="loginBtn" class="btn btn--primary"
+      onclick="window._alf.login(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value)">
       Sign In
     </button>
     <p class="login-back" onclick="window._alf.showView('home')">← Back to site</p>
   </div>
 </div>
 
-<!-- ============================================================
-     VIEW: ADMIN
-============================================================ -->
+<!-- ═══════════════ ADMIN ═══════════════ -->
 
 <div id="view-admin" class="view">
   <div class="admin-bar" id="adminBar"></div>
-
   <div class="admin-container">
     <h2>Dashboard</h2>
+    <div class="admin-tabs">
+      <button class="admin-tab-btn admin-tab-btn--active" data-tab="artworks" onclick="window._alf.switchAdminTab('artworks')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Artworks
+      </button>
+      <button class="admin-tab-btn" data-tab="orders" onclick="window._alf.switchAdminTab('orders')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Orders
+      </button>
+      <button class="admin-tab-btn tab--users" data-tab="users" onclick="window._alf.switchAdminTab('users')" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Users
+      </button>
+    </div>
 
 ```
-<div class="admin-tabs">
-  <button class="admin-tab-btn admin-tab-btn--active" data-tab="artworks"
-    onclick="window._alf.switchAdminTab('artworks')">Artworks</button>
-  <button class="admin-tab-btn" data-tab="orders"
-    onclick="window._alf.switchAdminTab('orders')">Orders</button>
-  <button class="admin-tab-btn tab--users" data-tab="users"
-    onclick="window._alf.switchAdminTab('users')" style="display:none">Users</button>
-</div>
-
-<!-- ARTWORKS PANE -->
 <div class="admin-tab-pane admin-tab-pane--active" id="admin-pane-artworks">
   <div class="admin-toolbar">
     <h3>Manage Artworks</h3>
     <button class="btn btn--primary" onclick="window._alf.openAddArtwork()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Artwork
     </button>
   </div>
   <div id="adminArtworksList"></div>
 </div>
 
-<!-- ORDERS PANE -->
 <div class="admin-tab-pane" id="admin-pane-orders">
-  <div class="admin-toolbar">
-    <h3>Orders</h3>
-  </div>
+  <div class="admin-toolbar"><h3>Orders</h3></div>
   <div id="adminOrdersList"></div>
 </div>
 
-<!-- USERS PANE (crown only) -->
 <div class="admin-tab-pane" id="admin-pane-users">
-  <div class="admin-toolbar">
-    <h3>Users</h3>
-  </div>
+  <div class="admin-toolbar"><h3>Users</h3></div>
   <div id="adminUsersList"></div>
 </div>
 ```
@@ -1627,75 +1584,109 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 300; }
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: ARTWORK ADD / EDIT
-============================================================ -->
+<!-- ═══════════════ MODAL: ARTWORK ═══════════════ -->
 
 <div class="modal" id="artworkModal">
   <div class="modal__card">
     <div class="modal__header">
       <h3 id="artworkModalTitle">Add Artwork</h3>
-      <button class="modal__close" onclick="window._alf.closeArtworkModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
+      <button class="modal__close" onclick="window._alf.closeArtworkModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-
-```
-<form id="artworkForm" class="modal-form" onsubmit="event.preventDefault(); window._alf.saveArtwork()">
-  <input type="hidden" id="artworkEditId" />
-
-  <div class="form-group">
-    <label for="artworkTitle">Title *</label>
-    <input id="artworkTitle" type="text" placeholder="Artwork title" required />
-  </div>
-
-  <div class="form-group">
-    <label for="artworkPrice">Price (Display) *</label>
-    <input id="artworkPrice" type="text" placeholder="e.g. KES 45,000" required />
-  </div>
-
-  <div class="form-group">
-    <label for="artworkPriceNum">Price (Numeric)</label>
-    <input id="artworkPriceNum" type="number" placeholder="45000" min="0" />
-  </div>
-
-  <div class="form-group">
-    <label for="artworkDesc">Description</label>
-    <textarea id="artworkDesc" placeholder="Describe the artwork…"></textarea>
-  </div>
-
-  <div class="form-group">
-    <label for="artworkStatus">Status</label>
-    <select id="artworkStatus">
-      <option value="available">Available</option>
-      <option value="sold">Sold</option>
-    </select>
-  </div>
-
-  <div class="form-group">
-    <label for="artworkImage">Image</label>
-    <input id="artworkImage" type="file" accept="image/*" />
-    <div class="upload-progress" id="uploadProgress"></div>
-  </div>
-
-  <div class="modal-actions">
-    <button type="button" class="btn btn--ghost" onclick="window._alf.closeArtworkModal()">Cancel</button>
-    <button type="submit" class="btn btn--primary">
-      <div class="loader" id="artworkSaveLoader" style="display:none;width:16px;height:16px;"></div>
-      Save Artwork
-    </button>
-  </div>
-</form>
-```
-
+    <form id="artworkForm" class="modal-form" onsubmit="event.preventDefault();window._alf.saveArtwork()">
+      <input type="hidden" id="artworkEditId" />
+      <div class="form-group">
+        <label for="artworkTitle">Title *</label>
+        <input id="artworkTitle" type="text" placeholder="Artwork title" required />
+      </div>
+      <div class="form-group">
+        <label for="artworkPrice">Price (Display) *</label>
+        <input id="artworkPrice" type="text" placeholder="e.g. KES 45,000" required />
+      </div>
+      <div class="form-group">
+        <label for="artworkPriceNum">Price (Numeric)</label>
+        <input id="artworkPriceNum" type="number" placeholder="45000" min="0" />
+      </div>
+      <div class="form-group">
+        <label for="artworkDesc">Description</label>
+        <textarea id="artworkDesc" placeholder="Describe the artwork…"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="artworkStatus">Status</label>
+        <select id="artworkStatus">
+          <option value="available">Available</option>
+          <option value="featured">Featured</option>
+          <option value="sold">Sold</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="artworkImage">Image</label>
+        <input id="artworkImage" type="file" accept="image/*" />
+        <div class="upload-progress" id="uploadProgress"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--ghost" onclick="window._alf.closeArtworkModal()">Cancel</button>
+        <button type="submit" id="artworkSaveBtn" class="btn btn--primary">
+          <div class="loader" id="artworkSaveLoader" style="display:none;width:14px;height:14px;border-width:1.5px;"></div>
+          Save Artwork
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
-<!-- ============================================================
-     FIRESTORE SECURITY RULES (reference comment)
-     Copy these into your Firebase console → Firestore → Rules
+<!-- ═══════════════ MODAL: ZOOM ═══════════════ -->
+
+<div class="modal" id="zoomModal" onclick="window._alf.closeZoom()">
+  <button class="zoom-close" onclick="window._alf.closeZoom()" aria-label="Close zoom">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="modal__card" onclick="event.stopPropagation()">
+    <img id="zoomImg" src="" alt="Artwork zoom" />
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: COMMENTS ═══════════════ -->
+
+<div class="modal" id="commentsModal">
+  <div class="modal__card">
+    <div class="modal__header">
+      <h3>Comments</h3>
+      <button class="modal__close" onclick="window._alf.closeComments()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="commentsArtworkId" />
+    <div class="comments-list" id="commentsList"></div>
+    <div class="comments-input-row">
+      <input id="commentsInput" type="text" placeholder="Write a comment…"
+        onkeydown="if(event.key==='Enter') window._alf.submitComment()" />
+      <button class="btn btn--primary btn--sm" onclick="window._alf.submitComment()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Post
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ACCESS DENIED MODAL ═══════════════ -->
+
+<div id="accessDeniedModal">
+  <div class="access-denied-card">
+    <div class="access-denied-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+    </div>
+    <h2>Oops. Access Denied.</h2>
+    <p>This section is for Lewis, the CEO, only.</p>
+    <span class="access-denied-tag">Restricted Area</span>
+  </div>
+</div>
+
+<!--
+════════════════════════════════════════════════════
+FIRESTORE SECURITY RULES (paste into Firebase console)
+════════════════════════════════════════════════════
 
 rules_version = '2';
 service cloud.firestore {
@@ -1710,7 +1701,10 @@ service cloud.firestore {
 
     match /artworks/{id} {
       allow read: if true;
-      allow write: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn() && isAdmin()
+        && request.resource.data.keys().hasAll(["title","price","priceNum","status"])
+        && request.resource.data.priceNum is number;
+      allow update, delete: if isSignedIn() && isAdmin();
     }
     match /orders/{id} {
       allow create: if isSignedIn();
@@ -1722,9 +1716,13 @@ service cloud.firestore {
     }
     match /likes/{id} {
       allow read: if true;
-      allow write: if isSignedIn() && request.auth.uid == resource.data.userId
-                      || (isSignedIn() && !exists(/databases/$(database)/documents/likes/$(id)));
-      allow delete: if isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/likes/$(id)).data.userId;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && get(/databases/$(database)/documents/likes/$(id)).data.userId == request.auth.uid;
+    }
+    match /comments/{id} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && (get(/databases/$(database)/documents/comments/$(id)).data.userId == request.auth.uid || isAdmin());
     }
     match /carts/{uid} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
@@ -1732,19 +1730,20 @@ service cloud.firestore {
   }
 }
 
-     FIREBASE STORAGE RULES:
+════════════════════════════════════════════════════
+FIREBASE STORAGE RULES
+════════════════════════════════════════════════════
 
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /artworks/{file} {
       allow read: if true;
-      allow write: if request.auth != null;
-      allow delete: if request.auth != null;
+      allow write, delete: if request.auth != null;
     }
   }
 }
-============================================================ -->
+-->
 
 </body>
 </html>
