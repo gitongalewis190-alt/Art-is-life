@@ -34,8 +34,8 @@ function track(event, data={}){ gtag('event', event, data); }
     getFirestore,
     doc, getDoc, getDocs,
     collection, addDoc, query, orderBy, limit,
-    updateDoc, deleteDoc,
-    serverTimestamp, onSnapshot
+    updateDoc, deleteDoc, setDoc,
+    serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import {
     getStorage, ref,
@@ -61,14 +61,27 @@ function track(event, data={}){ gtag('event', event, data); }
   /* ── ROLE HIERARCHY ── */
   const ROLE_HIERARCHY = { crown:4, admin:3, editor:2, viewer:1 };
 
+  /**
+   * FIX: fetchUserRole now returns a rich diagnostic object
+   * so the login UI can show exactly what went wrong.
+   */
   async function fetchUserRole(uid) {
     try {
       const snap = await getDoc(doc(db, "users", uid));
-      if (!snap.exists()) { console.warn(`⛔ No Firestore doc for UID: ${uid}`); return null; }
-      const role = (snap.data().role || "").toLowerCase().trim();
-      if (!ROLE_HIERARCHY[role]) { console.warn(`⛔ Unknown role: "${snap.data().role}"`); return null; }
-      return role;
-    } catch(e) { console.error("Role fetch error:", e); return null; }
+      if (!snap.exists()) {
+        console.warn(`⛔ No Firestore doc for UID: ${uid}`);
+        return { role: null, error: 'no_doc', uid };
+      }
+      const raw = (snap.data().role || "").toLowerCase().trim();
+      if (!ROLE_HIERARCHY[raw]) {
+        console.warn(`⛔ Unknown role: "${snap.data().role}"`);
+        return { role: null, error: 'invalid_role', rawRole: snap.data().role };
+      }
+      return { role: raw, error: null };
+    } catch(e) {
+      console.error("Role fetch error:", e);
+      return { role: null, error: 'fetch_error', message: e.message };
+    }
   }
 
   function hasPermission(userRole, requiredRole) {
@@ -87,12 +100,13 @@ function track(event, data={}){ gtag('event', event, data); }
   onAuthStateChanged(auth, async (user) => {
     window._authReady = false;
     if (user) {
-      const role = await fetchUserRole(user.uid);
+      const result = await fetchUserRole(user.uid);
+      const role = result.role;
       window._currentUser   = user;
       window._currentRole   = role;
       window._firebaseAdmin = hasPermission(role, "admin");
       if (window._firebaseAdmin) console.log(`✅ Admin: ${user.email} | Role: ${role}`);
-      else console.warn(`⛔ Role insufficient: "${role}"`);
+      else console.warn(`⛔ Role check failed:`, result);
     } else {
       window._currentUser = window._currentRole = null;
       window._firebaseAdmin = false;
@@ -101,25 +115,52 @@ function track(event, data={}){ gtag('event', event, data); }
     window.dispatchEvent(new Event("auth_ready"));
   });
 
-  /* ── ADMIN LOGIN ── */
+  /* ── ADMIN LOGIN — with rich diagnostics ── */
   window.firebaseAdminLogin = async function(email, password) {
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Wait for onAuthStateChanged to complete role fetch
+      const uid  = cred.user.uid;
+
+      // Wait for onAuthStateChanged to complete
       if (!window._authReady) {
         await new Promise(res => {
           const h = () => { window.removeEventListener("auth_ready", h); res(); };
           window.addEventListener("auth_ready", h);
         });
       }
+
       const role = window._currentRole;
+
       if (!hasPermission(role, "admin")) {
+        // Fetch raw doc for diagnostics
+        let diagMsg = '';
+        try {
+          const snap = await getDoc(doc(db, "users", uid));
+          if (!snap.exists()) {
+            diagMsg = `No Firestore record found for this account.\n\n`
+              + `To fix: Go to Firestore → "users" collection → Create document:\n`
+              + `  Document ID: ${uid}\n`
+              + `  Field: role  |  Value: crown`;
+          } else {
+            const rawRole = snap.data().role;
+            if (!rawRole) {
+              diagMsg = `Account found but has no "role" field.\n\n`
+                + `To fix: Edit document "${uid}" in Firestore → add field:\n`
+                + `  role = crown`;
+            } else {
+              diagMsg = `Role "${rawRole}" does not have admin access.\n`
+                + `Requires: admin or crown. Contact system administrator.`;
+            }
+          }
+        } catch(e) {
+          diagMsg = `Could not read role data: ${e.message}`;
+        }
+
         await signOut(auth);
-        return { success:false, error: role
-          ? `Access denied. Role "${role}" — admin or crown required.`
-          : "No role found. Contact system administrator." };
+        return { success: false, error: diagMsg, uid };
       }
-      return { success:true, role };
+
+      return { success: true, role };
     } catch(err) {
       const msgs = {
         "auth/user-not-found":    "No account with this email.",
@@ -128,7 +169,7 @@ function track(event, data={}){ gtag('event', event, data); }
         "auth/too-many-requests": "Too many attempts. Please wait.",
         "auth/invalid-credential":"Invalid email or password."
       };
-      return { success:false, error: msgs[err.code]||err.message };
+      return { success: false, error: msgs[err.code] || err.message };
     }
   };
 
@@ -209,6 +250,18 @@ function track(event, data={}){ gtag('event', event, data); }
     await updateDoc(doc(db,"users",uid), updates);
   };
 
+  /* ── DIAGNOSTIC HELPER — shows UID for Firestore setup ── */
+  window.getAdminSetupInfo = async function(email, password) {
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+      await signOut(auth);
+      return { uid, email };
+    } catch(e) {
+      return { error: e.message };
+    }
+  };
+
   console.log("🔥 Firebase — Auth ✅ Firestore ✅ Storage ✅ RBAC ✅");
 </script>
 
@@ -239,8 +292,6 @@ function track(event, data={}){ gtag('event', event, data); }
   --card-hover:0 24px 64px rgba(0,0,0,0.16);
   --radius:4px;
   --transition:0.4s cubic-bezier(0.25,0.46,0.45,0.94);
-
-  /* Admin panel theme */
   --adm-bg:#0f0e0b;
   --adm-surface:#191714;
   --adm-surface2:#211f1a;
@@ -256,9 +307,6 @@ function track(event, data={}){ gtag('event', event, data); }
   --adm-orange:#fb923c;
 }
 
-/* ═══════════════════════════════════════
-   RESET + BASE
-═══════════════════════════════════════ */
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;font-size:16px;}
 body{font-family:'DM Sans',sans-serif;background:var(--warm-white);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
@@ -266,14 +314,10 @@ h1,h2,h3,h4,.display{font-family:'Cormorant Garamond',serif;}
 a{text-decoration:none;color:inherit;}
 img{display:block;}
 button{cursor:pointer;font-family:'DM Sans',sans-serif;}
-
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:var(--cream);}
 ::-webkit-scrollbar-thumb{background:var(--gold);border-radius:2px;}
 
-/* ═══════════════════════════════════════
-   KEYFRAMES
-═══════════════════════════════════════ */
 @keyframes fadeUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes heroZoom{from{transform:scale(1);}to{transform:scale(1.07);}}
@@ -285,18 +329,10 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif;}
 @keyframes overlayIn{from{opacity:0;}to{opacity:1;}}
 @keyframes slideRight{from{transform:translateX(-20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
 @keyframes countUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-@keyframes skeletonPulse{0%,100%{opacity:0.5;}50%{opacity:1;}}
 @keyframes goldPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4);}50%{box-shadow:0 0 0 8px rgba(201,168,76,0);}}
 
-/* ═══════════════════════════════════════
-   HEADER
-═══════════════════════════════════════ */
-header{
-  position:sticky;top:0;z-index:900;
-  background:rgba(255,254,249,0.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-  border-bottom:1px solid rgba(201,168,76,0.15);
-  padding:0 5%;display:flex;justify-content:space-between;align-items:center;height:66px;
-}
+/* HEADER */
+header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid rgba(201,168,76,0.15);padding:0 5%;display:flex;justify-content:space-between;align-items:center;height:66px;}
 .header-brand{font-family:'Cormorant Garamond',serif;font-size:1.08rem;font-weight:600;letter-spacing:0.05em;color:var(--charcoal);display:flex;align-items:center;gap:10px;}
 .header-brand-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;}
 .header-brand span{color:var(--gold);}
@@ -304,25 +340,16 @@ header{
 .header-nav a{font-size:0.78rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:7px 14px;border-radius:50px;transition:color 0.25s,background 0.25s;}
 .header-nav a:hover{color:var(--charcoal);background:var(--gold-subtle);}
 .header-right{display:flex;align-items:center;gap:10px;}
-
-#adminPanelTrigger{
-  cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
-  width:38px;height:38px;border-radius:50%;border:1px solid rgba(201,168,76,0.3);
-  background:transparent;transition:background 0.25s,border-color 0.25s,transform 0.2s;flex-shrink:0;user-select:none;
-}
+#adminPanelTrigger{cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid rgba(201,168,76,0.3);background:transparent;transition:background 0.25s,border-color 0.25s,transform 0.2s;flex-shrink:0;user-select:none;}
 #adminPanelTrigger:hover{background:var(--gold-subtle);border-color:var(--gold);transform:scale(1.07);}
 #adminPanelTrigger.active{background:rgba(201,168,76,0.18);border-color:var(--gold);animation:goldPulse 2s ease infinite;}
-
 .cart-btn{display:flex;align-items:center;gap:7px;padding:8px 16px;border:1px solid rgba(201,168,76,0.35);border-radius:50px;background:transparent;font-size:0.82rem;font-weight:600;color:var(--ink);transition:all 0.3s;flex-shrink:0;}
 .cart-btn:hover{border-color:var(--gold);background:var(--gold-subtle);}
 #cartCount{background:var(--gold);color:white;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform 0.3s;}
-
 .nav-toggle{display:none;background:none;border:none;padding:6px;flex-direction:column;gap:5px;}
 .nav-toggle span{display:block;width:22px;height:2px;background:var(--charcoal);border-radius:2px;transition:all 0.3s;}
 
-/* ═══════════════════════════════════════
-   HERO
-═══════════════════════════════════════ */
+/* HERO */
 .hero{position:relative;height:88vh;min-height:520px;overflow:hidden;display:flex;align-items:flex-end;}
 .hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#1a1108 0%,#2c2010 50%,#0d0d0d 100%);}
 .hero-bg img{width:100%;height:100%;object-fit:cover;opacity:0.65;animation:heroZoom 14s ease-in-out infinite alternate;will-change:transform;}
@@ -423,7 +450,6 @@ header{
 .art-btn-cart:hover{background:var(--gold-dark);}
 .art-btn-call{background:#f0f0f0;color:var(--ink);border:1px solid #e0e0e0;}
 .art-btn-call:hover{background:var(--red);color:white;border-color:var(--red);}
-
 .no-results{text-align:center;padding:90px 20px;color:var(--muted);grid-column:1/-1;}
 .no-results-icon{font-size:3rem;margin-bottom:16px;opacity:0.3;}
 .no-results h3{font-family:'Cormorant Garamond',serif;font-size:2rem;margin-bottom:10px;color:var(--charcoal);}
@@ -513,110 +539,71 @@ header{
 .commission-body h3{font-size:1.65rem;font-weight:400;margin-bottom:8px;}
 .commission-subtitle{font-size:0.85rem;color:var(--muted);margin-bottom:28px;line-height:1.6;}
 
-/* ADMIN LOGIN MODAL */
-.admin-login-box{max-width:400px;}
+/* ADMIN LOGIN MODAL — IMPROVED */
+.admin-login-box{max-width:440px;}
 .admin-login-body{padding:36px;}
 .admin-login-body h3{font-size:1.45rem;font-weight:500;margin-bottom:6px;}
 .admin-subtitle{font-size:0.82rem;color:var(--muted);margin-bottom:26px;line-height:1.5;}
-.admin-error{color:var(--red);font-size:0.82rem;margin-top:8px;display:none;padding:10px 14px;background:rgba(179,38,30,0.06);border-radius:var(--radius);border-left:2px solid var(--red);}
+.admin-error{
+  color:var(--red);font-size:0.82rem;margin-top:8px;display:none;
+  padding:12px 16px;background:rgba(179,38,30,0.06);border-radius:var(--radius);
+  border-left:2px solid var(--red);white-space:pre-line;line-height:1.6;
+}
+/* UID setup box shown when doc is missing */
+.admin-uid-box{
+  display:none;margin-top:14px;padding:14px 16px;
+  background:#f0f8ff;border:1px solid #bee3f8;border-radius:var(--radius);
+}
+.admin-uid-box h5{font-size:0.78rem;font-weight:700;color:#1e40af;margin-bottom:8px;letter-spacing:0.04em;}
+.admin-uid-box code{
+  display:block;background:#1e293b;color:#7dd3fc;
+  font-size:0.76rem;padding:10px 12px;border-radius:4px;
+  font-family:monospace;word-break:break-all;margin-bottom:10px;
+  user-select:all;cursor:text;
+}
+.admin-uid-box p{font-size:0.76rem;color:#334155;line-height:1.55;}
+.admin-uid-copy{
+  padding:5px 14px;font-size:0.72rem;font-weight:600;border:1px solid #93c5fd;
+  border-radius:4px;background:white;color:#1e40af;margin-top:6px;
+  transition:all 0.2s;
+}
+.admin-uid-copy:hover{background:#eff6ff;}
 .btn-admin-login{width:100%;padding:13px;background:var(--charcoal);color:var(--gold);border:none;border-radius:var(--radius);font-size:0.87rem;font-weight:700;letter-spacing:0.04em;transition:all 0.3s;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;}
 .btn-admin-login:hover{background:#333;}
 .btn-admin-login:disabled{opacity:0.6;cursor:not-allowed;}
 
-/* ═══════════════════════════════════════════════════
-   ADMIN DASHBOARD — FULL SCREEN (matches site theme)
-═══════════════════════════════════════════════════ */
-.adm-overlay{
-  display:none;position:fixed;inset:0;z-index:3000;
-  background:var(--adm-bg);
-  overflow:hidden;
-}
+/* ADMIN DASHBOARD */
+.adm-overlay{display:none;position:fixed;inset:0;z-index:3000;background:var(--adm-bg);overflow:hidden;}
 .adm-overlay.active{display:flex;flex-direction:column;animation:fadeIn 0.3s ease;}
-
-/* TOP BAR */
-.adm-topbar{
-  height:62px;flex-shrink:0;
-  background:var(--adm-surface);
-  border-bottom:1px solid var(--adm-border);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 28px;
-}
-.adm-topbar-brand{
-  display:flex;align-items:center;gap:12px;
-  font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--adm-gold);
-}
+.adm-topbar{height:62px;flex-shrink:0;background:var(--adm-surface);border-bottom:1px solid var(--adm-border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;}
+.adm-topbar-brand{display:flex;align-items:center;gap:12px;font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--adm-gold);}
 .adm-topbar-brand-dot{width:7px;height:7px;border-radius:50%;background:var(--adm-gold);}
 .adm-topbar-right{display:flex;align-items:center;gap:14px;}
-.adm-user-chip{
-  display:flex;align-items:center;gap:9px;
-  background:var(--adm-surface2);border:1px solid var(--adm-border);
-  border-radius:50px;padding:7px 16px;font-size:0.78rem;color:var(--adm-muted);
-}
-.adm-role-pip{
-  padding:2px 10px;border-radius:50px;
-  font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
-}
+.adm-user-chip{display:flex;align-items:center;gap:9px;background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:50px;padding:7px 16px;font-size:0.78rem;color:var(--adm-muted);}
+.adm-role-pip{padding:2px 10px;border-radius:50px;font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;}
 .adm-role-pip.crown{background:rgba(201,168,76,0.18);color:var(--adm-gold);}
 .adm-role-pip.admin{background:rgba(96,165,250,0.15);color:var(--adm-blue);}
-.adm-close-btn{
-  width:34px;height:34px;border-radius:50%;border:1px solid var(--adm-border);
-  background:transparent;color:var(--adm-muted);font-size:1rem;
-  display:flex;align-items:center;justify-content:center;transition:all 0.25s;
-}
+.adm-close-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--adm-border);background:transparent;color:var(--adm-muted);font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all 0.25s;}
 .adm-close-btn:hover{border-color:var(--adm-red);color:var(--adm-red);}
-
-/* BODY */
 .adm-body{display:flex;flex:1;overflow:hidden;}
-
-/* SIDEBAR */
-.adm-sidebar{
-  width:220px;flex-shrink:0;
-  background:var(--adm-surface);
-  border-right:1px solid var(--adm-border);
-  padding:20px 0;display:flex;flex-direction:column;
-  overflow-y:auto;
-}
+.adm-sidebar{width:220px;flex-shrink:0;background:var(--adm-surface);border-right:1px solid var(--adm-border);padding:20px 0;display:flex;flex-direction:column;overflow-y:auto;}
 .adm-nav-section{margin-bottom:22px;}
-.adm-nav-label{
-  font-size:0.58rem;letter-spacing:0.26em;text-transform:uppercase;
-  color:rgba(201,168,76,0.45);padding:0 20px 8px;display:block;
-}
-.adm-nav-item{
-  display:flex;align-items:center;gap:11px;
-  padding:10px 20px;margin:1px 10px;border-radius:6px;
-  font-size:0.82rem;color:var(--adm-muted);
-  background:transparent;border:none;width:calc(100% - 20px);text-align:left;
-  transition:all 0.22s;cursor:pointer;
-}
+.adm-nav-label{font-size:0.58rem;letter-spacing:0.26em;text-transform:uppercase;color:rgba(201,168,76,0.45);padding:0 20px 8px;display:block;}
+.adm-nav-item{display:flex;align-items:center;gap:11px;padding:10px 20px;margin:1px 10px;border-radius:6px;font-size:0.82rem;color:var(--adm-muted);background:transparent;border:none;width:calc(100% - 20px);text-align:left;transition:all 0.22s;cursor:pointer;}
 .adm-nav-item:hover{color:var(--adm-text);background:var(--adm-surface2);}
 .adm-nav-item.active{color:var(--adm-gold);background:var(--adm-gold-glow);border:1px solid var(--adm-border);}
 .adm-nav-icon{font-size:1rem;width:20px;text-align:center;}
-.adm-nav-badge{
-  margin-left:auto;background:var(--adm-red);color:white;
-  border-radius:50px;font-size:0.6rem;font-weight:700;
-  padding:1px 7px;
-}
-
-/* MAIN AREA */
+.adm-nav-badge{margin-left:auto;background:var(--adm-red);color:white;border-radius:50px;font-size:0.6rem;font-weight:700;padding:1px 7px;}
 .adm-main{flex:1;overflow-y:auto;padding:28px;}
 .adm-main::-webkit-scrollbar{width:3px;}
 .adm-main::-webkit-scrollbar-thumb{background:var(--adm-border);}
-
 .adm-tab{display:none;}
 .adm-tab.active{display:block;animation:slideRight 0.3s ease;}
-
-/* PAGE HEADER */
 .adm-page-header{margin-bottom:24px;}
 .adm-page-title{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:400;color:var(--adm-text);margin-bottom:4px;}
 .adm-page-sub{font-size:0.8rem;color:var(--adm-muted);}
-
-/* STAT CARDS */
 .adm-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
-.adm-stat-card{
-  background:var(--adm-surface);border:1px solid var(--adm-border);
-  border-radius:8px;padding:20px;
-  transition:border-color 0.25s;
-}
+.adm-stat-card{background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;padding:20px;transition:border-color 0.25s;}
 .adm-stat-card:hover{border-color:var(--adm-border-hover);}
 .adm-stat-label{font-size:0.66rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--adm-muted);margin-bottom:10px;}
 .adm-stat-num{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:600;color:var(--adm-gold);line-height:1;animation:countUp 0.5s ease;}
@@ -624,17 +611,11 @@ header{
 .adm-stat-card.green .adm-stat-num{color:var(--adm-green);}
 .adm-stat-card.blue  .adm-stat-num{color:var(--adm-blue);}
 .adm-stat-card.red   .adm-stat-num{color:var(--adm-red);}
-
-/* TABLE */
 .adm-table-wrap{background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;overflow:hidden;}
 .adm-table-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--adm-border);}
 .adm-table-title{font-size:0.88rem;font-weight:600;color:var(--adm-text);}
 .adm-table-actions{display:flex;gap:8px;}
-.adm-btn-sm{
-  padding:6px 14px;border-radius:4px;font-size:0.75rem;font-weight:600;
-  border:1px solid var(--adm-border);background:transparent;
-  color:var(--adm-muted);transition:all 0.2s;
-}
+.adm-btn-sm{padding:6px 14px;border-radius:4px;font-size:0.75rem;font-weight:600;border:1px solid var(--adm-border);background:transparent;color:var(--adm-muted);transition:all 0.2s;}
 .adm-btn-sm:hover{border-color:var(--adm-gold);color:var(--adm-gold);}
 .adm-btn-sm.primary{background:var(--adm-gold);color:var(--adm-bg);border-color:var(--adm-gold);}
 .adm-btn-sm.primary:hover{background:var(--gold-dark);border-color:var(--gold-dark);}
@@ -651,18 +632,6 @@ table.adm-table tr:hover td{background:var(--adm-surface2);}
 .adm-status-badge.cancelled{background:rgba(224,82,82,0.12);color:var(--adm-red);}
 .adm-empty{text-align:center;padding:50px 20px;color:var(--adm-muted);font-size:0.85rem;}
 .adm-loader{text-align:center;padding:40px;color:var(--adm-muted);font-size:0.85rem;}
-
-/* ARTWORK GRID (admin) */
-.adm-art-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px;}
-.adm-art-card{background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:6px;overflow:hidden;transition:border-color 0.25s;}
-.adm-art-card:hover{border-color:var(--adm-border-hover);}
-.adm-art-img{width:100%;height:150px;object-fit:cover;background:#222;}
-.adm-art-info{padding:12px;}
-.adm-art-name{font-size:0.84rem;font-weight:600;color:var(--adm-text);margin-bottom:4px;}
-.adm-art-price{font-size:0.76rem;color:var(--adm-gold);}
-.adm-art-btns{display:flex;gap:6px;margin-top:10px;}
-
-/* ADD ARTWORK FORM */
 .adm-form-section{background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;padding:24px;margin-bottom:20px;}
 .adm-form-section h4{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--adm-text);margin-bottom:18px;}
 .adm-input{width:100%;padding:10px 14px;background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:4px;color:var(--adm-text);font-size:0.88rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.25s;}
@@ -676,12 +645,9 @@ table.adm-table tr:hover td{background:var(--adm-surface2);}
 .adm-upload-zone:hover{border-color:var(--adm-gold);color:var(--adm-gold);}
 .adm-progress{height:4px;background:var(--adm-border);border-radius:2px;overflow:hidden;margin-top:10px;display:none;}
 .adm-progress-bar{height:100%;background:var(--adm-gold);border-radius:2px;transition:width 0.3s;}
-
-/* USERS */
-.adm-user-row td:first-child{font-weight:600;}
 .adm-role-select{background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:4px;color:var(--adm-text);font-size:0.78rem;padding:4px 8px;outline:none;}
 
-/* TOAST (dark) */
+/* TOAST */
 #toast{position:fixed;bottom:94px;right:26px;z-index:6000;background:var(--charcoal);color:white;padding:12px 20px;border-radius:var(--radius);font-size:0.84rem;max-width:290px;border-left:3px solid var(--gold);box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:translateY(16px);opacity:0;pointer-events:none;transition:transform 0.4s var(--transition), opacity 0.4s ease;}
 #toast.show{transform:translateY(0);opacity:1;}
 
@@ -707,14 +673,13 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
   .about-img-frame{order:-1;}
   .hero-stats{display:none;}
   .adm-stats-grid{grid-template-columns:repeat(2,1fr);}
-  .adm-art-grid{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:768px){
   header{padding:0 5%;}
   .header-nav{display:none;}
   .header-nav.open{display:flex;flex-direction:column;position:absolute;top:66px;left:0;right:0;background:rgba(255,254,249,0.97);backdrop-filter:blur(18px);padding:16px 5%;border-bottom:1px solid rgba(201,168,76,0.15);z-index:899;}
   .nav-toggle{display:flex;}
-  .gallery-grid,.adm-art-grid{grid-template-columns:1fr;}
+  .gallery-grid{grid-template-columns:1fr;}
   .gallery-section{padding:50px 5%;}
   .about-section{padding:60px 5%;}
   .story-body{padding:28px;}
@@ -977,28 +942,41 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
   </div>
 </div>
 
-<!-- ADMIN LOGIN MODAL -->
+<!-- ADMIN LOGIN MODAL — IMPROVED WITH DIAGNOSTICS -->
 
 <div class="modal-overlay" id="adminLoginModal" onclick="closeAdminLogin()">
   <div class="modal-box admin-login-box" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeAdminLogin()">✕</button>
     <div class="admin-login-body">
       <h3>👑 Admin Access</h3>
-      <p class="admin-subtitle">Firebase RBAC — crown &amp; admin access only.</p>
+      <p class="admin-subtitle">Firebase RBAC — crown &amp; admin roles required.</p>
       <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="adminEmail" placeholder="Admin email" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
       <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="adminPassword" placeholder="Password" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
       <div class="admin-error" id="adminError"></div>
-      <button class="btn-admin-login" id="adminLoginBtn" onclick="handleAdminLogin()">🔐 Sign In with Firebase</button>
-    </div>
+
+```
+  <!-- UID SETUP GUIDE — shown only when Firestore doc is missing -->
+  <div class="admin-uid-box" id="adminUidBox">
+    <h5>🔧 FIRESTORE SETUP REQUIRED</h5>
+    <p style="margin-bottom:8px;">Your login is valid but no Firestore role record exists. Create this document in Firebase Console:</p>
+    <p><strong>Collection:</strong> users</p>
+    <p><strong>Document ID (your UID):</strong></p>
+    <code id="adminUidDisplay">—</code>
+    <button class="admin-uid-copy" onclick="copyUid()">📋 Copy UID</button>
+    <p style="margin-top:10px;"><strong>Field to add:</strong> role = <code style="background:#1e293b;color:#7dd3fc;padding:1px 6px;border-radius:3px;font-size:0.8rem;">crown</code></p>
+    <p style="margin-top:8px;opacity:0.8;">After creating the document, click Sign In again.</p>
+  </div>
+
+  <button class="btn-admin-login" id="adminLoginBtn" onclick="handleAdminLogin()">🔐 Sign In with Firebase</button>
+</div>
+```
+
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     ADMIN DASHBOARD — FULL SCREEN
-═══════════════════════════════════════════════════════════════ -->
+<!-- ADMIN DASHBOARD -->
 
 <div class="adm-overlay" id="adminDashboard">
-  <!-- TOP BAR -->
   <div class="adm-topbar">
     <div class="adm-topbar-brand">
       <div class="adm-topbar-brand-dot"></div>
@@ -1012,11 +990,7 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
       <button class="adm-close-btn" onclick="closeAdminDashboard()" title="Close">✕</button>
     </div>
   </div>
-
-  <!-- BODY -->
-
   <div class="adm-body">
-    <!-- SIDEBAR -->
     <div class="adm-sidebar">
       <div class="adm-nav-section">
         <span class="adm-nav-label">Overview</span>
@@ -1043,7 +1017,6 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     </div>
 
 ```
-<!-- MAIN -->
 <div class="adm-main" id="admMain">
 
   <!-- OVERVIEW TAB -->
@@ -1052,24 +1025,20 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
       <div class="adm-page-title">Dashboard Overview</div>
       <div class="adm-page-sub" id="admWelcome">Welcome back</div>
     </div>
-    <div class="adm-stats-grid" id="admStatsGrid">
+    <div class="adm-stats-grid">
       <div class="adm-stat-card"><div class="adm-stat-label">Total Orders</div><div class="adm-stat-num" id="stat-orders">—</div><div class="adm-stat-sub">All time</div></div>
       <div class="adm-stat-card" style="--adm-gold:var(--adm-orange)"><div class="adm-stat-label">Pending</div><div class="adm-stat-num" id="stat-pending" style="color:var(--adm-orange)">—</div><div class="adm-stat-sub">Awaiting fulfilment</div></div>
       <div class="adm-stat-card green"><div class="adm-stat-label">Completed</div><div class="adm-stat-num" id="stat-completed">—</div><div class="adm-stat-sub">Successfully fulfilled</div></div>
       <div class="adm-stat-card blue"><div class="adm-stat-label">Favourites</div><div class="adm-stat-num" id="stat-likes">—</div><div class="adm-stat-sub">Total likes</div></div>
     </div>
-    <!-- Revenue card -->
     <div style="background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;padding:20px;margin-bottom:20px;">
       <div style="font-size:0.66rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--adm-muted);margin-bottom:8px;">Estimated Revenue</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:600;color:var(--adm-gold);" id="stat-revenue">—</div>
       <div style="font-size:0.72rem;color:var(--adm-muted);margin-top:4px;">Sum of all order values (KES)</div>
     </div>
-    <!-- Collection quick view -->
     <div class="adm-table-wrap">
       <div class="adm-table-head"><span class="adm-table-title">Collection Quick View</span><div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add New</button></div></div>
-      <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="overviewArtGrid">
-        <!-- rendered by JS -->
-      </div>
+      <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="overviewArtGrid"></div>
     </div>
   </div>
 
@@ -1081,10 +1050,8 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     </div>
     <div class="adm-table-wrap">
       <div class="adm-table-head">
-        <span class="adm-table-title">All Artworks (12)</span>
-        <div class="adm-table-actions">
-          <button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add Artwork</button>
-        </div>
+        <span class="adm-table-title" id="artworkTableTitle">All Artworks (12)</span>
+        <div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add Artwork</button></div>
       </div>
       <div style="overflow-x:auto;">
         <table class="adm-table" id="artworksTable">
@@ -1134,9 +1101,7 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     <div class="adm-table-wrap">
       <div class="adm-table-head">
         <span class="adm-table-title">All Orders</span>
-        <div class="adm-table-actions">
-          <button class="adm-btn-sm" onclick="loadOrders()">↺ Refresh</button>
-        </div>
+        <div class="adm-table-actions"><button class="adm-btn-sm" onclick="loadOrders()">↺ Refresh</button></div>
       </div>
       <div id="ordersContent"><div class="adm-loader">Loading orders…</div></div>
     </div>
@@ -1149,11 +1114,8 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
       <div class="adm-page-sub">Artworks liked by visitors</div>
     </div>
     <div class="adm-table-wrap">
-      <div class="adm-table-head"><span class="adm-table-title">Liked Artworks (Collection)</span></div>
-      <div style="padding:20px;">
-        <div style="font-size:0.84rem;color:var(--adm-muted);margin-bottom:16px;">Local session favourites — below are all pieces that have been liked in this session:</div>
-        <div id="likesContent"></div>
-      </div>
+      <div class="adm-table-head"><span class="adm-table-title">Liked Artworks</span></div>
+      <div style="padding:20px;"><div id="likesContent"></div></div>
     </div>
   </div>
 
@@ -1185,13 +1147,13 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
         <div class="adm-form-group"><label class="adm-form-label">WhatsApp Number</label><input class="adm-input" type="text" value="254704708178" placeholder="WhatsApp"></div>
         <div class="adm-form-group"><label class="adm-form-label">Contact Email</label><input class="adm-input" type="text" value="gitongewis190@gmail.com" placeholder="Email"></div>
       </div>
-      <button class="adm-btn-sm primary" style="padding:10px 24px;" onclick="showToast('✅ Settings saved (connect to Firestore to persist)')">Save Settings</button>
+      <button class="adm-btn-sm primary" style="padding:10px 24px;" onclick="showToast('✅ Settings saved')">Save Settings</button>
     </div>
     <div class="adm-form-section">
       <h4 style="color:var(--adm-red);">Danger Zone</h4>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="adm-btn-sm danger" onclick="showToast('⚠️ Export functionality — connect to backend')">Export All Orders</button>
-        <button class="adm-btn-sm danger" onclick="showToast('⚠️ This would clear all orders — disabled in demo')">Clear Orders</button>
+        <button class="adm-btn-sm danger" onclick="showToast('⚠️ Export — connect to backend')">Export All Orders</button>
+        <button class="adm-btn-sm danger" onclick="showToast('⚠️ Disabled in demo')">Clear Orders</button>
       </div>
     </div>
   </div>
@@ -1212,12 +1174,10 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
 
 <div id="toast"></div>
 
-<!-- ═══════════════════════════════
-     JAVASCRIPT
-═══════════════════════════════ -->
-
 <script>
-/* ARTWORK DATA */
+/* ═══════════════════════════════
+   ARTWORK DATA
+═══════════════════════════════ */
 const artworks = [
   {id:0,  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling."},
   {id:1,  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power."},
@@ -1242,6 +1202,7 @@ let selectedChannel           = 'wa';
 let selectedCommissionChannel = 'wa';
 let currentSearch             = '';
 let uploadedImageUrl          = '';
+let _lastUid                  = '';
 
 const saveCart  = () => localStorage.setItem('ail_cart',  JSON.stringify(cart));
 const saveLikes = () => localStorage.setItem('ail_likes', JSON.stringify(likes));
@@ -1435,34 +1396,53 @@ function sendCommission() {
   track('commission_sent',{channel:selectedCommissionChannel}); closeCommission(); showToast('🎨 Commission sent! Lewis will respond soon.');
 }
 
-/* ═══════════════════════════════
-   ADMIN LOGIN
-═══════════════════════════════ */
+/* ═══════════════════════════════════════════
+   ADMIN LOGIN — with UID diagnostic helper
+═══════════════════════════════════════════ */
 function openAdminLogin() {
   if(window._firebaseAdmin){openAdminDashboard();return;}
   const modal=document.getElementById('adminLoginModal');
   modal.classList.add('active'); document.body.style.overflow='hidden';
-  document.getElementById('adminEmail').value=''; document.getElementById('adminPassword').value='';
+  document.getElementById('adminEmail').value='';
+  document.getElementById('adminPassword').value='';
   document.getElementById('adminError').style.display='none';
+  document.getElementById('adminUidBox').style.display='none';
   setTimeout(()=>document.getElementById('adminEmail').focus(),100);
 }
 function closeAdminLogin() {
   document.getElementById('adminLoginModal').classList.remove('active');
   document.getElementById('adminError').style.display='none';
+  document.getElementById('adminUidBox').style.display='none';
   document.body.style.overflow='';
 }
 
 async function handleAdminLogin() {
-  const email=document.getElementById('adminEmail').value.trim();
-  const password=document.getElementById('adminPassword').value;
-  const errEl=document.getElementById('adminError'), loginBtn=document.getElementById('adminLoginBtn');
+  const email    = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  const errEl    = document.getElementById('adminError');
+  const loginBtn = document.getElementById('adminLoginBtn');
+  const uidBox   = document.getElementById('adminUidBox');
+
   errEl.style.display='none';
-  if(!email||!password){errEl.textContent='Please enter both email and password.';errEl.style.display='block';return;}
-  if(!window.firebaseAdminLogin){errEl.textContent='Firebase not loaded yet. Please wait a moment.';errEl.style.display='block';return;}
-  loginBtn.innerHTML='<span style="display:inline-block;animation:spin 0.8s linear infinite;margin-right:8px;">⏳</span> Verifying role…';
+  uidBox.style.display='none';
+
+  if(!email||!password){
+    errEl.textContent='Please enter both email and password.';
+    errEl.style.display='block';return;
+  }
+  if(!window.firebaseAdminLogin){
+    errEl.textContent='Firebase not loaded yet. Please wait a moment.';
+    errEl.style.display='block';return;
+  }
+
+  loginBtn.innerHTML='<span style="display:inline-block;animation:spin 0.8s linear infinite;margin-right:8px;">⏳</span> Verifying…';
   loginBtn.disabled=true;
-  const result=await window.firebaseAdminLogin(email,password);
-  loginBtn.innerHTML='🔐 Sign In with Firebase'; loginBtn.disabled=false;
+
+  const result = await window.firebaseAdminLogin(email, password);
+
+  loginBtn.innerHTML='🔐 Sign In with Firebase';
+  loginBtn.disabled=false;
+
   if(result.success){
     closeAdminLogin();
     showToast(`👑 Welcome! Role: ${result.role}`);
@@ -1470,8 +1450,26 @@ async function handleAdminLogin() {
     document.getElementById('adminPanelTrigger').title=`Admin Dashboard (${result.role})`;
     openAdminDashboard();
   } else {
-    errEl.textContent=result.error||'Authentication failed.'; errEl.style.display='block';
+    // Show detailed error
+    errEl.textContent = result.error || 'Authentication failed.';
+    errEl.style.display = 'block';
+
+    // If UID returned, show the Firestore setup box
+    if(result.uid) {
+      _lastUid = result.uid;
+      document.getElementById('adminUidDisplay').textContent = result.uid;
+      uidBox.style.display = 'block';
+    }
   }
+}
+
+function copyUid() {
+  if(!_lastUid) return;
+  navigator.clipboard.writeText(_lastUid).then(()=>{
+    showToast('📋 UID copied to clipboard!');
+    document.querySelector('.admin-uid-copy').textContent = '✅ Copied!';
+    setTimeout(()=>{ document.querySelector('.admin-uid-copy').textContent = '📋 Copy UID'; }, 2000);
+  });
 }
 
 /* ═══════════════════════════════
@@ -1483,18 +1481,14 @@ function openAdminDashboard() {
   dash.classList.add('active');
   document.body.style.overflow='hidden';
 
-  // Populate user info
-  const role=window._currentRole||'admin';
-  const email=window._currentUser?.email||'admin';
+  const role  = window._currentRole || 'admin';
+  const email = window._currentUser?.email || 'admin';
   document.getElementById('admEmail').textContent=email;
   const pip=document.getElementById('admRolePip');
   pip.textContent=role; pip.className='adm-role-pip '+(role==='crown'?'crown':'admin');
   document.getElementById('admWelcome').textContent=`Welcome back, ${email.split('@')[0]} — ${new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
 
-  // Show crown sections
   if(role==='crown') document.getElementById('crownSection').style.display='block';
-
-  // Load stats + default tab
   loadDashboardStats();
   renderOverviewArtGrid();
   renderArtworksTable();
@@ -1506,22 +1500,18 @@ function closeAdminDashboard() {
   document.body.style.overflow='';
 }
 
-/* TAB SWITCHING */
 function admTab(name, btn) {
   document.querySelectorAll('.adm-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.adm-nav-item').forEach(n=>n.classList.remove('active'));
   const tab=document.getElementById('tab-'+name);
   if(tab) tab.classList.add('active');
   if(btn) btn.classList.add('active');
-
-  // Load data on tab switch
   if(name==='orders') loadOrders();
   if(name==='likes') renderLikesTab();
   if(name==='users') loadUsers();
   if(name==='artworks') renderArtworksTable();
 }
 
-/* STATS */
 async function loadDashboardStats() {
   if(!window.fetchDashboardStats) return;
   const stats=await window.fetchDashboardStats();
@@ -1530,15 +1520,12 @@ async function loadDashboardStats() {
   document.getElementById('stat-completed').textContent=stats.complete;
   document.getElementById('stat-likes').textContent=stats.totalLikes||likes.length;
   document.getElementById('stat-revenue').textContent=stats.revenue>0?`${stats.revenue.toLocaleString()} KES`:'—';
-
-  // Pending badge on nav
   if(stats.pending>0){
     const b=document.getElementById('pendingBadge');
     b.textContent=stats.pending; b.style.display='inline-flex';
   }
 }
 
-/* OVERVIEW ART GRID */
 function renderOverviewArtGrid() {
   const g=document.getElementById('overviewArtGrid');
   g.innerHTML=artworks.slice(0,8).map(a=>`
@@ -1549,9 +1536,10 @@ function renderOverviewArtGrid() {
     </div>`).join('');
 }
 
-/* ARTWORKS TABLE */
 function renderArtworksTable() {
   const tbody=document.getElementById('artworksTbody');
+  const titleEl=document.getElementById('artworkTableTitle');
+  if(titleEl) titleEl.textContent=`All Artworks (${artworks.length})`;
   tbody.innerHTML=artworks.map((a,i)=>`
     <tr>
       <td style="color:var(--adm-muted);font-size:0.72rem;">${String(i+1).padStart(2,'0')}</td>
@@ -1575,8 +1563,7 @@ function renderArtworksTable() {
 }
 
 function updateArtworkPrice(id, val) {
-  const art=artworks.find(a=>a.id===id);
-  if(!art) return;
+  const art=artworks.find(a=>a.id===id); if(!art) return;
   const trimmed=val.trim();
   art.price=trimmed;
   const num=parseInt(trimmed);
@@ -1595,10 +1582,8 @@ function confirmRemoveArtwork(id, title) {
   renderArtworksTable();
   renderGallery(currentSearch);
   renderOverviewArtGrid();
-  document.querySelector('.adm-table-title').textContent=`All Artworks (${artworks.length})`;
 }
 
-/* ADD ARTWORK */
 function handleImageUpload(input) {
   const file=input.files[0]; if(!file) return;
   if(!window.uploadArtworkImage){showToast('Firebase Storage not ready');return;}
@@ -1636,11 +1621,10 @@ function clearAddForm() {
   uploadedImageUrl='';
 }
 
-/* ORDERS */
 async function loadOrders() {
   const el=document.getElementById('ordersContent');
   el.innerHTML='<div class="adm-loader">⏳ Loading orders from Firestore…</div>';
-  if(!window.fetchOrders){el.innerHTML='<div class="adm-empty">Connect Firestore to view orders. Orders placed via the site will appear here.</div>';return;}
+  if(!window.fetchOrders){el.innerHTML='<div class="adm-empty">Connect Firestore to view orders.</div>';return;}
   const orders=await window.fetchOrders();
   if(!orders.length){el.innerHTML='<div class="adm-empty">No orders yet. When customers place orders, they will appear here.</div>';return;}
   el.innerHTML=`<div style="overflow-x:auto;"><table class="adm-table">
@@ -1684,7 +1668,6 @@ async function deleteOrder(id) {
   loadOrders(); loadDashboardStats();
 }
 
-/* LIKES TAB */
 function renderLikesTab() {
   const el=document.getElementById('likesContent');
   if(!likes.length){el.innerHTML='<div style="color:var(--adm-muted);font-size:0.84rem;">No likes yet in this session.</div>';return;}
@@ -1697,7 +1680,6 @@ function renderLikesTab() {
   </div>`;
 }
 
-/* USERS (crown) */
 async function loadUsers() {
   const el=document.getElementById('usersContent');
   if(window._currentRole!=='crown'){el.innerHTML='<div class="adm-empty">👑 Crown-level access required to manage users.</div>';return;}
@@ -1707,7 +1689,7 @@ async function loadUsers() {
   if(!users.length){el.innerHTML='<div class="adm-empty">No users found in Firestore users collection.</div>';return;}
   el.innerHTML=`<div style="overflow-x:auto;"><table class="adm-table">
     <thead><tr><th>UID</th><th>Email / ID</th><th>Role</th><th>Actions</th></tr></thead>
-    <tbody>${users.map(u=>`<tr class="adm-user-row">
+    <tbody>${users.map(u=>`<tr>
       <td style="font-size:0.7rem;color:var(--adm-muted);font-family:monospace;">${u.id.slice(0,12)}…</td>
       <td>${u.email||u.id}</td>
       <td>
@@ -1718,11 +1700,7 @@ async function loadUsers() {
           <option ${u.role==='viewer'?'selected':''}>viewer</option>
         </select>
       </td>
-      <td>
-        <div style="display:flex;gap:6px;">
-          <button class="adm-btn-sm" onclick="showToast('UID: ${u.id}')">View</button>
-        </div>
-      </td>
+      <td><button class="adm-btn-sm" onclick="navigator.clipboard.writeText('${u.id}').then(()=>showToast('UID copied'))">Copy UID</button></td>
     </tr>`).join('')}</tbody>
   </table></div>`;
 }
@@ -1733,7 +1711,6 @@ async function changeUserRole(uid, newRole) {
   showToast(`✅ Role updated to "${newRole}"`);
 }
 
-/* ADMIN LOGOUT */
 async function handleAdminLogout() {
   await window.firebaseAdminLogout?.();
   closeAdminDashboard();
@@ -1752,7 +1729,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* Close mobile nav on outside click */
 document.addEventListener('click', e => {
   const nav=document.getElementById('headerNav'), tog=document.getElementById('navToggle');
   if(nav.classList.contains('open')&&!nav.contains(e.target)&&!tog.contains(e.target)) nav.classList.remove('open');
