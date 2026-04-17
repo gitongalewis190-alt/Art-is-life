@@ -1,113 +1,2616 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ART IS LIFE FOUNDATION — Lewis Gitonga</title>
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces. Commissions open.">
+
+<!-- GOOGLE ANALYTICS -->
+
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
+
 <script>
-window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-MPX5MMNRB2');function track(e,d={}){gtag('event',e,d);}
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-MPX5MMNRB2');
+function track(event, data={}){ gtag('event', event, data); }
 </script>
+
+<!-- FIREBASE SDK -->
+
 <script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";import{getAnalytics}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";import{getFirestore,doc,getDoc,getDocs,collection,addDoc,query,orderBy,limit,updateDoc,deleteDoc,setDoc,onSnapshot,serverTimestamp,increment}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";import{getStorage,ref,uploadBytesResumable,getDownloadURL}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";const firebaseConfig={apiKey:"AIzaSyD3EHTs5MJO1614T6VfDZF31CANhAMzQbw",authDomain:"artislife-44968.firebaseapp.com",projectId:"artislife-44968",storageBucket:"artislife-44968.firebasestorage.app",messagingSenderId:"634431592292",appId:"1:634431592292:web:7e88d54be7291310f74c71",measurementId:"G-G0NN8SHKMR"};const app=initializeApp(firebaseConfig);getAnalytics(app);const auth=getAuth(app);const db=getFirestore(app);const storage=getStorage(app);const ROLE_HIERARCHY={crown:4,admin:3,editor:2,viewer:1};async function fetchUserRole(uid){try{const snap=await getDoc(doc(db,"users",uid));if(!snap.exists())return{role:null,error:'no_doc',uid};const raw=(snap.data().role||"").toLowerCase().trim();if(!ROLE_HIERARCHY[raw])return{role:null,error:'invalid_role',rawRole:snap.data().role};return{role:raw,error:null};}catch(e){return{role:null,error:'fetch_error',message:e.message};}}function hasPermission(userRole,requiredRole){if(!userRole||!requiredRole)return false;return(ROLE_HIERARCHY[userRole]||0)>=(ROLE_HIERARCHY[requiredRole]||999);}window._authReady=false;window._currentUser=null;window._currentRole=null;window._firebaseAdmin=false;window._db=db;window._auth=auth;window._storage=storage;window._artworksUnsubscribe=null;window.startArtworksSync=function(){if(window._artworksUnsubscribe)return;window._artworksUnsubscribe=onSnapshot(query(collection(db,"artworks"),orderBy("createdAt","desc")),(snap)=>{const firestoreArts=snap.docs.map(d=>{try{const data=d.data();const priceNum=parseInt(data.priceNum||data.price)||0;let finalImg='images/placeholder.jpg';if(data.image&&data.image.startsWith('http'))finalImg=data.image;else if(data.image)finalImg=data.image;return{id:d.id,title:data.title||'Untitled',price:data.price||`${priceNum} KES`,priceNum,image:finalImg,desc:data.desc||data.description||'',likes:data.likes||0,status:data.status||'available'};}catch(docErr){return null;}}).filter(Boolean);window._firestoreArtworks=firestoreArts;window.dispatchEvent(new Event("artworks_updated"));});};window.startLikesSync=function(){onSnapshot(collection(db,"likes"),(snap)=>{const likeCounts={};snap.docs.forEach(d=>{const artId=d.data().artworkId;if(artId)likeCounts[artId]=(likeCounts[artId]||0)+1;});window._firestoreLikeCounts=likeCounts;window.dispatchEvent(new Event("likes_updated"));});};window._ordersSnapFn=function(callback){return onSnapshot(query(collection(db,"orders"),orderBy("createdAt","desc")),(snap)=>{const orders=snap.docs.map(d=>({id:d.id,...d.data()}));callback(orders);});};window.startCommentsSync=function(artworkId,callback){return onSnapshot(query(collection(db,"comments"),orderBy("createdAt","asc")),(snap)=>{const comments=snap.docs.map(d=>({id:d.id,...d.data()})).filter(c=>c.artworkId===artworkId);callback(comments);});};onAuthStateChanged(auth,async(user)=>{window._authReady=false;if(user){const result=await fetchUserRole(user.uid);window._currentUser=user;window._currentRole=result.role;window._firebaseAdmin=hasPermission(result.role,"admin");}else{window._currentUser=window._currentRole=null;window._firebaseAdmin=false;}window._authReady=true;window.dispatchEvent(new Event("auth_ready"));});window.firebaseAdminLogin=async function(email,password){try{const cred=await signInWithEmailAndPassword(auth,email,password);if(!window._authReady){await new Promise(res=>{const h=()=>{window.removeEventListener("auth_ready",h);res();};window.addEventListener("auth_ready",h);});}if(!hasPermission(window._currentRole,"admin")){await signOut(auth);return{success:false,error:"Insufficient permissions."};}return{success:true,role:window._currentRole};}catch(err){return{success:false,error:err.message};}};window.firebaseAdminLogout=async function(){await signOut(auth);window._currentUser=window._currentRole=null;window._firebaseAdmin=false;};window.saveOrderToFirestore=async function(orderData){try{await addDoc(collection(db,"orders"),{...orderData,status:"pending",createdAt:serverTimestamp()});}catch(e){console.error(e);}};window.toggleLikeFirestore=async function(artworkId){const user=auth.currentUser;const likeId=user?`${user.uid}_${artworkId}`:`anon_${artworkId}`;try{const likeRef=doc(db,"likes",likeId);const snap=await getDoc(likeRef);if(snap.exists()){await deleteDoc(likeRef);return'unliked';}else{await setDoc(likeRef,{userId:user?.uid||'anon',artworkId,createdAt:serverTimestamp()});return'liked';}}catch(e){return null;}};window.saveCommentFirestore=async function(artworkId,text){const user=auth.currentUser;try{await addDoc(collection(db,"comments"),{artworkId,text,author:user?.email?.split('@')[0]||'Visitor',createdAt:serverTimestamp()});return true;}catch(e){return false;}};window.uploadArtworkImage=function(file,onProgress,onComplete,onError){const storageRef=ref(storage,`artworks/${Date.now()}_${file.name}`);const task=uploadBytesResumable(storageRef,file);task.on('state_changed',s=>onProgress?.(Math.round((s.bytesTransferred/s.totalBytes)*100)),e=>onError?.(e),async()=>onComplete?.(await getDownloadURL(task.snapshot.ref)));};function requireAdmin(){if(!window._firebaseAdmin)return false;return true;}window.adminAddArtwork=async(data)=>{if(!requireAdmin())return;return await addDoc(collection(db,"artworks"),{...data,createdAt:serverTimestamp()});};window.adminUpdateArtwork=async(id,updates)=>{if(!requireAdmin())return;await updateDoc(doc(db,"artworks",id),updates);};window.adminDeleteArtwork=async(id)=>{if(!requireAdmin())return;await updateDoc(doc(db,"artworks",id),{deleted:true,deletedAt:serverTimestamp()});};window.adminRestoreArtwork=async(id)=>{if(!requireAdmin())return;await updateDoc(doc(db,"artworks",id),{deleted:false,deletedAt:null});};window.fetchDeletedArtworks=async()=>{try{const s=await getDocs(collection(db,"artworks"));return s.docs.filter(d=>d.data().deleted===true).map(d=>({id:d.id,...d.data()}));}catch(e){return[];}};window.adminUpdateOrder=async(id,updates)=>{if(!requireAdmin())return;await updateDoc(doc(db,"orders",id),updates);};window.adminDeleteOrder=async(id)=>{if(!requireAdmin())return;await deleteDoc(doc(db,"orders",id));};window.fetchDashboardStats=async function(){try{const[ordersSnap,likesSnap]=await Promise.all([getDocs(collection(db,"orders")),getDocs(collection(db,"likes"))]);const orders=ordersSnap.docs.map(d=>({id:d.id,...d.data()}));return{totalOrders:orders.length,pending:orders.filter(o=>o.status==='pending').length,complete:orders.filter(o=>o.status==='completed').length,totalLikes:likesSnap.size,revenue:orders.filter(o=>o.totalPrice).reduce((s,o)=>s+(o.totalPrice||0),0)};}catch(e){return{totalOrders:0,pending:0,complete:0,totalLikes:0,revenue:0};}};window.startArtworksSync();window.startLikesSync();</script>
+  import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAnalytics }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore,
+    doc, getDoc, getDocs,
+    collection, addDoc, query, orderBy, limit,
+    updateDoc, deleteDoc, setDoc,
+    onSnapshot,
+    serverTimestamp,
+    increment
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    getStorage, ref,
+    uploadBytesResumable, getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyD3EHTs5MJO1614T6VfDZF31CANhAMzQbw",
+    authDomain:        "artislife-44968.firebaseapp.com",
+    projectId:         "artislife-44968",
+    storageBucket:     "artislife-44968.firebasestorage.app",
+    messagingSenderId: "634431592292",
+    appId:             "1:634431592292:web:7e88d54be7291310f74c71",
+    measurementId:     "G-G0NN8SHKMR"
+  };
+
+  const app     = initializeApp(firebaseConfig);
+  getAnalytics(app);
+  const auth    = getAuth(app);
+  const db      = getFirestore(app);
+  const storage = getStorage(app);
+
+  const ROLE_HIERARCHY = { crown:4, admin:3, editor:2, viewer:1 };
+
+  async function fetchUserRole(uid) {
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      if (!snap.exists()) {
+        console.warn(`⛔ No Firestore doc for UID: ${uid}`);
+        return { role: null, error: 'no_doc', uid };
+      }
+      const raw = (snap.data().role || "").toLowerCase().trim();
+      if (!ROLE_HIERARCHY[raw]) {
+        console.warn(`⛔ Unknown role: "${snap.data().role}"`);
+        return { role: null, error: 'invalid_role', rawRole: snap.data().role };
+      }
+      return { role: raw, error: null };
+    } catch(e) {
+      console.error("Role fetch error:", e);
+      return { role: null, error: 'fetch_error', message: e.message };
+    }
+  }
+
+  function hasPermission(userRole, requiredRole) {
+    if (!userRole || !requiredRole) return false;
+    return (ROLE_HIERARCHY[userRole]||0) >= (ROLE_HIERARCHY[requiredRole]||999);
+  }
+
+  window._authReady     = false;
+  window._currentUser   = null;
+  window._currentRole   = null;
+  window._firebaseAdmin = false;
+  window._db            = db;
+  window._auth          = auth;
+  window._storage       = storage;
+
+  // ── REAL-TIME ARTWORKS SYNC ──
+  window._artworksUnsubscribe = null;
+  window.startArtworksSync = function() {
+    if (window._artworksUnsubscribe) return;
+    console.log("🔄 Starting real-time artworks sync...");
+    window._artworksUnsubscribe = onSnapshot(
+      query(collection(db, "artworks"), orderBy("createdAt", "desc")),
+      (snap) => {
+        const firestoreArts = snap.docs.map(d => {
+          try {
+            const data = d.data();
+            const priceNum = parseInt(data.priceNum || data.price) || 0;
+            return {
+              id: d.id,
+              title: data.title || 'Untitled',
+              price: data.price || `${priceNum} KES`,
+              priceNum,
+              image: data.image || 'images/placeholder.jpg',
+              desc: data.desc || data.description || '',
+              likes: data.likes || 0,
+              status: data.status || 'available'
+            };
+          } catch(docErr) {
+            console.warn(`⚠️ Skipping malformed Firestore doc ${d.id}:`, docErr);
+            return null;
+          }
+        }).filter(Boolean);
+        window._firestoreArtworks = firestoreArts;
+        window.dispatchEvent(new Event("artworks_updated"));
+        console.log(`✅ Artworks synced: ${firestoreArts.length} Firestore items`);
+      },
+      (err) => {
+        console.warn("Artworks sync error (using local data):", err.message);
+      }
+    );
+  };
+
+  // ── REAL-TIME LIKES COUNT SYNC ──
+  window.startLikesSync = function() {
+    onSnapshot(collection(db, "likes"), (snap) => {
+      const likeCounts = {};
+      snap.docs.forEach(d => {
+        const artId = d.data().artworkId;
+        if (artId) likeCounts[artId] = (likeCounts[artId] || 0) + 1;
+      });
+      window._firestoreLikeCounts = likeCounts;
+      window.dispatchEvent(new Event("likes_updated"));
+    });
+  };
+
+  // ── REAL-TIME ORDERS SNAP BRIDGE ──
+  window._ordersSnapFn = function(callback) {
+    return onSnapshot(
+      query(collection(db, "orders"), orderBy("createdAt", "desc")),
+      (snap) => {
+        const orders = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        callback(orders);
+      },
+      (err) => { console.warn("Orders snap error:", err.message); }
+    );
+  };
+
+  // ── REAL-TIME COMMENTS SYNC ──
+  window.startCommentsSync = function(artworkId, callback) {
+    return onSnapshot(
+      query(collection(db, "comments"), orderBy("createdAt", "asc")),
+      (snap) => {
+        const comments = snap.docs
+          .map(d => ({id: d.id, ...d.data()}))
+          .filter(c => c.artworkId === artworkId);
+        callback(comments);
+      }
+    );
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    window._authReady = false;
+    if (user) {
+      const result = await fetchUserRole(user.uid);
+      const role = result.role;
+      window._currentUser   = user;
+      window._currentRole   = role;
+      window._firebaseAdmin = hasPermission(role, "admin");
+      if (window._firebaseAdmin) console.log(`✅ Admin: ${user.email} | Role: ${role}`);
+      else console.warn(`⛔ Role check failed:`, result);
+    } else {
+      window._currentUser = window._currentRole = null;
+      window._firebaseAdmin = false;
+    }
+    window._authReady = true;
+    window.dispatchEvent(new Event("auth_ready"));
+  });
+
+  window.firebaseAdminLogin = async function(email, password) {
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid  = cred.user.uid;
+      if (!window._authReady) {
+        await new Promise(res => {
+          const h = () => { window.removeEventListener("auth_ready", h); res(); };
+          window.addEventListener("auth_ready", h);
+        });
+      }
+      const role = window._currentRole;
+      if (!hasPermission(role, "admin")) {
+        let diagMsg = '';
+        try {
+          const snap = await getDoc(doc(db, "users", uid));
+          if (!snap.exists()) {
+            diagMsg = `No Firestore record found for this account.\n\nTo fix: Go to Firestore → "users" collection → Create document:\n  Document ID: ${uid}\n  Field: role  |  Value: crown`;
+          } else {
+            const rawRole = snap.data().role;
+            if (!rawRole) {
+              diagMsg = `Account found but has no "role" field.\n\nTo fix: Edit document "${uid}" in Firestore → add field:\n  role = crown`;
+            } else {
+              diagMsg = `Role "${rawRole}" does not have admin access.\nRequires: admin or crown. Contact system administrator.`;
+            }
+          }
+        } catch(e) {
+          diagMsg = `Could not read role data: ${e.message}`;
+        }
+        await signOut(auth);
+        return { success: false, error: diagMsg, uid };
+      }
+      return { success: true, role };
+    } catch(err) {
+      const msgs = {
+        "auth/user-not-found":    "No account with this email.",
+        "auth/wrong-password":    "Incorrect password.",
+        "auth/invalid-email":     "Invalid email address.",
+        "auth/too-many-requests": "Too many attempts. Please wait.",
+        "auth/invalid-credential":"Invalid email or password."
+      };
+      return { success: false, error: msgs[err.code] || err.message };
+    }
+  };
+
+  window.firebaseAdminLogout = async function() {
+    await signOut(auth);
+    window._currentUser = window._currentRole = null;
+    window._firebaseAdmin = false;
+    if(typeof showToast==='function') showToast('👋 Signed out');
+  };
+
+  window.saveOrderToFirestore = async function(orderData) {
+    try { await addDoc(collection(db,"orders"), {...orderData, status:"pending", createdAt:serverTimestamp()}); }
+    catch(e) { console.error("Order save error:",e); }
+  };
+
+  // ── LIKES — stored per user in Firestore ──
+  window.toggleLikeFirestore = async function(artworkId) {
+    const user = auth.currentUser;
+    const likeId = user ? `${user.uid}_${artworkId}` : `anon_${artworkId}`;
+    try {
+      const likeRef = doc(db, "likes", likeId);
+      const snap = await getDoc(likeRef);
+      if (snap.exists()) {
+        await deleteDoc(likeRef);
+        return 'unliked';
+      } else {
+        await setDoc(likeRef, { userId: user?.uid || 'anon', artworkId, createdAt: serverTimestamp() });
+        return 'liked';
+      }
+    } catch(e) {
+      console.error("Like toggle error:", e);
+      return null;
+    }
+  };
+
+  // ── COMMENTS ──
+  window.saveCommentFirestore = async function(artworkId, text) {
+    const user = auth.currentUser;
+    try {
+      await addDoc(collection(db, "comments"), {
+        artworkId,
+        text,
+        author: user?.email?.split('@')[0] || 'Visitor',
+        createdAt: serverTimestamp()
+      });
+      return true;
+    } catch(e) {
+      console.error("Comment error:", e);
+      return false;
+    }
+  };
+
+  window.uploadArtworkImage = function(file, onProgress, onComplete, onError) {
+    const storageRef = ref(storage, `artworks/${Date.now()}_${file.name}`);
+    const task = uploadBytesResumable(storageRef, file);
+    task.on('state_changed',
+      s => onProgress?.(Math.round((s.bytesTransferred/s.totalBytes)*100)),
+      e => { console.error("Upload error:",e); onError?.(e); },
+      async () => onComplete?.(await getDownloadURL(task.snapshot.ref))
+    );
+  };
+
+  function requireAdmin() {
+    if (!window._firebaseAdmin) { if(typeof showToast==='function') showToast('⛔ Admin role required.'); return false; }
+    return true;
+  }
+  window.adminAddArtwork    = async (data) => { if (!requireAdmin()) return; return await addDoc(collection(db,"artworks"), {...data, createdAt:serverTimestamp()}); };
+  window.adminUpdateArtwork = async (id, updates) => { if (!requireAdmin()) return; await updateDoc(doc(db,"artworks",id), updates); };
+  window.adminDeleteArtwork = async (id) => { if (!requireAdmin()) return; await updateDoc(doc(db,"artworks",id), {deleted:true, deletedAt:serverTimestamp()}); };
+  window.adminRestoreArtwork = async (id) => { if (!requireAdmin()) return; await updateDoc(doc(db,"artworks",id), {deleted:false, deletedAt:null}); };
+  window.fetchDeletedArtworks = async () => { try { const s = await getDocs(collection(db,"artworks")); return s.docs.filter(d=>d.data().deleted===true).map(d=>({id:d.id,...d.data()})); } catch(e){return[];} };
+  window.adminUpdateOrder   = async (id, updates) => { if (!requireAdmin()) return; await updateDoc(doc(db,"orders",id), updates); };
+  window.adminDeleteOrder   = async (id) => { if (!requireAdmin()) return; await deleteDoc(doc(db,"orders",id)); };
+
+  window.fetchDashboardStats = async function() {
+    try {
+      const [ordersSnap, likesSnap] = await Promise.all([
+        getDocs(collection(db,"orders")),
+        getDocs(collection(db,"likes"))
+      ]);
+      const orders = ordersSnap.docs.map(d => ({id:d.id,...d.data()}));
+      const pending  = orders.filter(o => o.status === 'pending').length;
+      const complete = orders.filter(o => o.status === 'completed').length;
+      const revenue  = orders.filter(o=>o.totalPrice).reduce((s,o)=>s+(o.totalPrice||0),0);
+      return { totalOrders: orders.length, pending, complete, totalLikes: likesSnap.size, revenue };
+    } catch(e) { console.error(e); return { totalOrders:0, pending:0, complete:0, totalLikes:0, revenue:0 }; }
+  };
+
+  window.fetchOrders = async function() {
+    try {
+      const snap = await getDocs(query(collection(db,"orders"), orderBy("createdAt","desc"), limit(50)));
+      return snap.docs.map(d => ({id:d.id,...d.data()}));
+    } catch(e) { return []; }
+  };
+
+  window.fetchUsers = async function() {
+    try {
+      const snap = await getDocs(collection(db,"users"));
+      return snap.docs.map(d => ({id:d.id,...d.data()}));
+    } catch(e) { return []; }
+  };
+
+  window.adminUpdateUser = async function(uid, updates) {
+    if (!requireAdmin()) return;
+    await updateDoc(doc(db,"users",uid), updates);
+  };
+
+  // ── ARTWORK LIKES COUNT FROM FIRESTORE for dashboard ──
+  window.fetchArtworkLikesCounts = async function() {
+    try {
+      const snap = await getDocs(collection(db, "likes"));
+      const counts = {};
+      snap.docs.forEach(d => {
+        const id = d.data().artworkId;
+        if (id) counts[id] = (counts[id] || 0) + 1;
+      });
+      return counts;
+    } catch(e) { return {}; }
+  };
+
+  window.getAdminSetupInfo = async function(email, password) {
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+      await signOut(auth);
+      return { uid, email };
+    } catch(e) {
+      return { error: e.message };
+    }
+  };
+
+  // Start real-time syncs immediately
+  window.startArtworksSync();
+  window.startLikesSync();
+
+  console.log("🔥 Firebase — Auth ✅ Firestore ✅ Storage ✅ RBAC ✅ Real-time ✅");
+</script>
+
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+
 <style>
-:root{--gold:#c9a84c;--gold-light:#e8d48b;--gold-dim:#d4b96a;--gold-dark:#9a7a2e;--gold-subtle:rgba(201,168,76,0.12);--cream:#faf8f3;--warm-white:#fffef9;--charcoal:#1a1a1a;--ink:#2c2c2c;--muted:#6b6b6b;--muted-light:#999;--red:#b3261e;--green:#1aa34a;--green-bright:#25D366;--blue:#2563eb;--orange:#ea580c;--radius:4px;--transition:0.4s cubic-bezier(0.25,0.46,0.45,0.94);--adm-bg:#0f0e0b;--adm-surface:#191714;--adm-border:rgba(201,168,76,0.14);--adm-text:#f5f0e8;}
+/* ═══════════════════════════════════════
+   ROOT VARIABLES
+═══════════════════════════════════════ */
+:root{
+  --gold:#c9a84c;
+  --gold-light:#e8d48b;
+  --gold-dim:#d4b96a;
+  --gold-dark:#9a7a2e;
+  --gold-subtle:rgba(201,168,76,0.12);
+  --cream:#faf8f3;
+  --warm-white:#fffef9;
+  --charcoal:#1a1a1a;
+  --ink:#2c2c2c;
+  --muted:#6b6b6b;
+  --muted-light:#999;
+  --red:#b3261e;
+  --green:#1aa34a;
+  --green-bright:#25D366;
+  --blue:#2563eb;
+  --orange:#ea580c;
+  --card-shadow:0 2px 20px rgba(0,0,0,0.07);
+  --card-hover:0 24px 64px rgba(0,0,0,0.16);
+  --radius:4px;
+  --transition:0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+  --adm-bg:#0f0e0b;
+  --adm-surface:#191714;
+  --adm-surface2:#211f1a;
+  --adm-border:rgba(201,168,76,0.14);
+  --adm-border-hover:rgba(201,168,76,0.35);
+  --adm-text:#f5f0e8;
+  --adm-muted:rgba(245,240,232,0.45);
+  --adm-gold:#c9a84c;
+  --adm-gold-glow:rgba(201,168,76,0.15);
+  --adm-red:#e05252;
+  --adm-green:#4ade80;
+  --adm-blue:#60a5fa;
+  --adm-orange:#fb923c;
+}
+
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'DM Sans',sans-serif;background:var(--warm-white);color:var(--ink);overflow-x:hidden;}
-h1,h2,h3,h4{font-family:'Cormorant Garamond',serif;}
+html{scroll-behavior:smooth;font-size:16px;}
+body{font-family:'DM Sans',sans-serif;background:var(--warm-white);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4,.display{font-family:'Cormorant Garamond',serif;}
+a{text-decoration:none;color:inherit;}
+img{display:block;}
+button{cursor:pointer;font-family:'DM Sans',sans-serif;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:var(--cream);}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:2px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes heroZoom{from{transform:scale(1);}to{transform:scale(1.07);}}
+@keyframes shimmer{100%{left:100%;}}
+@keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+@keyframes badgePulse{0%,100%{opacity:1;}50%{opacity:0.7;}}
+@keyframes floatIn{from{opacity:0;transform:scale(0.96) translateY(16px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes overlayIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideRight{from{transform:translateX(-20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes countUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes goldPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4);}50%{box-shadow:0 0 0 8px rgba(201,168,76,0);}}
+@keyframes accessDeniedIn{from{opacity:0;transform:scale(0.88) translateY(24px);}to{opacity:1;transform:scale(1) translateY(0);}}
 @keyframes heartBeat{0%{transform:scale(1);}14%{transform:scale(1.3);}28%{transform:scale(1);}42%{transform:scale(1.2);}70%{transform:scale(1);}}
-.hamburger-wrap{position:fixed;top:14px;left:16px;z-index:1800;transition:opacity 0.3s;}
-.hamburger-wrap.hidden{opacity:0;pointer-events:none;}
-.hamburger-btn{background:rgba(255,254,249,0.95);border:1px solid rgba(201,168,76,0.25);border-radius:8px;width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;backdrop-filter:blur(12px);}
-header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backdrop-filter:blur(18px);border-bottom:1px solid rgba(201,168,76,0.15);padding:0 5% 0 72px;display:flex;justify-content:space-between;align-items:center;height:66px;}
-.artwork-card{position:relative;background:white;border-radius:var(--radius);overflow:hidden;transition:var(--transition);}
-.artwork-like-btn{position:absolute;bottom:12px;right:12px;background:white;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;}
-.artwork-like-btn.animating{animation:heartBeat 0.45s ease-out;}
-.cart-drawer{position:fixed;right:-400px;top:0;width:400px;height:100%;background:white;z-index:2000;transition:right 0.4s cubic-bezier(0.16,1,0.3,1);box-shadow:-10px 0 30px rgba(0,0,0,0.1);}
-.cart-drawer.open{right:0;}
-.qty-btn{width:28px;height:28px;border-radius:50%;border:1px solid #ddd;background:none;display:flex;align-items:center;justify-content:center;font-weight:bold;transition:0.2s;}
-.qty-btn:hover{background:#f5f5f5;border-color:var(--gold);}
-.commission-agreement{padding:20px;background:var(--cream);border-radius:8px;margin-top:20px;display:none;}
-.commission-agreement.active{display:block;}
+@keyframes adminHeartbeat{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}25%{transform:scale(1.22);box-shadow:0 0 10px 4px rgba(201,168,76,0.7);}50%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}75%{transform:scale(1.18);box-shadow:0 0 8px 3px rgba(201,168,76,0.55);}}
+@keyframes heartCenterBounce{0%{transform:translate(-50%,-50%) scale(0);opacity:1;}30%{transform:translate(-50%,-50%) scale(1.4);opacity:1;}60%{transform:translate(-50%,-50%) scale(1.1);opacity:0.8;}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0;}}
+@keyframes commentSlide{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── HAMBURGER (TOP LEFT) ── */
+.hamburger-wrap{position:fixed;top:14px;left:16px;z-index:1800;}
+.hamburger-btn{background:rgba(255,254,249,0.95);border:1px solid rgba(201,168,76,0.25);border-radius:8px;width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;transition:all 0.25s;backdrop-filter:blur(12px);}
+.hamburger-btn:hover{border-color:var(--gold);background:var(--gold-subtle);}
+.hamburger-btn span{display:block;width:18px;height:2px;background:var(--charcoal);border-radius:2px;transition:all 0.3s;}
+.hamburger-btn.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hamburger-btn.open span:nth-child(2){opacity:0;}
+.hamburger-btn.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+
+/* HAMBURGER DROPDOWN MENU */
+.hamburger-menu{position:fixed;top:64px;left:16px;z-index:1799;background:rgba(255,254,249,0.98);backdrop-filter:blur(18px);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:8px;min-width:210px;box-shadow:0 12px 40px rgba(0,0,0,0.14);display:none;animation:floatIn 0.25s ease;}
+.hamburger-menu.open{display:block;}
+.ham-menu-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:6px;font-size:0.84rem;font-weight:500;color:var(--ink);border:none;background:none;width:100%;text-align:left;transition:background 0.2s,color 0.2s;}
+.ham-menu-item:hover{background:var(--gold-subtle);color:var(--gold-dark);}
+.ham-menu-item svg{flex-shrink:0;color:var(--gold);}
+.ham-menu-divider{height:1px;background:rgba(201,168,76,0.15);margin:4px 0;}
+.ham-menu-url{font-size:0.72rem;color:var(--muted);font-weight:400;padding:8px 14px 10px;display:flex;align-items:center;gap:8px;}
+.ham-menu-url a{color:var(--gold-dark);text-decoration:underline;text-underline-offset:2px;}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid rgba(201,168,76,0.15);padding:0 5% 0 72px;display:flex;justify-content:space-between;align-items:center;height:66px;}
+.header-brand{font-family:'Cormorant Garamond',serif;font-size:1.08rem;font-weight:600;letter-spacing:0.05em;color:var(--charcoal);display:flex;align-items:center;gap:10px;}
+.header-brand-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;}
+.header-brand span{color:var(--gold);}
+.header-nav{display:flex;align-items:center;gap:6px;}
+.header-nav a{font-size:0.78rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:7px 14px;border-radius:50px;transition:color 0.25s,background 0.25s;}
+.header-nav a:hover{color:var(--charcoal);background:var(--gold-subtle);}
+.header-right{display:flex;align-items:center;gap:10px;}
+#adminPanelTrigger{cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(201,168,76,0.5);background:transparent;flex-shrink:0;user-select:none;animation:adminHeartbeat 0.5s ease infinite;transition:border-color 0.25s;}
+#adminPanelTrigger:hover{background:var(--gold-subtle);border-color:var(--gold);}
+#adminPanelTrigger.active{background:rgba(201,168,76,0.18);border-color:var(--gold);}
+.cart-btn{display:flex;align-items:center;gap:7px;padding:8px 16px;border:1px solid rgba(201,168,76,0.35);border-radius:50px;background:transparent;font-size:0.82rem;font-weight:600;color:var(--ink);transition:all 0.3s;flex-shrink:0;}
+.cart-btn:hover{border-color:var(--gold);background:var(--gold-subtle);}
+#cartCount{background:var(--gold);color:white;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform 0.3s;}
+.nav-toggle{display:none;background:none;border:none;padding:6px;flex-direction:column;gap:5px;}
+.nav-toggle span{display:block;width:22px;height:2px;background:var(--charcoal);border-radius:2px;transition:all 0.3s;}
+
+/* HERO */
+.hero{position:relative;height:88vh;min-height:520px;overflow:hidden;display:flex;align-items:flex-end;}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#1a1108 0%,#2c2010 50%,#0d0d0d 100%);}
+.hero-bg img{width:100%;height:100%;object-fit:cover;opacity:0.65;animation:heroZoom 14s ease-in-out infinite alternate;will-change:transform;}
+.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(15,10,5,0.92) 0%,rgba(15,10,5,0.35) 50%,rgba(201,168,76,0.04) 100%),linear-gradient(to right,rgba(15,10,5,0.4) 0%,transparent 60%);}
+.hero-content{position:relative;z-index:2;padding:6% 8% 7%;max-width:680px;animation:fadeUp 1.6s ease forwards;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:0.68rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;font-weight:500;}
+.hero-eyebrow::before{content:'';width:28px;height:1px;background:var(--gold);}
+.hero-title{font-size:clamp(3rem,7.5vw,6rem);font-weight:300;color:white;line-height:1.02;margin-bottom:20px;letter-spacing:-0.01em;}
+.hero-title em{font-style:italic;color:var(--gold-light);}
+.hero-title strong{font-weight:600;}
+.hero-sub{font-size:1rem;color:rgba(255,255,255,0.58);margin-bottom:36px;max-width:400px;line-height:1.7;font-weight:300;}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:14px 30px;background:var(--gold);color:white;border:none;font-size:0.83rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;border-radius:var(--radius);transition:all 0.3s;position:relative;overflow:hidden;}
+.btn-primary::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.25),transparent);animation:shimmer 3s infinite;}
+.btn-primary:hover{background:var(--gold-dark);transform:translateY(-2px);box-shadow:0 10px 28px rgba(154,122,46,0.45);}
+.btn-ghost{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:transparent;color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.25);font-size:0.83rem;font-weight:500;letter-spacing:0.05em;border-radius:var(--radius);transition:all 0.3s;}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(201,168,76,0.06);}
+.hero-scroll{position:absolute;bottom:36px;right:8%;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.hero-scroll span{font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.35);writing-mode:vertical-rl;}
+.hero-scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--gold),transparent);animation:fadeUp 2s ease infinite alternate;}
+.hero-stats{position:absolute;bottom:0;right:0;z-index:3;display:flex;align-items:stretch;animation:fadeIn 2s ease 0.8s both;}
+.hero-stat{padding:20px 26px;background:rgba(255,254,249,0.06);backdrop-filter:blur(10px);border-left:1px solid rgba(255,255,255,0.07);text-align:center;}
+.hero-stat-num{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:600;color:var(--gold-light);line-height:1;margin-bottom:4px;}
+.hero-stat-label{font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.4);}
+
+/* MARQUEE */
+.marquee-band{background:var(--charcoal);padding:16px 0;overflow:hidden;border-top:1px solid rgba(201,168,76,0.1);}
+.marquee-track{display:flex;width:max-content;animation:marquee 20s linear infinite;will-change:transform;}
+.marquee-item{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-style:italic;color:rgba(255,255,255,0.4);padding:0 30px;white-space:nowrap;}
+.marquee-sep{color:var(--gold);font-style:normal;opacity:0.6;}
+
+/* ABOUT */
+.about-section{padding:110px 8%;display:grid;grid-template-columns:1fr 1fr;gap:90px;align-items:center;max-width:1400px;margin:0 auto;}
+.section-eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:0.63rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;font-weight:500;}
+.section-eyebrow::before{content:'✦';font-size:0.55rem;}
+.about-title{font-size:clamp(2rem,3.5vw,3rem);font-weight:400;line-height:1.12;color:var(--charcoal);margin-bottom:26px;}
+.about-title em{font-style:italic;color:var(--gold-dark);}
+.about-body p{font-size:0.94rem;line-height:1.85;color:var(--muted);margin-bottom:18px;}
+.about-quote{border-left:2px solid var(--gold);padding:6px 0 6px 22px;margin:30px 0;font-family:'Cormorant Garamond',serif;font-size:1.28rem;font-style:italic;color:var(--charcoal);line-height:1.5;}
+.btn-outline{display:inline-flex;align-items:center;gap:10px;padding:13px 26px;border:1px solid var(--gold);color:var(--gold-dark);background:transparent;font-size:0.8rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;border-radius:var(--radius);transition:all 0.3s;position:relative;overflow:hidden;}
+.btn-outline::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(201,168,76,0.12),transparent);animation:shimmer 3.5s infinite;}
+.btn-outline:hover{background:var(--gold);color:white;transform:translateY(-1px);}
+
+/* ENGAGEMENT BUTTONS (Like + Comment next to Explore Journey) */
+.about-cta-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:24px;}
+.engage-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border:1px solid rgba(201,168,76,0.3);border-radius:50px;background:transparent;font-size:0.78rem;font-weight:600;color:var(--muted);transition:all 0.3s;}
+.engage-btn:hover{border-color:var(--gold);color:var(--charcoal);background:var(--gold-subtle);}
+.engage-btn.liked{border-color:#e05252;color:#e05252;background:rgba(224,82,82,0.07);}
+.engage-btn.liked svg{fill:#e05252;color:#e05252;}
+.engage-btn svg{transition:all 0.3s;}
+.engage-count{font-size:0.8rem;}
+
+.about-img-frame{position:relative;}
+.about-img-inner{position:relative;border-radius:var(--radius);overflow:hidden;}
+.about-img-inner img{width:100%;height:460px;object-fit:cover;display:block;transition:transform 0.7s ease;cursor:zoom-in;}
+.about-img-inner:hover img{transform:scale(1.03);}
+.about-img-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(15,10,5,0.75) 0%,transparent 100%);padding:36px 24px 22px;}
+.about-img-caption{font-family:'Cormorant Garamond',serif;font-style:italic;color:rgba(255,255,255,0.8);font-size:0.88rem;}
+.about-img-frame::before{content:'';position:absolute;top:-14px;left:-14px;right:14px;bottom:14px;border:1px solid rgba(201,168,76,0.25);border-radius:var(--radius);z-index:-1;pointer-events:none;}
+.about-badge{position:absolute;top:-18px;right:-18px;width:90px;height:90px;border-radius:50%;background:var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2;box-shadow:0 8px 24px rgba(154,122,46,0.4);}
+.about-badge-num{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:white;line-height:1;}
+.about-badge-text{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.8);}
+
+/* SEARCH */
+.search-band{background:var(--cream);padding:36px 8%;border-top:1px solid rgba(201,168,76,0.12);border-bottom:1px solid rgba(201,168,76,0.12);}
+.search-inner{max-width:580px;margin:0 auto;position:relative;}
+.search-label{display:block;font-size:0.62rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;text-align:center;}
+.search-field{width:100%;padding:14px 50px 14px 20px;border:1px solid rgba(201,168,76,0.28);border-radius:var(--radius);background:white;font-size:0.93rem;font-family:'DM Sans',sans-serif;color:var(--ink);transition:all 0.3s;outline:none;box-shadow:0 2px 12px rgba(0,0,0,0.04);}
+.search-field:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.1);}
+.search-field::placeholder{color:#c0bdb7;}
+.search-ico{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--gold);pointer-events:none;margin-top:11px;}
+.filter-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px;}
+.filter-chip{padding:6px 16px;border:1px solid rgba(201,168,76,0.25);border-radius:50px;background:white;font-size:0.74rem;font-weight:500;letter-spacing:0.04em;color:var(--muted);transition:all 0.25s;}
+.filter-chip:hover,.filter-chip.active{border-color:var(--gold);background:var(--gold);color:white;}
+
+/* GALLERY */
+.gallery-section{padding:80px 8%;}
+.gallery-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:50px;padding-bottom:20px;border-bottom:1px solid rgba(0,0,0,0.06);}
+.gallery-title{font-size:clamp(1.7rem,3vw,2.5rem);font-weight:400;color:var(--charcoal);}
+.gallery-title span{font-style:italic;color:var(--gold-dark);}
+.gallery-meta{text-align:right;}
+.gallery-count{font-size:0.78rem;color:var(--muted);letter-spacing:0.1em;display:block;margin-bottom:4px;}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;}
+
+/* ART CARD */
+.art-card{background:white;border:1px solid rgba(0,0,0,0.06);border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow);transition:transform var(--transition), box-shadow var(--transition);animation:fadeUp 0.55s ease both;position:relative;}
+.art-card:hover{transform:translateY(-9px);box-shadow:var(--card-hover);}
+.art-img-wrap{position:relative;overflow:hidden;height:270px;cursor:pointer;background:var(--cream);}
+.art-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform 0.65s ease;}
+.art-card:hover .art-img-wrap img{transform:scale(1.07);}
+.art-img-overlay{position:absolute;inset:0;background:rgba(15,10,5,0);transition:background 0.4s ease;display:flex;align-items:center;justify-content:center;}
+.art-card:hover .art-img-overlay{background:rgba(15,10,5,0.18);}
+.art-zoom-icon{opacity:0;transform:scale(0.7);transition:opacity 0.35s ease, transform 0.35s ease;background:rgba(255,255,255,0.9);width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.art-zoom-icon svg{width:20px;height:20px;color:var(--charcoal);}
+.art-card:hover .art-zoom-icon{opacity:1;transform:scale(1);}
+.badge-available{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,var(--green) 0%,#2dd872 50%,var(--green) 100%);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
+.badge-sold{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#b3261e 0%,#e05252 50%,#b3261e 100%);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
+.badge-featured{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#2563eb 0%,#60a5fa 50%,#2563eb 100%);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
+.like-btn{position:absolute;bottom:10px;right:10px;width:34px;height:34px;background:rgba(255,255,255,0.93);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform 0.3s,box-shadow 0.3s;box-shadow:0 2px 10px rgba(0,0,0,0.12);z-index:2;}
+.like-btn:hover{transform:scale(1.18);box-shadow:0 4px 14px rgba(0,0,0,0.2);}
+.like-btn svg{width:16px;height:16px;transition:all 0.3s;}
+.like-btn.liked svg{fill:#e05252;color:#e05252;}
+.heart-bounce-overlay{position:fixed;pointer-events:none;z-index:9000;font-size:3rem;animation:heartCenterBounce 1.5s ease forwards;transform:translate(-50%,-50%) scale(0);color:#e05252;}
+.art-info{padding:18px 18px 12px;}
+.art-title{font-family:'Cormorant Garamond',serif;font-size:1.12rem;font-weight:600;color:var(--charcoal);margin-bottom:4px;line-height:1.2;}
+.art-price{color:var(--gold-dark);font-weight:700;font-size:0.88rem;margin-bottom:8px;letter-spacing:0.04em;}
+.art-desc{font-size:0.8rem;color:var(--muted);line-height:1.55;margin-bottom:4px;}
+.art-like-count{font-size:0.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:4px;}
+.art-like-count svg{width:12px;height:12px;color:#e05252;}
+.art-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 14px 14px;}
+.art-btn{padding:9px 8px;border:none;border-radius:var(--radius);font-size:0.73rem;font-weight:600;letter-spacing:0.04em;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.28s;position:relative;overflow:hidden;}
+.art-btn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.35),transparent);animation:shimmer 3s infinite;}
+.art-btn svg{width:14px;height:14px;flex-shrink:0;}
+.art-btn-order{background:var(--green-bright);color:white;grid-column:1/-1;}
+.art-btn-order:hover{background:#128C7E;transform:translateY(-1px);}
+.art-btn-cart{background:var(--gold);color:white;}
+.art-btn-cart:hover{background:var(--gold-dark);}
+.art-btn-call{background:#f0f0f0;color:var(--ink);border:1px solid #e0e0e0;}
+.art-btn-call:hover{background:var(--red);color:white;border-color:var(--red);}
+.no-results{text-align:center;padding:90px 20px;color:var(--muted);grid-column:1/-1;}
+.no-results-icon{font-size:3rem;margin-bottom:16px;opacity:0.3;}
+.no-results h3{font-family:'Cormorant Garamond',serif;font-size:2rem;margin-bottom:10px;color:var(--charcoal);}
+.no-results p{font-size:0.88rem;margin-bottom:24px;}
+.no-results button{padding:10px 26px;border:1px solid var(--gold);background:transparent;color:var(--gold-dark);border-radius:var(--radius);font-size:0.82rem;font-weight:500;}
+
+/* COMMENT MODAL */
+.comment-modal-box{max-width:500px;}
+.comment-body{padding:32px;}
+.comment-body h3{font-size:1.35rem;font-weight:500;margin-bottom:4px;}
+.comment-artwork-tag{font-size:0.82rem;color:var(--gold-dark);font-weight:600;margin-bottom:20px;display:block;}
+.comment-list{max-height:220px;overflow-y:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;}
+.comment-list::-webkit-scrollbar{width:3px;}
+.comment-item{background:var(--cream);border-radius:var(--radius);padding:10px 14px;animation:commentSlide 0.3s ease;}
+.comment-item-author{font-size:0.72rem;font-weight:700;color:var(--gold-dark);margin-bottom:3px;}
+.comment-item-text{font-size:0.84rem;color:var(--ink);line-height:1.55;}
+.comment-item-time{font-size:0.65rem;color:var(--muted);margin-top:4px;}
+.comment-empty{font-size:0.84rem;color:var(--muted);text-align:center;padding:16px;}
+.comment-input-row{display:flex;gap:8px;}
+.comment-input{flex:1;padding:10px 14px;border:1px solid rgba(201,168,76,0.28);border-radius:var(--radius);font-size:0.88rem;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:border-color 0.3s;}
+.comment-input:focus{border-color:var(--gold);}
+.comment-submit{padding:10px 18px;background:var(--gold);color:white;border:none;border-radius:var(--radius);font-size:0.8rem;font-weight:700;transition:background 0.3s;}
+.comment-submit:hover{background:var(--gold-dark);}
+
+/* CART DRAWER */
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.52);z-index:1500;display:none;}
+.cart-overlay.open{display:block;animation:overlayIn 0.3s ease;}
+.cart-drawer{position:fixed;top:0;right:0;width:380px;max-width:95vw;height:100%;background:white;z-index:1600;display:flex;flex-direction:column;box-shadow:-12px 0 50px rgba(0,0,0,0.14);transform:translateX(100%);transition:transform var(--transition);will-change:transform;}
+.cart-drawer.open{transform:translateX(0);}
+.cart-head{padding:22px 24px;border-bottom:1px solid #f0ede8;display:flex;justify-content:space-between;align-items:center;}
+.cart-head h3{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;display:flex;align-items:center;gap:8px;}
+.cart-head-right{display:flex;align-items:center;gap:8px;}
+.cart-close-btn{background:none;border:1px solid #eee;border-radius:50%;width:32px;height:32px;font-size:1rem;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.cart-close-btn:hover{border-color:var(--red);color:var(--red);}
+.cart-clear-btn{background:none;border:1px solid rgba(179,38,30,0.3);border-radius:50px;padding:5px 12px;font-size:0.72rem;font-weight:600;color:var(--red);transition:all 0.2s;}
+.cart-clear-btn:hover{background:var(--red);color:white;border-color:var(--red);}
+.cart-items-wrap{flex:1;overflow-y:auto;padding:20px 24px;}
+.cart-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid #f8f6f2;align-items:center;}
+.cart-item-info{flex:1;}
+.cart-item-info strong{display:block;font-size:0.88rem;margin-bottom:3px;color:var(--charcoal);}
+.cart-item-info span{font-size:0.8rem;color:var(--gold-dark);font-weight:600;}
+.cart-item-del{background:none;border:none;color:#ddd;font-size:1rem;transition:color 0.2s;padding:4px;display:flex;align-items:center;}
+.cart-item-del:hover{color:var(--red);}
+.cart-item-del svg{width:14px;height:14px;}
+.cart-empty-state{text-align:center;padding:70px 20px;color:var(--muted);}
+.cart-empty-icon{font-size:3rem;margin-bottom:16px;opacity:0.35;}
+.cart-footer{padding:20px 24px;border-top:1px solid #f0ede8;display:none;}
+.cart-summary{margin-bottom:14px;}
+.cart-total-row{display:flex;justify-content:space-between;margin-bottom:6px;font-weight:600;font-size:0.93rem;}
+.cart-total-row span:last-child{color:var(--gold-dark);}
+.cart-count-row{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--muted);margin-bottom:4px;}
+.btn-checkout{width:100%;padding:14px;background:var(--green-bright);color:white;border:none;border-radius:var(--radius);font-size:0.88rem;font-weight:700;transition:all 0.3s;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-checkout svg{width:16px;height:16px;}
+.btn-checkout:hover{background:#128C7E;transform:translateY(-1px);}
+
+/* IMAGE ZOOM OVERLAY */
+.img-zoom-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2500;display:none;align-items:center;justify-content:center;cursor:zoom-out;}
+.img-zoom-overlay.active{display:flex;animation:overlayIn 0.3s ease;}
+.img-zoom-inner{position:relative;display:flex;align-items:center;justify-content:center;max-width:90vw;max-height:90vh;}
+.img-zoom-inner img{max-width:86vw;max-height:86vh;object-fit:contain;border-radius:var(--radius);box-shadow:0 40px 100px rgba(0,0,0,0.7);transition:transform 0.2s ease;}
+.img-zoom-close{position:fixed;top:18px;right:18px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;width:38px;height:38px;border-radius:50%;font-size:0.9rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;z-index:10;}
+.img-zoom-close:hover{background:rgba(255,255,255,0.22);}
+.img-zoom-close svg{width:16px;height:16px;}
+.img-zoom-caption{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.6);font-size:0.82rem;font-family:'Cormorant Garamond',serif;font-style:italic;background:rgba(0,0,0,0.5);padding:6px 16px;border-radius:50px;white-space:nowrap;}
+
+/* MODAL BASE */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;justify-content:center;align-items:center;padding:20px;}
+.modal-overlay.active{display:flex;animation:overlayIn 0.3s ease;}
+.modal-box{background:white;border-radius:6px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:floatIn 0.4s ease;}
+.modal-close{position:absolute;top:14px;right:14px;z-index:10;width:30px;height:30px;border-radius:50%;border:1px solid #e8e5e0;background:white;font-size:0.9rem;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.modal-close svg{width:14px;height:14px;}
+
+/* STORY MODAL */
+.story-box{max-width:920px;}
+.story-hero-img{width:100%;height:300px;object-fit:cover;display:block;border-radius:6px 6px 0 0;cursor:zoom-in;}
+.story-body{padding:44px 48px;}
+.story-eyebrow{font-size:0.62rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:block;}
+.story-body h2{font-size:2rem;font-weight:400;margin-bottom:32px;color:var(--charcoal);}
+.story-chapter{margin-bottom:32px;}
+.story-chapter h4{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;color:var(--gold-dark);border-left:2px solid var(--gold);padding-left:14px;margin-bottom:12px;}
+.story-chapter p{font-size:0.9rem;line-height:1.82;color:var(--muted);}
+.story-img-grid{display:grid;gap:12px;margin:20px 0;}
+.story-img-grid.cols-2{grid-template-columns:1fr 1fr;}
+.story-img-grid img{width:100%;height:200px;object-fit:cover;border-radius:var(--radius);display:block;cursor:zoom-in;transition:opacity 0.2s;}
+.story-img-grid img:hover{opacity:0.88;}
+.story-img-grid.full img{height:240px;}
+.story-blockquote{background:var(--cream);border-left:2px solid var(--gold);padding:22px 28px;margin:28px 0;border-radius:0 var(--radius) var(--radius) 0;}
+.story-blockquote p{font-family:'Cormorant Garamond',serif;font-size:1.22rem;font-style:italic;color:var(--charcoal);line-height:1.5;}
+
+/* ORDER MODAL */
+.order-box{max-width:520px;}
+.order-body{padding:36px;}
+.order-body h3{font-size:1.5rem;font-weight:500;margin-bottom:5px;}
+.order-artwork-tag{font-size:0.82rem;color:var(--gold-dark);font-weight:600;margin-bottom:26px;display:block;}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:0.71rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.form-input,.form-textarea,.form-select{width:100%;padding:11px 14px;border:1px solid #e0dbd4;border-radius:var(--radius);font-size:0.9rem;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:white;transition:border-color 0.3s,box-shadow 0.3s;}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.1);}
+.form-textarea{resize:vertical;min-height:80px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.channel-label{font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;display:block;}
+.channel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.channel-opt{padding:12px 8px;border:1px solid #e0dbd4;border-radius:var(--radius);background:white;font-size:0.76rem;font-weight:600;color:var(--muted);transition:all 0.25s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.channel-opt .ch-icon{width:20px;height:20px;}
+.channel-opt:hover,.channel-opt.sel{border-color:var(--gold);background:var(--gold-subtle);color:var(--charcoal);}
+.channel-opt.sel-wa.sel{border-color:var(--green-bright);background:rgba(37,211,102,0.07);}
+.channel-opt.sel-email.sel{border-color:var(--blue);background:rgba(37,99,235,0.06);}
+.channel-opt.sel-sms.sel{border-color:var(--orange);background:rgba(234,88,12,0.06);}
+.btn-send{width:100%;padding:14px;border:none;border-radius:var(--radius);font-size:0.87rem;font-weight:700;letter-spacing:0.04em;transition:all 0.3s;position:relative;overflow:hidden;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-send svg{width:16px;height:16px;}
+.btn-wa{background:var(--green-bright);color:white;}
+.btn-wa:hover{background:#128C7E;transform:translateY(-1px);}
+.btn-email{background:var(--blue);color:white;}
+.btn-email:hover{background:#1d4ed8;}
+.btn-sms{background:var(--orange);color:white;}
+.btn-sms:hover{background:#c2410c;}
+
+/* COMMISSION MODAL */
+.commission-box{max-width:580px;}
+.commission-body{padding:40px;}
+.commission-body .section-eyebrow{margin-bottom:8px;}
+.commission-body h3{font-size:1.65rem;font-weight:400;margin-bottom:8px;}
+.commission-subtitle{font-size:0.85rem;color:var(--muted);margin-bottom:28px;line-height:1.6;}
+
+/* ADMIN LOGIN MODAL */
+.admin-login-box{max-width:440px;}
+.admin-login-body{padding:36px;}
+.admin-login-body h3{font-size:1.45rem;font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:10px;}
+.admin-login-body h3 svg{width:22px;height:22px;color:var(--gold);}
+.admin-subtitle{font-size:0.82rem;color:var(--muted);margin-bottom:26px;line-height:1.5;}
+.admin-error{color:var(--red);font-size:0.82rem;margin-top:8px;display:none;padding:12px 16px;background:rgba(179,38,30,0.06);border-radius:var(--radius);border-left:2px solid var(--red);white-space:pre-line;line-height:1.6;}
+.admin-uid-box{display:none;margin-top:14px;padding:14px 16px;background:#f0f8ff;border:1px solid #bee3f8;border-radius:var(--radius);}
+.admin-uid-box h5{font-size:0.78rem;font-weight:700;color:#1e40af;margin-bottom:8px;letter-spacing:0.04em;}
+.admin-uid-box code{display:block;background:#1e293b;color:#7dd3fc;font-size:0.76rem;padding:10px 12px;border-radius:4px;font-family:monospace;word-break:break-all;margin-bottom:10px;user-select:all;cursor:text;}
+.admin-uid-box p{font-size:0.76rem;color:#334155;line-height:1.55;}
+.admin-uid-copy{padding:5px 14px;font-size:0.72rem;font-weight:600;border:1px solid #93c5fd;border-radius:4px;background:white;color:#1e40af;margin-top:6px;transition:all 0.2s;}
+.admin-uid-copy:hover{background:#eff6ff;}
+.btn-admin-login{width:100%;padding:13px;background:var(--charcoal);color:var(--gold);border:none;border-radius:var(--radius);font-size:0.87rem;font-weight:700;letter-spacing:0.04em;transition:all 0.3s;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-admin-login svg{width:16px;height:16px;}
+.btn-admin-login:hover{background:#333;}
+.btn-admin-login:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* ── ACCESS DENIED MODAL (large, premium) ── */
+.access-denied-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:24px;}
+.access-denied-overlay.active{display:flex;animation:overlayIn 0.35s ease;}
+.access-denied-box{background:linear-gradient(145deg,#1a1108,#2c2010);border:1px solid rgba(201,168,76,0.35);border-radius:16px;max-width:520px;width:100%;padding:52px 44px;text-align:center;animation:accessDeniedIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;box-shadow:0 40px 120px rgba(0,0,0,0.8),0 0 60px rgba(179,38,30,0.15);}
+.access-denied-icon{width:72px;height:72px;background:rgba(179,38,30,0.15);border:1px solid rgba(179,38,30,0.35);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;}
+.access-denied-icon svg{width:32px;height:32px;color:#e05252;}
+.access-denied-box h2{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:400;color:white;margin-bottom:16px;line-height:1.2;}
+.access-denied-box p{font-size:1.05rem;color:rgba(255,255,255,0.65);line-height:1.7;margin-bottom:32px;}
+.access-denied-box p strong{color:var(--gold-light);}
+.access-denied-close{padding:14px 36px;background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold-light);border-radius:50px;font-size:0.84rem;font-weight:600;letter-spacing:0.08em;transition:all 0.3s;}
+.access-denied-close:hover{background:rgba(201,168,76,0.12);border-color:var(--gold);}
+
+/* ADMIN DASHBOARD */
+.adm-overlay{display:none;position:fixed;inset:0;z-index:3000;background:var(--adm-bg);overflow:hidden;}
+.adm-overlay.active{display:flex;flex-direction:column;animation:fadeIn 0.3s ease;}
+.adm-topbar{height:62px;flex-shrink:0;background:var(--adm-surface);border-bottom:1px solid var(--adm-border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;}
+.adm-topbar-brand{display:flex;align-items:center;gap:12px;font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--adm-gold);}
+.adm-topbar-brand-dot{width:7px;height:7px;border-radius:50%;background:var(--adm-gold);}
+.adm-topbar-right{display:flex;align-items:center;gap:14px;}
+.adm-user-chip{display:flex;align-items:center;gap:9px;background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:50px;padding:7px 16px;font-size:0.78rem;color:var(--adm-muted);}
+.adm-role-pip{padding:2px 10px;border-radius:50px;font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;}
+.adm-role-pip.crown{background:rgba(201,168,76,0.18);color:var(--adm-gold);}
+.adm-role-pip.admin{background:rgba(96,165,250,0.15);color:var(--adm-blue);}
+.adm-close-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--adm-border);background:transparent;color:var(--adm-muted);display:flex;align-items:center;justify-content:center;transition:all 0.25s;}
+.adm-close-btn svg{width:14px;height:14px;}
+.adm-close-btn:hover{border-color:var(--adm-red);color:var(--adm-red);}
+.adm-body{display:flex;flex:1;overflow:hidden;}
+.adm-sidebar{width:220px;flex-shrink:0;background:var(--adm-surface);border-right:1px solid var(--adm-border);padding:20px 0;display:flex;flex-direction:column;overflow-y:auto;}
+.adm-nav-section{margin-bottom:22px;}
+.adm-nav-label{font-size:0.58rem;letter-spacing:0.26em;text-transform:uppercase;color:rgba(201,168,76,0.45);padding:0 20px 8px;display:block;}
+.adm-nav-item{display:flex;align-items:center;gap:11px;padding:10px 20px;margin:1px 10px;border-radius:6px;font-size:0.82rem;color:var(--adm-muted);background:transparent;border:none;width:calc(100% - 20px);text-align:left;transition:all 0.22s;cursor:pointer;}
+.adm-nav-item:hover{color:var(--adm-text);background:var(--adm-surface2);}
+.adm-nav-item.active{color:var(--adm-gold);background:var(--adm-gold-glow);border:1px solid var(--adm-border);}
+.adm-nav-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.adm-nav-icon svg{width:16px;height:16px;}
+.adm-nav-badge{margin-left:auto;background:var(--adm-red);color:white;border-radius:50px;font-size:0.6rem;font-weight:700;padding:1px 7px;}
+.adm-main{flex:1;overflow-y:auto;padding:28px;}
+.adm-main::-webkit-scrollbar{width:3px;}
+.adm-main::-webkit-scrollbar-thumb{background:var(--adm-border);}
+.adm-tab{display:none;}
+.adm-tab.active{display:block;animation:slideRight 0.3s ease;}
+.adm-page-header{margin-bottom:24px;}
+.adm-page-title{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:400;color:var(--adm-text);margin-bottom:4px;}
+.adm-page-sub{font-size:0.8rem;color:var(--adm-muted);}
+.adm-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.adm-stat-card{background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;padding:20px;transition:border-color 0.25s;}
+.adm-stat-card:hover{border-color:var(--adm-border-hover);}
+.adm-stat-label{font-size:0.66rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--adm-muted);margin-bottom:10px;}
+.adm-stat-num{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:600;color:var(--adm-gold);line-height:1;animation:countUp 0.5s ease;}
+.adm-stat-sub{font-size:0.72rem;color:var(--adm-muted);margin-top:6px;}
+.adm-stat-card.green .adm-stat-num{color:var(--adm-green);}
+.adm-stat-card.blue  .adm-stat-num{color:var(--adm-blue);}
+.adm-stat-card.red   .adm-stat-num{color:var(--adm-red);}
+.adm-table-wrap{background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;overflow:hidden;}
+.adm-table-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--adm-border);}
+.adm-table-title{font-size:0.88rem;font-weight:600;color:var(--adm-text);}
+.adm-table-actions{display:flex;gap:8px;}
+.adm-btn-sm{padding:6px 14px;border-radius:4px;font-size:0.75rem;font-weight:600;border:1px solid var(--adm-border);background:transparent;color:var(--adm-muted);transition:all 0.2s;display:inline-flex;align-items:center;gap:5px;}
+.adm-btn-sm svg{width:12px;height:12px;}
+.adm-btn-sm:hover{border-color:var(--adm-gold);color:var(--adm-gold);}
+.adm-btn-sm.primary{background:var(--adm-gold);color:var(--adm-bg);border-color:var(--adm-gold);}
+.adm-btn-sm.primary:hover{background:var(--gold-dark);border-color:var(--gold-dark);}
+.adm-btn-sm.danger{border-color:var(--adm-red);color:var(--adm-red);}
+.adm-btn-sm.danger:hover{background:var(--adm-red);color:white;}
+table.adm-table{width:100%;border-collapse:collapse;}
+table.adm-table th{font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--adm-muted);padding:12px 20px;text-align:left;border-bottom:1px solid var(--adm-border);}
+table.adm-table td{font-size:0.82rem;color:var(--adm-text);padding:13px 20px;border-bottom:1px solid rgba(201,168,76,0.06);}
+table.adm-table tr:last-child td{border-bottom:none;}
+table.adm-table tr:hover td{background:var(--adm-surface2);}
+.adm-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:50px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;}
+.adm-status-badge.pending{background:rgba(251,146,60,0.12);color:var(--adm-orange);}
+.adm-status-badge.completed{background:rgba(74,222,128,0.12);color:var(--adm-green);}
+.adm-status-badge.cancelled{background:rgba(224,82,82,0.12);color:var(--adm-red);}
+.adm-empty{text-align:center;padding:50px 20px;color:var(--adm-muted);font-size:0.85rem;}
+.adm-loader{text-align:center;padding:40px;color:var(--adm-muted);font-size:0.85rem;}
+.adm-form-section{background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;padding:24px;margin-bottom:20px;}
+.adm-form-section h4{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--adm-text);margin-bottom:18px;}
+.adm-input{width:100%;padding:10px 14px;background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:4px;color:var(--adm-text);font-size:0.88rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.25s;}
+.adm-input:focus{border-color:var(--adm-gold);}
+.adm-input::placeholder{color:rgba(245,240,232,0.2);}
+.adm-input.textarea{min-height:80px;resize:vertical;}
+.adm-form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.adm-form-group{margin-bottom:14px;}
+.adm-form-label{display:block;font-size:0.66rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--adm-muted);margin-bottom:6px;}
+.adm-upload-zone{border:2px dashed var(--adm-border);border-radius:6px;padding:30px;text-align:center;cursor:pointer;transition:border-color 0.25s;color:var(--adm-muted);font-size:0.84rem;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.adm-upload-zone svg{width:24px;height:24px;}
+.adm-upload-zone:hover{border-color:var(--adm-gold);color:var(--adm-gold);}
+.adm-progress{height:4px;background:var(--adm-border);border-radius:2px;overflow:hidden;margin-top:10px;display:none;}
+.adm-progress-bar{height:100%;background:var(--adm-gold);border-radius:2px;transition:width 0.3s;}
+.adm-role-select{background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:4px;color:var(--adm-text);font-size:0.78rem;padding:4px 8px;outline:none;}
+.adm-status-select{background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:4px;color:var(--adm-text);font-size:0.78rem;padding:4px 8px;outline:none;}
+.adm-like-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--adm-muted);}
+.adm-like-badge svg{width:11px;height:11px;color:#e05252;fill:#e05252;}
+
+/* TOAST */
+#toast{position:fixed;bottom:94px;right:26px;z-index:6000;background:var(--charcoal);color:white;padding:12px 20px;border-radius:var(--radius);font-size:0.84rem;max-width:290px;border-left:3px solid var(--gold);box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:translateY(16px);opacity:0;pointer-events:none;transition:transform 0.4s var(--transition), opacity 0.4s ease;}
+#toast.show{transform:translateY(0);opacity:1;}
+
+/* FAB */
+.fab-wrap{position:fixed;bottom:26px;right:26px;z-index:1400;}
+.fab-btn{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);color:white;padding:14px 22px;border-radius:50px;font-weight:700;font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;border:none;box-shadow:0 8px 28px rgba(154,122,46,0.45);transition:all 0.35s;display:flex;align-items:center;gap:9px;position:relative;overflow:hidden;}
+.fab-btn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.35),transparent);animation:shimmer 2.5s infinite;}
+.fab-btn:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 16px 40px rgba(154,122,46,0.55);}
+.fab-btn svg{width:16px;height:16px;}
+
+/* SOCIAL + FOOTER */
+.social-section{background:var(--charcoal);padding:70px 8%;text-align:center;border-top:1px solid rgba(201,168,76,0.1);}
+.social-section h3{font-family:'Cormorant Garamond',serif;font-size:2.1rem;font-weight:300;color:white;margin-bottom:10px;}
+.social-section p{font-size:0.85rem;color:rgba(255,255,255,0.4);margin-bottom:36px;}
+.social-links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+.social-link{padding:11px 24px;border:1px solid rgba(201,168,76,0.3);color:rgba(255,255,255,0.7);border-radius:50px;font-size:0.8rem;font-weight:500;letter-spacing:0.06em;transition:all 0.3s;display:flex;align-items:center;gap:8px;}
+.social-link svg{width:16px;height:16px;}
+.social-link:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(201,168,76,0.08);}
+footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0.25);background:var(--charcoal);border-top:1px solid rgba(255,255,255,0.05);line-height:1.7;}
+
+/* RESPONSIVE */
+@media(max-width:1024px){
+  .gallery-grid{grid-template-columns:repeat(2,1fr);}
+  .about-section{grid-template-columns:1fr;gap:50px;padding:70px 6%;}
+  .about-img-frame{order:-1;}
+  .hero-stats{display:none;}
+  .adm-stats-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:768px){
+  header{padding:0 5% 0 70px;}
+  .header-nav{display:none;}
+  .header-nav.open{display:flex;flex-direction:column;position:absolute;top:66px;left:0;right:0;background:rgba(255,254,249,0.97);backdrop-filter:blur(18px);padding:16px 5%;border-bottom:1px solid rgba(201,168,76,0.15);z-index:899;}
+  .nav-toggle{display:flex;}
+  .gallery-grid{grid-template-columns:1fr;}
+  .gallery-section{padding:50px 5%;}
+  .about-section{padding:60px 5%;}
+  .story-body{padding:28px;}
+  .order-body,.commission-body{padding:28px;}
+  .form-row{grid-template-columns:1fr;}
+  .hero-content{padding:4% 6% 9%;}
+  .hero{height:78vh;}
+  .hero-title{font-size:clamp(2.6rem,9vw,4rem);}
+  .marquee-band{display:none;}
+  .adm-sidebar{width:180px;}
+  .adm-stats-grid{grid-template-columns:1fr 1fr;}
+  .adm-form-row{grid-template-columns:1fr;}
+}
+@media(max-width:480px){
+  .header-brand{font-size:0.82rem;}
+  .gallery-header{flex-direction:column;align-items:flex-start;gap:10px;}
+  .channel-grid{grid-template-columns:1fr;}
+  .cart-drawer{width:100%;}
+  .hero-actions{flex-direction:column;align-items:flex-start;}
+  .fab-btn{padding:12px 18px;font-size:0.75rem;}
+  .adm-sidebar{display:none;}
+  .adm-stats-grid{grid-template-columns:1fr;}
+  .about-cta-row{flex-direction:column;align-items:flex-start;}
+}
 </style>
+
 </head>
 <body>
-<div id="hamburgerWrap" class="hamburger-wrap">
-  <button id="hamburgerBtn" class="hamburger-btn">
+
+<!-- HAMBURGER MENU (TOP LEFT) -->
+
+<div class="hamburger-wrap">
+  <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleHamburger()" aria-label="Open menu">
     <span></span><span></span><span></span>
   </button>
+  <div class="hamburger-menu" id="hamburgerMenu">
+    <button class="ham-menu-item" onclick="openStory();closeHamburger()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      My Story
+    </button>
+    <button class="ham-menu-item" onclick="scrollToGallery();closeHamburger()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Collections
+    </button>
+  </div>
 </div>
+
+<!-- HEADER -->
+
 <header>
-  <div class="header-brand">ART IS LIFE<span class="header-brand-dot"></span><span>FOUNDATION</span></div>
+  <div class="header-brand">
+    <div class="header-brand-dot"></div>
+    ART IS LIFE <span>FOUNDATION</span>
+  </div>
+  <nav class="header-nav" id="headerNav">
+    <a href="#gallery-section" onclick="scrollToGallery()">Collection</a>
+    <a href="#" onclick="openStory();return false;">Our Story</a>
+    <a href="#social-section">Connect</a>
+  </nav>
   <div class="header-right">
-    <button id="cartBtn" class="cart-btn">🛒 <span id="cartCount">0</span></button>
+    <div id="adminPanelTrigger" title="Admin Login" onclick="openAdminLogin()" aria-label="Admin access">
+      <img src="admin_icon.png" alt="Admin" width="22" height="22" style="border-radius:50%;object-fit:contain;filter:drop-shadow(0 0 4px rgba(201,168,76,0.8));" onerror="this.style.display='none';this.parentNode.innerHTML+='&#9881;'">
+    </div>
+    <button class="cart-btn" onclick="openCart()" aria-label="Open cart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+      <span id="cartCount">0</span>
+    </button>
   </div>
 </header>
-<main id="galleryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;padding:40px 8%;"></main>
-<div id="cartDrawer" class="cart-drawer">
-  <div style="padding:24px;">
-    <h3>Your Gallery Cart</h3>
-    <div id="cartItemsList" style="margin:20px 0;"></div>
-    <button id="checkoutBtn" class="btn-primary" style="width:100%;">Complete Selection</button>
+
+<!-- HERO -->
+
+<section class="hero">
+  <div class="hero-bg">
+    <img src="images/cover.jpg" alt="Art is Life — Lewis Gitonga" loading="eager" onerror="this.src='images/placeholder.jpg'">
   </div>
-</div>
-<div id="commissionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:3000;align-items:center;justify-content:center;">
-  <div style="background:white;padding:40px;border-radius:8px;max-width:500px;width:90%;">
-    <div id="commissionForm">
-      <h2>Project Commission</h2>
-      <p>Tell us about your vision.</p>
-      <textarea id="visionText" style="width:100%;height:100px;margin:15px 0;"></textarea>
-      <button id="submitCommission" class="btn-primary">Next Step</button>
-    </div>
-    <div id="agreementSection" class="commission-agreement">
-      <p>“In accordance with our policy, you are required to pay 50% of the total amount as a deposit before work begins. Do you agree?”</p>
-      <div style="display:flex;gap:10px;margin-top:15px;">
-        <button id="agreeYes" class="btn-primary">YES</button>
-        <button id="agreeNo" class="btn-ghost" style="color:var(--charcoal);border-color:#ccc;">NO</button>
-      </div>
-    </div>
-    <div id="orderStep" style="display:none;margin-top:20px;">
-      <h3>Proceed with order</h3>
-      <p>Select your preferred channel:</p>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
-        <button onclick="window.location.href='https://wa.me/254700000000'" class="btn-outline">WhatsApp</button>
-        <button onclick="window.location.href='mailto:info@artislife.com'" class="btn-outline">Email</button>
-        <button class="btn-outline">SMS</button>
-      </div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Lewis Gitonga · Nairobi, Kenya</div>
+    <h1 class="hero-title">Art is<br><em>evidence</em><br><strong>of life.</strong></h1>
+    <p class="hero-sub">One-time creations. Rarely reproduced. Each piece is a conversation between the soul and the canvas.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="scrollToGallery()">Explore Collection <span>→</span></button>
+      <button class="btn-ghost" onclick="openStory()">The Untold Canvas</button>
     </div>
   </div>
+  <div class="hero-scroll"><span>Scroll</span><div class="hero-scroll-line"></div></div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-num" id="heroWorkCount">12</div><div class="hero-stat-label">Works</div></div>
+    <div class="hero-stat"><div class="hero-stat-num">1</div><div class="hero-stat-label">Artist</div></div>
+    <div class="hero-stat"><div class="hero-stat-num">∞</div><div class="hero-stat-label">Emotion</div></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+
+<div class="marquee-band">
+  <div class="marquee-track">
+    <span class="marquee-item">Original</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Emotional</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">One of a Kind</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Nairobi, Kenya</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Art Is Life Foundation</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Lewis Gitonga</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Original</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Emotional</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">One of a Kind</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Nairobi, Kenya</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Art Is Life Foundation</span><span class="marquee-sep">✦</span>
+    <span class="marquee-item">Lewis Gitonga</span><span class="marquee-sep">✦</span>
+  </div>
 </div>
+
+<!-- ABOUT -->
+
+<section class="about-section">
+  <div class="about-text">
+    <div class="section-eyebrow">The Artist's Journey</div>
+    <h2 class="about-title">The <em>Untold Canvas</em> — My Origin</h2>
+    <div class="about-body">
+      <p>From a young age, I was drawn to creativity in a way I could not fully explain. I didn't just want to draw — I wanted to express feeling, emotion, and meaning through every line.</p>
+      <p>Everything changed when I attended the Africa Kidpreneur Summit. I met young creatives turning their ideas into real opportunities. That experience opened my mind: art is not just passion — it can become purpose, identity, and livelihood.</p>
+    </div>
+    <blockquote class="about-quote">"Art for me is not just life — it is evidence of life itself."</blockquote>
+    <!-- Explore Journey + Like + Comment buttons -->
+    <div class="about-cta-row">
+      <button class="btn-outline" onclick="openStory()">✦ Explore the Full Journey</button>
+      <button class="engage-btn" id="storyLikeBtn" onclick="toggleStoryLike()" title="Like this story">
+        <svg id="storyLikeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        <span class="engage-count" id="storyLikeCount">0</span>
+      </button>
+      <button class="engage-btn" onclick="openStoryComments()" title="Leave a comment">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span class="engage-count" id="storyCommentCount">0</span>
+      </button>
+    </div>
+  </div>
+  <div class="about-img-frame">
+    <div class="about-img-inner">
+      <img src="images/story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga · CEO &amp; Founder')" onerror="this.src='images/placeholder.jpg';this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='460px'">
+      <div class="about-img-overlay">
+        <div class="about-img-caption">Lewis Gitonga · CEO &amp; Founder, Art Is Life Foundation</div>
+      </div>
+    </div>
+    <div class="about-badge"><div class="about-badge-num" id="aboutBadgeNum">12</div><div class="about-badge-text">Works</div></div>
+  </div>
+</section>
+
+<!-- SEARCH BAND -->
+
+<div class="search-band">
+  <label class="search-label" for="searchInput">Search the Collection</label>
+  <div class="search-inner">
+    <input class="search-field" type="text" id="searchInput" placeholder="Search by title, mood, emotion…" oninput="handleSearch(this.value)" autocomplete="off">
+    <span class="search-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    </span>
+  </div>
+  <div class="filter-row">
+    <button class="filter-chip active" onclick="applyFilter(this,'')">All Works</button>
+    <button class="filter-chip" onclick="applyFilter(this,'nature')">Nature</button>
+    <button class="filter-chip" onclick="applyFilter(this,'emotion')">Emotion</button>
+    <button class="filter-chip" onclick="applyFilter(this,'resilience')">Resilience</button>
+    <button class="filter-chip" onclick="applyFilter(this,'light')">Light</button>
+    <button class="filter-chip" onclick="applyFilter(this,'bloom')">Bloom</button>
+  </div>
+</div>
+
+<!-- GALLERY -->
+
+<section class="gallery-section" id="gallery-section">
+  <div class="gallery-header">
+    <h2 class="gallery-title">The <span>Collection</span></h2>
+    <div class="gallery-meta"><span class="gallery-count" id="galleryCount">12 works</span></div>
+  </div>
+  <div class="gallery-grid" id="gallery"></div>
+</section>
+
+<!-- SOCIAL -->
+
+<div class="social-section" id="social-section">
+  <h3>Follow the Journey</h3>
+  <p>Stay connected with new works, stories, and creative moments from Nairobi.</p>
+  <div class="social-links">
+    <a class="social-link" href="https://www.tiktok.com/@lewis_art.is.life" target="_blank" rel="noopener" onclick="track('tiktok_click')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/></svg>
+      TikTok
+    </a>
+    <a class="social-link" href="https://x.com/Gitonga_LE44047" target="_blank" rel="noopener" onclick="track('x_click')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4l16 16M20 4L4 20"/></svg>
+      X
+    </a>
+    <a class="social-link" href="https://www.youtube.com/@lewis.gitonga.artislife" target="_blank" rel="noopener" onclick="track('youtube_click')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.47a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/></svg>
+      YouTube
+    </a>
+    <a class="social-link" href="https://instagram.com/lewis_art.is.life" target="_blank" rel="noopener" onclick="track('instagram_click')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      Instagram
+    </a>
+    <a class="social-link" href="https://wa.me/254704708178" target="_blank" rel="noopener" onclick="track('whatsapp_direct')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      WhatsApp
+    </a>
+  </div>
+</div>
+<footer>© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.<br>Each artwork is an original, one-time creation. Nairobi, Kenya.</footer>
+
+<!-- CART DRAWER -->
+
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-head">
+    <h3>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+      Your Cart
+    </h3>
+    <div class="cart-head-right">
+      <button class="cart-clear-btn" onclick="clearCart()" id="cartClearBtn" style="display:none">Clear All</button>
+      <button class="cart-close-btn" onclick="closeCart()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="cart-items-wrap" id="cartItems"></div>
+  <div class="cart-footer" id="cartFooter">
+    <div class="cart-summary">
+      <div class="cart-count-row"><span>Items selected</span><span id="cartItemCount">0</span></div>
+      <div class="cart-total-row"><span>Total</span><span id="cartTotal">0 KES</span></div>
+    </div>
+    <button class="btn-checkout" onclick="checkoutFromCart()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Proceed to Order
+    </button>
+  </div>
+</div>
+
+<!-- IMAGE ZOOM OVERLAY (replaces old modal) -->
+
+<div class="img-zoom-overlay" id="imgZoomOverlay" onclick="closeZoom()">
+  <div class="img-zoom-inner" onclick="event.stopPropagation()">
+    <button class="img-zoom-close" onclick="closeZoom()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <img id="zoomImg" src="" alt="Artwork zoomed view">
+  </div>
+  <div class="img-zoom-caption" id="zoomCaption"></div>
+</div>
+
+<!-- STORY MODAL -->
+
+<div class="modal-overlay" id="storyModal" onclick="closeStory()">
+  <div class="modal-box story-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeStory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <img class="story-hero-img" src="images/story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga — CEO')" onerror="this.src='images/placeholder.jpg'">
+    <div class="story-body">
+      <span class="story-eyebrow">Lewis Gitonga · Art Is Life Foundation</span>
+      <h2>How It All Started — My Untold Story</h2>
+      <div class="story-chapter"><h4>My Identity — CEO of Art Is Life</h4><p>This is who I am. Art Is Life Foundation is not just a brand — it is my identity, my voice, and my purpose. As its CEO and founder, every decision I make, every stroke I paint, carries the weight of who I am and who I am becoming.</p></div>
+      <div class="story-img-grid full"><img src="images/story_01_identity.jpg" alt="Lewis Gitonga" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+      <div class="story-chapter"><h4>The Beginning — Early Artworks &amp; Foundation</h4><p>From a young age, I was drawn to creativity in a way I could not fully explain. I didn't just want to draw; I wanted to express feeling, emotion, and meaning through every line.</p></div>
+      <div class="story-img-grid full"><img src="images/story_02_early_journey.jpg" alt="Early journey" loading="lazy" onclick="openZoom(this.src,'Early Journey')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+      <div class="story-chapter"><h4>The Turning Point — Africa Kidpreneur Summit &amp; Elvis</h4><p>A defining moment came at the Africa Kidpreneur Summit. Elvis introduced us to the foundations of painting — how to blend colors, control the brush, and most importantly, how to express emotion through art. That moment changed everything.</p></div>
+      <div class="story-img-grid cols-2">
+        <img src="images/story_03_summit.jpg" alt="Summit" loading="lazy" onclick="openZoom(this.src,'Africa Kidpreneur Summit')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='200px'">
+        <img src="images/story_04_elvis_teaching.jpg" alt="Elvis teaching" loading="lazy" onclick="openZoom(this.src,'Elvis Teaching')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='200px'">
+      </div>
+      <div class="story-blockquote"><p>"That moment changed how I saw creativity — it was no longer just a skill, but a language."</p></div>
+      <div class="story-chapter"><h4>The Vision — What I Aim to Build &amp; Become</h4><p>I see a future where my art reaches the world — galleries, collections, conversations across continents. Art Is Life Foundation is my dream institution: one that uplifts artists across Kenya.</p></div>
+      <div class="story-img-grid full"><img src="images/story_05_vision.jpg" alt="Vision" loading="lazy" onclick="openZoom(this.src,'The Vision')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+      <div class="story-chapter"><h4>Current Work — Present Skill, Progress &amp; Maturity</h4><p>This is where I stand today. The progress is real. The skill is sharper. Each piece now carries not just emotion, but mastery. Today, my work tells human stories that words cannot fully capture.</p></div>
+      <div class="story-img-grid full"><img src="images/story_06_current_work.jpg" alt="Current work" loading="lazy" onclick="openZoom(this.src,'Current Work')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+      <div class="story-blockquote"><p>"Art for me is not just life — it is evidence of life itself."</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER MODAL -->
+
+<div class="modal-overlay" id="orderModal" onclick="closeOrder()">
+  <div class="modal-box order-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeOrder()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="order-body">
+      <h3>Order Artwork</h3>
+      <span class="order-artwork-tag" id="orderArtworkName"></span>
+      <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="orderName" placeholder="Full name" autocomplete="name"></div>
+      <div class="form-group"><label class="form-label">Delivery Address</label><input class="form-input" type="text" id="orderAddress" placeholder="Your address or area"></div>
+      <div class="form-group"><label class="form-label">Phone (optional)</label><input class="form-input" type="tel" id="orderPhone" placeholder="+254…"></div>
+      <span class="channel-label">Send your order via:</span>
+      <div class="channel-grid">
+        <button class="channel-opt sel-wa sel" id="ch-wa" onclick="selectChannel('wa')">
+          <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          WhatsApp
+        </button>
+        <button class="channel-opt sel-email" id="ch-email" onclick="selectChannel('email')">
+          <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        </button>
+        <button class="channel-opt sel-sms" id="ch-sms" onclick="selectChannel('sms')">
+          <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          SMS
+        </button>
+      </div>
+      <button class="btn-send btn-wa" id="sendBtn" onclick="sendOrder()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        Send via WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- COMMISSION MODAL -->
+
+<div class="modal-overlay" id="commissionModal" onclick="closeCommission()">
+  <div class="modal-box commission-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeCommission()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="commission-body">
+      <div class="section-eyebrow">Custom Commission</div>
+      <h3>Create Your Vision</h3>
+      <p class="commission-subtitle">Can't find exactly what you're looking for? Let Lewis create something uniquely yours.</p>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="cName" placeholder="Full name"></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="cPhone" placeholder="+254…"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Describe Your Vision</label><textarea class="form-textarea" id="cDesc" placeholder="What should this artwork feel like?"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Mood / Emotion</label>
+          <select class="form-select" id="cMood"><option value="">Select mood…</option><option>Peaceful &amp; Calm</option><option>Bold &amp; Energetic</option><option>Melancholic &amp; Deep</option><option>Joyful &amp; Vibrant</option><option>Mysterious &amp; Dark</option><option>Romantic &amp; Warm</option><option>Spiritual &amp; Transcendent</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Size</label>
+          <select class="form-select" id="cSize"><option value="">Select size…</option><option>Small (A4 / 8×10 in)</option><option>Medium (A3 / 12×16 in)</option><option>Large (18×24 in)</option><option>Extra Large (24×36 in)</option><option>Custom — specify in description</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Color Preferences</label><input class="form-input" type="text" id="cColors" placeholder="e.g. warm earth tones, deep blues…"></div>
+      <div class="form-group"><label class="form-label">Delivery Address</label><input class="form-input" type="text" id="cAddress" placeholder="Your address"></div>
+      <span class="channel-label">Send commission request via:</span>
+      <div class="channel-grid">
+        <button class="channel-opt sel-wa sel" id="cc-wa" onclick="selectCommissionChannel('wa')">
+          <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          WhatsApp
+        </button>
+        <button class="channel-opt sel-email" id="cc-email" onclick="selectCommissionChannel('email')">
+          <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        </button>
+        <button class="channel-opt sel-sms" id="cc-sms" onclick="selectCommissionChannel('sms')">
+          <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          SMS
+        </button>
+      </div>
+      <button class="btn-send btn-wa" id="commissionSendBtn" onclick="sendCommission()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        Send Commission Request
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+
+<div class="modal-overlay" id="adminLoginModal" onclick="closeAdminLogin()">
+  <div class="modal-box admin-login-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeAdminLogin()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="admin-login-body">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color:var(--gold);filter:drop-shadow(0 0 4px rgba(201,168,76,0.7))"><path d="M2 20h20M5 20V10l7-7 7 7v10"/><path d="M9 20v-6h6v6"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>
+        Admin Access
+      </h3>
+      <p class="admin-subtitle">Firebase RBAC — crown &amp; admin roles required.</p>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="adminEmail" placeholder="Admin email" autocomplete="off" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="adminPassword" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
+      <div class="admin-error" id="adminError"></div>
+      <div class="admin-uid-box" id="adminUidBox">
+        <h5>🔧 FIRESTORE SETUP REQUIRED</h5>
+        <p style="margin-bottom:8px;">Your login is valid but no Firestore role record exists. Create this document in Firebase Console:</p>
+        <p><strong>Collection:</strong> users &nbsp;|&nbsp; <strong>Document ID:</strong></p>
+        <code id="adminUidDisplay">—</code>
+        <button class="admin-uid-copy" onclick="copyUid()">📋 Copy UID</button>
+        <p style="margin-top:10px;"><strong>Field:</strong> role = <code style="background:#1e293b;color:#7dd3fc;padding:1px 6px;border-radius:3px;font-size:0.8rem;">crown</code></p>
+        <p style="margin-top:8px;opacity:0.8;">After creating the document, click Sign In again.</p>
+      </div>
+      <button class="btn-admin-login" id="adminLoginBtn" onclick="handleAdminLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Sign In with Firebase
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCESS DENIED MODAL (large, premium) -->
+
+<div class="access-denied-overlay" id="accessDeniedOverlay" onclick="closeAccessDenied()">
+  <div class="access-denied-box" onclick="event.stopPropagation()">
+    <div class="access-denied-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+    </div>
+    <h2>Access Denied</h2>
+    <p>Oops. Access denied. This section is for <strong>Lewis, the CEO</strong>, only.</p>
+    <button class="access-denied-close" onclick="closeAccessDenied()">Understood</button>
+  </div>
+</div>
+
+<!-- COMMENT MODAL -->
+
+<div class="modal-overlay" id="commentModal" onclick="closeCommentModal()">
+  <div class="modal-box comment-modal-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeCommentModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="comment-body">
+      <h3 id="commentModalTitle">Comments</h3>
+      <span class="comment-artwork-tag" id="commentModalSub"></span>
+      <div class="comment-list" id="commentList"><div class="comment-empty">No comments yet. Be the first!</div></div>
+      <div class="comment-input-row">
+        <input class="comment-input" type="text" id="commentInput" placeholder="Write a comment…" maxlength="280" onkeydown="if(event.key==='Enter')submitComment()">
+        <button class="comment-submit" onclick="submitComment()">Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+
+<div class="adm-overlay" id="adminDashboard">
+  <div class="adm-topbar">
+    <div class="adm-topbar-brand">
+      <div class="adm-topbar-brand-dot"></div>
+      ART IS LIFE &nbsp;·&nbsp; <span style="font-style:italic;opacity:0.7">Admin Dashboard</span>
+    </div>
+    <div class="adm-topbar-right">
+      <div class="adm-user-chip">
+        <span id="admEmail" style="color:#f5f0e8;"></span>
+        <span class="adm-role-pip crown" id="admRolePip">crown</span>
+      </div>
+      <button class="adm-close-btn" onclick="closeAdminDashboard()" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="adm-body">
+    <div class="adm-sidebar">
+      <div class="adm-nav-section">
+        <span class="adm-nav-label">Overview</span>
+        <button class="adm-nav-item active" onclick="admTab('overview',this)">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+          Dashboard
+        </button>
+      </div>
+      <div class="adm-nav-section">
+        <span class="adm-nav-label">Content</span>
+        <button class="adm-nav-item" onclick="admTab('artworks',this)">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+          Artworks
+        </button>
+        <button class="adm-nav-item" onclick="admTab('add_artwork',this)">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+          Add Artwork
+        </button>
+      </div>
+      <div class="adm-nav-section">
+        <span class="adm-nav-label">Commerce</span>
+        <button class="adm-nav-item" onclick="admTab('orders',this)" id="navOrders">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+          Orders
+          <span class="adm-nav-badge" id="pendingBadge" style="display:none">0</span>
+        </button>
+        <button class="adm-nav-item" onclick="admTab('likes',this)">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>
+          Favourites
+        </button>
+      </div>
+      <div class="adm-nav-section" id="crownSection" style="display:none">
+        <span class="adm-nav-label">Crown Only</span>
+        <button class="adm-nav-item" onclick="admTab('users',this)">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+          Users
+        </button>
+        <button class="adm-nav-item" onclick="admTab('settings',this)">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+          Settings
+        </button>
+      </div>
+      <div style="margin-top:auto;padding:16px 10px 10px;">
+        <button class="adm-nav-item" style="color:#e05252;" onclick="handleAdminLogout()">
+          <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+          Sign Out
+        </button>
+      </div>
+    </div>
+
+```
+<div class="adm-main" id="admMain">
+
+  <!-- OVERVIEW TAB -->
+  <div class="adm-tab active" id="tab-overview">
+    <div class="adm-page-header">
+      <div class="adm-page-title">Dashboard Overview</div>
+      <div class="adm-page-sub" id="admWelcome">Welcome back</div>
+    </div>
+    <div class="adm-stats-grid">
+      <div class="adm-stat-card"><div class="adm-stat-label">Total Orders</div><div class="adm-stat-num" id="stat-orders">—</div><div class="adm-stat-sub">All time</div></div>
+      <div class="adm-stat-card" style="--adm-gold:var(--adm-orange)"><div class="adm-stat-label">Pending</div><div class="adm-stat-num" id="stat-pending" style="color:var(--adm-orange)">—</div><div class="adm-stat-sub">Awaiting fulfilment</div></div>
+      <div class="adm-stat-card green"><div class="adm-stat-label">Completed</div><div class="adm-stat-num" id="stat-completed">—</div><div class="adm-stat-sub">Successfully fulfilled</div></div>
+      <div class="adm-stat-card blue"><div class="adm-stat-label">Favourites</div><div class="adm-stat-num" id="stat-likes">—</div><div class="adm-stat-sub">Total likes</div></div>
+    </div>
+    <div style="background:var(--adm-surface);border:1px solid var(--adm-border);border-radius:8px;padding:20px;margin-bottom:20px;">
+      <div style="font-size:0.66rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--adm-muted);margin-bottom:8px;">Estimated Revenue</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:600;color:var(--adm-gold);" id="stat-revenue">—</div>
+      <div style="font-size:0.72rem;color:var(--adm-muted);margin-top:4px;">Sum of all order values (KES)</div>
+    </div>
+    <div class="adm-table-wrap">
+      <div class="adm-table-head">
+        <span class="adm-table-title">Collection Quick View</span>
+        <div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add New</button></div>
+      </div>
+      <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="overviewArtGrid"></div>
+    </div>
+  </div>
+
+  <!-- ARTWORKS TAB -->
+  <div class="adm-tab" id="tab-artworks">
+    <div class="adm-page-header">
+      <div class="adm-page-title">Manage Artworks</div>
+      <div class="adm-page-sub">Edit pricing, titles, status. Sorted by likes.</div>
+    </div>
+    <div class="adm-table-wrap">
+      <div class="adm-table-head">
+        <span class="adm-table-title" id="artworkTableTitle">All Artworks</span>
+        <div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add Artwork</button></div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="adm-table" id="artworksTable">
+          <thead><tr><th>Rank</th><th>Title</th><th>Price</th><th>Status</th><th>Likes</th><th>Actions</th></tr></thead>
+          <tbody id="artworksTbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="adm-form-section" style="margin-top:20px;">
+      <h4 style="display:flex;align-items:center;justify-content:space-between;">Recovery Panel <button class="adm-btn-sm" onclick="loadRecoveryPanel()" style="font-size:0.72rem;">↺ Load</button></h4>
+      <div id="recoveryPanelContent" style="font-size:0.82rem;color:var(--adm-muted);">Click Load to view soft-deleted artworks.</div>
+    </div>
+  </div>
+
+  <!-- ADD ARTWORK TAB -->
+  <div class="adm-tab" id="tab-add_artwork">
+    <div class="adm-page-header">
+      <div class="adm-page-title">Add New Artwork</div>
+      <div class="adm-page-sub">Upload a new piece to the collection</div>
+    </div>
+    <div class="adm-form-section">
+      <h4>Artwork Details</h4>
+      <div class="adm-form-row">
+        <div class="adm-form-group"><label class="adm-form-label">Title *</label><input class="adm-input" type="text" id="newTitle" placeholder="e.g. Resonant Rhythms"></div>
+        <div class="adm-form-group"><label class="adm-form-label">Price (KES) *</label><input class="adm-input" type="number" id="newPrice" placeholder="e.g. 1200"></div>
+      </div>
+      <div class="adm-form-group"><label class="adm-form-label">Description</label><textarea class="adm-input textarea" id="newDesc" placeholder="What emotion does this piece carry?"></textarea></div>
+      <div class="adm-form-group"><label class="adm-form-label">Status</label>
+        <select class="adm-input" id="newStatus">
+          <option value="available">Available</option>
+          <option value="featured">Featured</option>
+          <option value="sold">Sold</option>
+        </select>
+      </div>
+      <div class="adm-form-group"><label class="adm-form-label">Image Filename (local fallback)</label><input class="adm-input" type="text" id="newImage" placeholder="e.g. my_artwork.jpg"></div>
+      <div class="adm-form-group">
+        <label class="adm-form-label">Upload Image (Firebase Storage)</label>
+        <div class="adm-upload-zone" onclick="document.getElementById('imgFileInput').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Click or tap to upload image
+          <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+        </div>
+        <div class="adm-progress" id="uploadProgress"><div class="adm-progress-bar" id="uploadBar" style="width:0%"></div></div>
+        <div id="uploadedUrl" style="font-size:0.75rem;color:var(--adm-gold);margin-top:6px;word-break:break-all;"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button class="adm-btn-sm primary" onclick="submitAddArtwork()" style="padding:10px 24px;font-size:0.82rem;">✦ Save Artwork</button>
+        <button class="adm-btn-sm" onclick="clearAddForm()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDERS TAB -->
+  <div class="adm-tab" id="tab-orders">
+    <div class="adm-page-header">
+      <div class="adm-page-title">Orders</div>
+      <div class="adm-page-sub">Real-time incoming artwork orders — newest first</div>
+    </div>
+    <div class="adm-table-wrap">
+      <div class="adm-table-head">
+        <span class="adm-table-title">All Orders</span>
+        <div class="adm-table-actions">
+          <button class="adm-btn-sm" onclick="loadOrders()">↺ Refresh</button>
+          <button class="adm-btn-sm" onclick="exportOrders()" style="color:var(--adm-blue);border-color:var(--adm-blue);">⬇ Export CSV</button>
+          <button class="adm-btn-sm danger" onclick="confirmClearOrders()">✕ Clear All</button>
+        </div>
+      </div>
+      <div id="ordersContent"><div class="adm-loader">Loading orders…</div></div>
+    </div>
+  </div>
+
+  <!-- LIKES TAB -->
+  <div class="adm-tab" id="tab-likes">
+    <div class="adm-page-header">
+      <div class="adm-page-title">Favourites</div>
+      <div class="adm-page-sub">Artworks liked by visitors — ranked by likes</div>
+    </div>
+    <div class="adm-table-wrap">
+      <div class="adm-table-head"><span class="adm-table-title">Liked Artworks</span></div>
+      <div style="padding:20px;"><div id="likesContent"></div></div>
+    </div>
+  </div>
+
+  <!-- USERS TAB (crown only) -->
+  <div class="adm-tab" id="tab-users">
+    <div class="adm-page-header">
+      <div class="adm-page-title">User Management</div>
+      <div class="adm-page-sub">👑 Crown-level access — manage roles</div>
+    </div>
+    <div class="adm-table-wrap">
+      <div class="adm-table-head"><span class="adm-table-title">All Users</span><div class="adm-table-actions"><button class="adm-btn-sm" onclick="loadUsers()">↺ Refresh</button></div></div>
+      <div id="usersContent"><div class="adm-loader">Loading users…</div></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB (crown only) -->
+  <div class="adm-tab" id="tab-settings">
+    <div class="adm-page-header">
+      <div class="adm-page-title">System Settings</div>
+      <div class="adm-page-sub">👑 Crown-level configuration</div>
+    </div>
+    <div class="adm-form-section">
+      <h4>Site Identity</h4>
+      <div class="adm-form-row">
+        <div class="adm-form-group"><label class="adm-form-label">Artist Name</label><input class="adm-input" type="text" value="Lewis Gitonga" placeholder="Artist name"></div>
+        <div class="adm-form-group"><label class="adm-form-label">Foundation Name</label><input class="adm-input" type="text" value="Art Is Life Foundation" placeholder="Foundation name"></div>
+      </div>
+      <div class="adm-form-row">
+        <div class="adm-form-group"><label class="adm-form-label">WhatsApp Number</label><input class="adm-input" type="text" value="254704708178" placeholder="WhatsApp"></div>
+        <div class="adm-form-group"><label class="adm-form-label">Contact Email</label><input class="adm-input" type="text" value="gitongewis190@gmail.com" placeholder="Email"></div>
+      </div>
+      <button class="adm-btn-sm primary" style="padding:10px 24px;" onclick="showToast('✅ Settings saved')">Save Settings</button>
+    </div>
+    <div class="adm-form-section">
+      <h4 style="color:var(--adm-red);">Danger Zone</h4>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="adm-btn-sm danger" onclick="showToast('⚠️ Export — connect to backend')">Export All Orders</button>
+        <button class="adm-btn-sm danger" onclick="showToast('⚠️ Disabled in production')">Clear Orders</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end adm-main -->
+```
+
+  </div><!-- end adm-body -->
+</div><!-- end adm-overlay -->
+
+<!-- FAB -->
+
+<div class="fab-wrap">
+  <button class="fab-btn" onclick="openCommission()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    Commission a Piece
+  </button>
+</div>
+
+<!-- TOAST -->
+
+<div id="toast"></div>
+
 <script>
-let cart=[];function renderGallery(){const grid=document.getElementById('galleryGrid');grid.innerHTML=(window._firestoreArtworks||[]).map(art=>`
-<div class="artwork-card">
-  <img src="${art.image}" style="width:100%;height:350px;object-fit:cover;">
-  <div style="padding:15px;">
-    <h4>${art.title}</h4>
-    <p style="color:var(--gold);font-weight:bold;">${art.price}</p>
-    <button class="btn-primary" onclick="addToCart('${art.id}')" style="font-size:0.7rem;padding:8px 16px;">Add to Cart</button>
-  </div>
-  <button id="like-${art.id}" class="artwork-like-btn" onclick="handleLike('${art.id}')">❤️</button>
-</div>`).join('');}
-window.addEventListener('artworks_updated',renderGallery);
-async function handleLike(id){const btn=document.getElementById(`like-${id}`);btn.classList.add('animating');await window.toggleLikeFirestore(id);setTimeout(()=>btn.classList.remove('animating'),450);}
-function addToCart(id){const item=window._firestoreArtworks.find(a=>a.id===id);const existing=cart.find(c=>c.id===id);if(existing)existing.qty++;else cart.push({...item,qty:1});updateCartUI();}
-function updateCartUI(){const list=document.getElementById('cartItemsList');document.getElementById('cartCount').innerText=cart.reduce((s,i)=>s+i.qty,0);list.innerHTML=cart.map((item,idx)=>`
-<div style="display:flex;justify-content:space-between;margin-bottom:15px;align-items:center;">
-  <span>${item.title}</span>
-  <div style="display:flex;align-items:center;gap:10px;">
-    <button class="qty-btn" onclick="changeQty(${idx},-1)">−</button>
-    <span>${item.qty}</span>
-    <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
-  </div>
-</div>`).join('');}
-function changeQty(idx,delta){cart[idx].qty+=delta;if(cart[idx].qty<=0)cart.splice(idx,1);updateCartUI();}
-document.getElementById('cartBtn').onclick=()=>{const d=document.getElementById('cartDrawer');d.classList.add('open');document.getElementById('hamburgerWrap').classList.add('hidden');};
-window.onclick=(e)=>{if(!e.target.closest('#cartDrawer')&&!e.target.closest('#cartBtn')){document.getElementById('cartDrawer').classList.remove('open');document.getElementById('hamburgerWrap').classList.remove('hidden');}};
-document.getElementById('submitCommission').onclick=()=>{document.getElementById('commissionForm').style.display='none';document.getElementById('agreementSection').classList.add('active');};
-document.getElementById('agreeNo').onclick=()=>window.location.href='/';
-document.getElementById('agreeYes').onclick=()=>{document.getElementById('agreementSection').style.display='none';document.getElementById('orderStep').style.display='block';};
+/* ═══════════════════════════════
+   ARTWORK DATA (local fallback)
+═══════════════════════════════ */
+const LOCAL_ARTWORKS = [
+  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"images/resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
+  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"images/giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
+  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"images/sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
+  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"images/canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
+  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"images/solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
+  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"images/resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
+  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"images/kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
+  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"images/chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
+  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"images/neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
+  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"images/joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
+  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"images/sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
+  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"images/color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
+];
+
+// Active artworks — populated from Firestore or fallback
+let artworks = [...LOCAL_ARTWORKS];
+
+const CONTACT = { waNum:'254704708178', phone:'0704708178', email:'gitongewis190@gmail.com' };
+
+let cart                      = JSON.parse(localStorage.getItem('ail_cart')  || '[]');
+let likes                     = JSON.parse(localStorage.getItem('ail_likes') || '[]');
+let storyLiked                = localStorage.getItem('ail_story_liked') === '1';
+let currentOrderIndex         = null;
+let selectedChannel           = 'wa';
+let selectedCommissionChannel = 'wa';
+let currentSearch             = '';
+let uploadedImageUrl          = '';
+let _lastUid                  = '';
+let currentCommentTarget      = null; // { id, title }
+let _commentUnsubscribe       = null;
+
+const saveCart  = () => localStorage.setItem('ail_cart',  JSON.stringify(cart));
+
+/* ══ REAL-TIME SYNC LISTENERS ══ */
+window.addEventListener('artworks_updated', () => {
+  const firestoreArts = window._firestoreArtworks || [];
+  console.log(`🔄 artworks_updated fired — Firestore items: ${firestoreArts.length}`);
+  if (firestoreArts.length > 0) {
+    // New artworks (Firestore) appear at TOP. Local artworks that are NOT in Firestore go below.
+    const fsIds = new Set(firestoreArts.map(a => a.id));
+    const localOnly = LOCAL_ARTWORKS.filter(a => !fsIds.has(a.id));
+    artworks = [...firestoreArts, ...localOnly];
+  } else {
+    artworks = [...LOCAL_ARTWORKS];
+  }
+  renderGallery(currentSearch);
+  const count = artworks.length;
+  document.getElementById('heroWorkCount').textContent = count;
+  document.getElementById('aboutBadgeNum').textContent = count;
+  console.log(`🔄 Gallery updated — total ${count} artworks`);
+});
+
+window.addEventListener('likes_updated', () => {
+  renderGallery(currentSearch);
+  updateStoryLikeCount();
+});
+
+/* TOAST */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ══ HAMBURGER MENU ══ */
+function toggleHamburger() {
+  const btn = document.getElementById('hamburgerBtn');
+  const menu = document.getElementById('hamburgerMenu');
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+}
+function closeHamburger() {
+  document.getElementById('hamburgerBtn').classList.remove('open');
+  document.getElementById('hamburgerMenu').classList.remove('open');
+}
+
+/* NAV */
+function toggleNav() { document.getElementById('headerNav').classList.toggle('open'); }
+function scrollToGallery() { document.getElementById('gallery-section').scrollIntoView({behavior:'smooth'}); }
+
+/* ══ IMAGE ZOOM (all images) ══ */
+function openZoom(src, caption) {
+  const overlay = document.getElementById('imgZoomOverlay');
+  document.getElementById('zoomImg').src = src;
+  document.getElementById('zoomCaption').textContent = caption || '';
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  track('image_zoom', {src});
+}
+function closeZoom() {
+  document.getElementById('imgZoomOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+/* ══ GALLERY RENDER ══ */
+function getLikeCount(id) {
+  const counts = window._firestoreLikeCounts || {};
+  return counts[String(id)] || 0;
+}
+
+function renderGallery(filter) {
+  console.log(`🖼️ renderGallery called — artworks: ${artworks.length}, filter: "${filter||''}"`);
+  const grid = document.getElementById('gallery');
+  const term = (filter||'').toLowerCase().trim();
+  const filtered = artworks.filter(a =>
+    !term || a.title.toLowerCase().includes(term) || a.desc.toLowerCase().includes(term) || (a.price||'').toLowerCase().includes(term)
+  );
+  document.getElementById('galleryCount').textContent =
+    filtered.length === artworks.length ? `${artworks.length} works` : `${filtered.length} of ${artworks.length} works`;
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="no-results"><div class="no-results-icon">🖼️</div><h3>No artworks found</h3><p>Try a different search.</p><button onclick="clearSearch()">Show All Works</button></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map((a,i) => {
+    const isLiked = likes.includes(String(a.id)) || likes.includes(a.id);
+    const likeCount = getLikeCount(a.id);
+    const status = a.status || 'available';
+    const badge = status === 'sold'
+      ? `<div class="badge-sold">✦ Sold</div>`
+      : status === 'featured'
+      ? `<div class="badge-featured">✦ Featured</div>`
+      : `<div class="badge-available">✦ Available</div>`;
+    // Image resolution: Firebase URL → use directly; relative path → use as-is; missing → placeholder
+    const imgSrc = a.image
+      ? (a.image.startsWith('http') ? a.image : a.image)
+      : 'images/placeholder.jpg';
+    return `
+    <div class="art-card" style="animation-delay:${i*0.06}s">
+      <div class="art-img-wrap" onclick="openZoom('${imgSrc}','${a.title.replace(/'/g,"\\'")}')">
+        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='images/placeholder.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
+        <div class="art-img-overlay">
+          <div class="art-zoom-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </div>
+        </div>
+        ${badge}
+        <button class="like-btn${isLiked?' liked':''}" onclick="event.stopPropagation();toggleLike('${a.id}')" title="${isLiked?'Unlike':'Like'}" aria-label="${isLiked?'Unlike':'Like'}">
+          <svg viewBox="0 0 24 24" fill="${isLiked?'#e05252':'none'}" stroke="${isLiked?'#e05252':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        </button>
+      </div>
+      <div class="art-info">
+        <div class="art-title">${a.title}</div>
+        <div class="art-price">${a.price}</div>
+        <div class="art-desc">${a.desc}</div>
+        ${likeCount > 0 ? `<div class="art-like-count"><svg viewBox="0 0 24 24" fill="#e05252" stroke="#e05252" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${likeCount} like${likeCount!==1?'s':''}</div>` : ''}
+      </div>
+      <div class="art-actions">
+        <button class="art-btn art-btn-order" onclick="openOrder('${a.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          Order This
+        </button>
+        <button class="art-btn art-btn-cart" onclick="addToCart('${a.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+          Cart
+        </button>
+        <button class="art-btn art-btn-call" onclick="callGallery('${a.title.replace(/'/g,"\\'")}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 11.66a19.79 19.79 0 01-3.07-8.67A2 2 0 011.91 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+          Call
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  track('gallery_render', {count:filtered.length, filter:term});
+}
+
+function handleSearch(val) {
+  currentSearch = val;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('.filter-chip').classList.add('active');
+  if(val) track('search_used',{query:val});
+  renderGallery(val);
+}
+function applyFilter(btn, term) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('searchInput').value = term;
+  currentSearch = term;
+  renderGallery(term);
+}
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  currentSearch = '';
+  document.querySelectorAll('.filter-chip').forEach((c,i) => c.classList.toggle('active', i===0));
+  renderGallery('');
+}
+
+/* ══ LIKES (Firestore-backed) ══ */
+function triggerHeartBounce(id) {
+  const btn = document.querySelector(`.like-btn[onclick*="'${id}'"]`);
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const el = document.createElement('div');
+  el.className = 'heart-bounce-overlay';
+  el.textContent = '❤';
+  el.style.left = cx + 'px';
+  el.style.top = cy + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+async function toggleLike(id) {
+  const sid = String(id);
+  const wasLiked = likes.includes(sid) || likes.includes(id);
+  if (wasLiked) {
+    likes = likes.filter(l => l !== sid && l !== id);
+    showToast('💔 Removed from favourites');
+  } else {
+    likes.push(sid);
+    triggerHeartBounce(sid);
+    showToast('❤️ Added to favourites');
+    track('like_clicked', {artwork_id: id});
+  }
+  localStorage.setItem('ail_likes', JSON.stringify(likes));
+  // Update ONLY the like button — no full gallery re-render (prevents page shake/reflow)
+  const btn = document.querySelector(`.like-btn[onclick*="'${sid}'"]`);
+  if (btn) {
+    const nowLiked = likes.includes(sid);
+    btn.classList.toggle('liked', nowLiked);
+    const svg = btn.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('fill', nowLiked ? '#e05252' : 'none');
+      svg.setAttribute('stroke', nowLiked ? '#e05252' : 'currentColor');
+    }
+    btn.title = nowLiked ? 'Unlike' : 'Like';
+    btn.setAttribute('aria-label', nowLiked ? 'Unlike' : 'Like');
+    btn.style.transform = 'scale(1.35)';
+    setTimeout(() => { btn.style.transform = ''; }, 200);
+  }
+  // Sync to Firestore
+  if (window.toggleLikeFirestore) {
+    window.toggleLikeFirestore(sid).catch(e => console.warn('Like sync error:', e));
+  }
+}
+
+/* ══ STORY LIKE ══ */
+function updateStoryLikeCount() {
+  const counts = window._firestoreLikeCounts || {};
+  const count = counts['story'] || 0;
+  document.getElementById('storyLikeCount').textContent = count;
+}
+function toggleStoryLike() {
+  storyLiked = !storyLiked;
+  localStorage.setItem('ail_story_liked', storyLiked ? '1' : '0');
+  const btn = document.getElementById('storyLikeBtn');
+  const icon = document.getElementById('storyLikeIcon');
+  if (storyLiked) {
+    btn.classList.add('liked');
+    icon.setAttribute('fill', '#e05252');
+    icon.setAttribute('stroke', '#e05252');
+    showToast('❤️ You liked the story!');
+    icon.style.animation = 'heartBeat 0.6s ease';
+    setTimeout(() => icon.style.animation = '', 600);
+    if (window.toggleLikeFirestore) window.toggleLikeFirestore('story');
+  } else {
+    btn.classList.remove('liked');
+    icon.setAttribute('fill', 'none');
+    icon.setAttribute('stroke', 'currentColor');
+    if (window.toggleLikeFirestore) window.toggleLikeFirestore('story');
+  }
+}
+
+/* ══ COMMENT SYSTEM ══ */
+function openStoryComments() {
+  currentCommentTarget = { id: 'story', title: 'The Untold Canvas — My Origin' };
+  openCommentModal();
+}
+
+function openCommentModal() {
+  if (!currentCommentTarget) return;
+  document.getElementById('commentModalTitle').textContent = 'Comments';
+  document.getElementById('commentModalSub').textContent = currentCommentTarget.title;
+  document.getElementById('commentInput').value = '';
+  document.getElementById('commentModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  loadComments();
+}
+
+function closeCommentModal() {
+  document.getElementById('commentModal').classList.remove('active');
+  document.body.style.overflow = '';
+  if (_commentUnsubscribe) { _commentUnsubscribe(); _commentUnsubscribe = null; }
+}
+
+function loadComments() {
+  if (!currentCommentTarget) return;
+  const list = document.getElementById('commentList');
+  list.innerHTML = '<div class="comment-empty" style="color:var(--muted)">Loading…</div>';
+  if (window.startCommentsSync) {
+    if (_commentUnsubscribe) _commentUnsubscribe();
+    _commentUnsubscribe = window.startCommentsSync(currentCommentTarget.id, (comments) => {
+      renderComments(comments);
+      const sub = document.getElementById('commentModalSub');
+      if (sub && currentCommentTarget) {
+        sub.textContent = `${currentCommentTarget.title} · ${comments.length} comment${comments.length!==1?'s':''}`;
+      }
+      // Update count on about section
+      document.getElementById('storyCommentCount').textContent = comments.length;
+    });
+  } else {
+    list.innerHTML = '<div class="comment-empty">Comments unavailable offline.</div>';
+  }
+}
+
+function renderComments(comments) {
+  const list = document.getElementById('commentList');
+  if (!comments.length) {
+    list.innerHTML = '<div class="comment-empty">No comments yet. Be the first!</div>';
+    return;
+  }
+  list.innerHTML = comments.map(c => {
+    const time = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString('en-KE', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="comment-item">
+      <div class="comment-item-author">${escapeHtml(c.author || 'Visitor')}</div>
+      <div class="comment-item-text">${escapeHtml(c.text || '')}</div>
+      ${time ? `<div class="comment-item-time">${time}</div>` : ''}
+    </div>`;
+  }).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+async function submitComment() {
+  const input = document.getElementById('commentInput');
+  const text = input.value.trim();
+  if (!text || !currentCommentTarget) return;
+  if (text.length < 2) { showToast('⚠️ Comment too short'); return; }
+  input.value = '';
+  if (window.saveCommentFirestore) {
+    const ok = await window.saveCommentFirestore(currentCommentTarget.id, text);
+    if (!ok) showToast('❌ Could not post comment');
+  } else {
+    showToast('💬 Comment feature requires Firebase');
+  }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ══ CART ══ */
+function addToCart(id) {
+  const art = artworks.find(a => String(a.id) === String(id));
+  if (!art) return;
+  const existing = cart.find(c => String(c.id) === String(id));
+  if (existing) { existing.qty = (existing.qty || 1) + 1; saveCart(); updateCartCount(); renderCartDrawer(); showToast(`"${art.title}" qty updated`); return; }
+  cart.push({id: String(art.id), title: art.title, price: art.price, priceNum: art.priceNum, qty: 1});
+  saveCart(); updateCartCount();
+  track('cart_add', {artwork_id: id, title: art.title});
+  showToast(`🛒 "${art.title}" added to cart`);
+}
+function removeFromCart(id) {
+  cart = cart.filter(c => String(c.id) !== String(id));
+  saveCart(); updateCartCount(); renderCartDrawer();
+}
+function cartIncreaseQty(id) {
+  const item = cart.find(c => String(c.id) === String(id));
+  if (!item) return;
+  item.qty = (item.qty || 1) + 1;
+  saveCart(); updateCartCount(); renderCartDrawer();
+}
+function cartDecreaseQty(id) {
+  const item = cart.find(c => String(c.id) === String(id));
+  if (!item) return;
+  if ((item.qty || 1) <= 1) { removeFromCart(id); return; }
+  item.qty = item.qty - 1;
+  saveCart(); updateCartCount(); renderCartDrawer();
+}
+function clearCart() {
+  if (!cart.length) return;
+  cart = [];
+  saveCart(); updateCartCount(); renderCartDrawer();
+  showToast('🗑️ Cart cleared');
+}
+function updateCartCount() {
+  const el = document.getElementById('cartCount');
+  el.textContent = cart.length;
+  el.style.transform = 'scale(1.3)';
+  setTimeout(() => el.style.transform = '', 250);
+}
+function renderCartDrawer() {
+  const wrap = document.getElementById('cartItems');
+  const footer = document.getElementById('cartFooter');
+  const clearBtn = document.getElementById('cartClearBtn');
+  if (!cart.length) {
+    wrap.innerHTML = `<div class="cart-empty-state"><div class="cart-empty-icon">🖼️</div><p style="font-weight:600;margin-bottom:6px;">Your cart is empty</p><p style="font-size:0.8rem;color:#bbb;">Browse the collection and add pieces you love.</p></div>`;
+    footer.style.display = 'none';
+    clearBtn.style.display = 'none';
+    return;
+  }
+  const total = cart.reduce((s,c) => s + ((c.priceNum||0) * (c.qty||1)), 0);
+  wrap.innerHTML = cart.map(c => `
+    <div class="cart-item">
+      <div class="cart-item-info"><strong>${c.title||'Unknown'}</strong><span>${c.price||''}</span></div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <button style="width:26px;height:26px;border:1px solid #e0dbd4;border-radius:50%;background:white;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:all 0.2s;" onclick="cartDecreaseQty('${c.id}')" title="Decrease" aria-label="Decrease quantity">−</button>
+        <span style="font-size:0.84rem;font-weight:700;min-width:18px;text-align:center;">${c.qty||1}</span>
+        <button style="width:26px;height:26px;border:1px solid #e0dbd4;border-radius:50%;background:white;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:all 0.2s;" onclick="cartIncreaseQty('${c.id}')" title="Increase" aria-label="Increase quantity">+</button>
+        <button class="cart-item-del" onclick="removeFromCart('${c.id}')" title="Remove" aria-label="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+  document.getElementById('cartItemCount').textContent = cart.length;
+  document.getElementById('cartTotal').textContent = total > 0 ? `${total.toLocaleString()} KES` : '—';
+  footer.style.display = 'block';
+  clearBtn.style.display = 'inline-flex';
+}
+function openCart() {
+  renderCartDrawer();
+  document.getElementById('cartOverlay').classList.add('open');
+  document.getElementById('cartDrawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('hamburgerBtn').style.display = 'none';
+}
+function closeCart() {
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('hamburgerBtn').style.display = '';
+}
+function checkoutFromCart() { closeCart(); openOrderForCart(); }
+
+/* ══ STORY ══ */
+function openStory()  { document.getElementById('storyModal').classList.add('active'); document.body.style.overflow='hidden'; track('story_opened'); }
+function closeStory() { document.getElementById('storyModal').classList.remove('active'); document.body.style.overflow=''; }
+
+/* ══ ORDER ══ */
+function openOrder(id) {
+  const art = artworks.find(a => String(a.id) === String(id));
+  if (!art) return;
+  currentOrderIndex = String(id);
+  document.getElementById('orderArtworkName').textContent = `🖼️ ${art.title} — ${art.price}`;
+  ['orderName','orderAddress','orderPhone'].forEach(f => document.getElementById(f).value = '');
+  selectedChannel = 'wa'; updateOrderChannelUI();
+  document.getElementById('orderModal').classList.add('active'); document.body.style.overflow='hidden';
+  track('order_clicked', {artwork_id: id, title: art.title});
+}
+function openOrderForCart() {
+  if (!cart.length) { showToast('Your cart is empty'); return; }
+  currentOrderIndex = null;
+  document.getElementById('orderArtworkName').textContent = `🛒 Cart: ${cart.length} item(s) · ${cart.reduce((s,c)=>s+(c.priceNum||0),0).toLocaleString()} KES`;
+  ['orderName','orderAddress','orderPhone'].forEach(f => document.getElementById(f).value = '');
+  selectedChannel = 'wa'; updateOrderChannelUI();
+  document.getElementById('orderModal').classList.add('active'); document.body.style.overflow='hidden';
+}
+function closeOrder() { document.getElementById('orderModal').classList.remove('active'); document.body.style.overflow=''; }
+
+function selectChannel(ch) { selectedChannel = ch; updateOrderChannelUI(); }
+function updateOrderChannelUI() {
+  ['wa','email','sms'].forEach(c => { const el = document.getElementById('ch-'+c); if(el) el.classList.toggle('sel', c===selectedChannel); });
+  const btn = document.getElementById('sendBtn');
+  const icons = {
+    wa: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>`,
+    email: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+    sms: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`
+  };
+  const map = {
+    wa:    ['Send via WhatsApp', 'btn-send btn-wa', icons.wa],
+    email: ['Send via Email',    'btn-send btn-email', icons.email],
+    sms:   ['Send via SMS',      'btn-send btn-sms', icons.sms]
+  };
+  const [txt, cls, ico] = map[selectedChannel] || map.wa;
+  btn.innerHTML = `${ico} ${txt}`;
+  btn.className = cls;
+}
+
+function sendOrder() {
+  const name    = document.getElementById('orderName').value.trim();
+  const address = document.getElementById('orderAddress').value.trim();
+  const phone   = document.getElementById('orderPhone').value.trim();
+  if (!name || !address) { showToast('⚠️ Please fill in your name and address'); return; }
+  let artworkLine = '';
+  let totalPrice = 0;
+  if (currentOrderIndex !== null) {
+    const art = artworks.find(a => String(a.id) === String(currentOrderIndex));
+    artworkLine = `🖼️ ${art.title} — ${art.price}`;
+    totalPrice = art.priceNum;
+  } else {
+    artworkLine = cart.map(c => `🖼️ ${c.title} — ${c.price}`).join('\n');
+    totalPrice = cart.reduce((s,c) => s + (c.priceNum||0), 0);
+    if (totalPrice > 0) artworkLine += `\n💰 Total: ${totalPrice.toLocaleString()} KES`;
+  }
+  const msg = `Hello, I'm ${name}\n\nI would like to order:\n${artworkLine}\n\n📍 Address: ${address}${phone?`\n📱 Phone: ${phone}`:''}\n\nKindly confirm availability.`;
+  const enc = encodeURIComponent(msg);
+  if (selectedChannel === 'wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`, '_blank');
+  else if (selectedChannel === 'email') {
+    const art = currentOrderIndex !== null ? artworks.find(a=>String(a.id)===String(currentOrderIndex)) : null;
+    const subj = art ? `Art Order — ${art.title}` : `Art Order — ${cart.length} items`;
+    window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent(subj)}&body=${enc}`, '_blank');
+  } else {
+    window.open(`sms:${CONTACT.phone}?body=${enc}`, '_blank');
+  }
+  if (window.saveOrderToFirestore) {
+    const art = currentOrderIndex !== null ? artworks.find(a=>String(a.id)===String(currentOrderIndex)) : null;
+    window.saveOrderToFirestore({
+      customerInfo: {name, address, phone},
+      items: art ? [art] : [...cart],
+      totalPrice,
+      channel: selectedChannel
+    });
+  }
+  track('order_sent', {channel: selectedChannel});
+  closeOrder();
+  showToast('✅ Order sent! Lewis will be in touch soon.');
+}
+
+/* ══ CALL ══ */
+function callGallery(title) { track('call_clicked', {title}); window.location.href = `tel:${CONTACT.phone}`; }
+
+/* ══ COMMISSION ══ */
+function openCommission()  { document.getElementById('commissionModal').classList.add('active'); document.body.style.overflow='hidden'; track('commission_opened'); }
+function closeCommission() { document.getElementById('commissionModal').classList.remove('active'); document.body.style.overflow=''; }
+function selectCommissionChannel(ch) {
+  selectedCommissionChannel = ch;
+  ['wa','email','sms'].forEach(c => document.getElementById('cc-'+c)?.classList.toggle('sel', c===ch));
+  const btn = document.getElementById('commissionSendBtn');
+  const icons = {
+    wa: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>`,
+    email: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+    sms: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`
+  };
+  const map = {
+    wa:    ['Send Commission Request via WhatsApp', 'btn-send btn-wa', icons.wa],
+    email: ['Send Commission Request via Email',    'btn-send btn-email', icons.email],
+    sms:   ['Send Commission Request via SMS',      'btn-send btn-sms', icons.sms]
+  };
+  const [txt, cls, ico] = map[ch] || map.wa;
+  btn.innerHTML = `${ico} ${txt}`;
+  btn.className = cls;
+}
+function sendCommission() {
+  const name=document.getElementById('cName').value.trim(),phone=document.getElementById('cPhone').value.trim(),desc=document.getElementById('cDesc').value.trim(),mood=document.getElementById('cMood').value,size=document.getElementById('cSize').value,colors=document.getElementById('cColors').value.trim(),address=document.getElementById('cAddress').value.trim();
+  if(!name||!desc){showToast('⚠️ Please fill in your name and describe your vision');return;}
+  const msg=`🎨 COMMISSION REQUEST — ART IS LIFE FOUNDATION\n\nName: ${name}${phone?`\nPhone: ${phone}`:''}${address?`\nAddress: ${address}`:''}\n\nVision:\n${desc}\n\nMood: ${mood||'Not specified'}\nSize: ${size||'Not specified'}\nColors: ${colors||"Artist's choice"}\n\nLooking forward to collaborating!`;
+  const enc=encodeURIComponent(msg);
+  if(selectedCommissionChannel==='wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`,'_blank');
+  else if(selectedCommissionChannel==='email') window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent('Commission Request — '+name)}&body=${enc}`,'_blank');
+  else window.open(`sms:${CONTACT.phone}?body=${enc}`,'_blank');
+  track('commission_sent',{channel:selectedCommissionChannel});
+  closeCommission();
+  showToast('🎨 Commission sent! Lewis will respond soon.');
+}
+
+/* ══ ACCESS DENIED MODAL ══ */
+function showAccessDenied() {
+  document.getElementById('accessDeniedOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeAccessDenied() {
+  document.getElementById('accessDeniedOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+/* ══ ADMIN LOGIN ══ */
+function openAdminLogin() {
+  if (window._firebaseAdmin) { openAdminDashboard(); return; }
+  const modal = document.getElementById('adminLoginModal');
+  modal.classList.add('active'); document.body.style.overflow='hidden';
+  document.getElementById('adminEmail').value = '';
+  document.getElementById('adminPassword').value = '';
+  document.getElementById('adminError').style.display = 'none';
+  document.getElementById('adminUidBox').style.display = 'none';
+  setTimeout(() => document.getElementById('adminEmail').focus(), 100);
+}
+function closeAdminLogin() {
+  document.getElementById('adminLoginModal').classList.remove('active');
+  document.getElementById('adminError').style.display = 'none';
+  document.getElementById('adminUidBox').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function handleAdminLogin() {
+  const email    = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  const errEl    = document.getElementById('adminError');
+  const loginBtn = document.getElementById('adminLoginBtn');
+  const uidBox   = document.getElementById('adminUidBox');
+
+  errEl.style.display = 'none';
+  uidBox.style.display = 'none';
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter both email and password.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!window.firebaseAdminLogin) {
+    errEl.textContent = 'Firebase not loaded yet. Please wait a moment.';
+    errEl.style.display = 'block'; return;
+  }
+
+  loginBtn.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite;margin-right:8px;">⏳</span> Verifying…';
+  loginBtn.disabled = true;
+
+  const result = await window.firebaseAdminLogin(email, password);
+
+  loginBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Sign In with Firebase`;
+  loginBtn.disabled = false;
+
+  if (result.success) {
+    closeAdminLogin();
+    showToast(`👑 Welcome! Role: ${result.role}`);
+    document.getElementById('adminPanelTrigger').classList.add('active');
+    document.getElementById('adminPanelTrigger').title = `Admin Dashboard (${result.role})`;
+    openAdminDashboard();
+  } else {
+    // Show large access denied modal for wrong credentials / access issue
+    closeAdminLogin();
+    showAccessDenied();
+    // Also show diagnostic if uid returned (Firestore setup needed)
+    if (result.uid) {
+      _lastUid = result.uid;
+      // Re-open login with uid info
+      setTimeout(() => {
+        closeAccessDenied();
+        openAdminLogin();
+        document.getElementById('adminUidDisplay').textContent = result.uid;
+        document.getElementById('adminUidBox').style.display = 'block';
+        document.getElementById('adminError').textContent = result.error || 'Authentication failed.';
+        document.getElementById('adminError').style.display = 'block';
+      }, 3000);
+    }
+  }
+}
+
+function copyUid() {
+  if (!_lastUid) return;
+  navigator.clipboard.writeText(_lastUid).then(() => {
+    showToast('📋 UID copied to clipboard!');
+    document.querySelector('.admin-uid-copy').textContent = '✅ Copied!';
+    setTimeout(() => { document.querySelector('.admin-uid-copy').textContent = '📋 Copy UID'; }, 2000);
+  });
+}
+
+/* ══ ADMIN DASHBOARD ══ */
+function openAdminDashboard() {
+  if (!window._firebaseAdmin) { showToast('⛔ Admin access required'); openAdminLogin(); return; }
+  document.getElementById('adminDashboard').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  const role  = window._currentRole || 'admin';
+  const email = window._currentUser?.email || 'admin';
+  document.getElementById('admEmail').textContent = email;
+  const pip = document.getElementById('admRolePip');
+  pip.textContent = role; pip.className = 'adm-role-pip ' + (role === 'crown' ? 'crown' : 'admin');
+  document.getElementById('admWelcome').textContent = `Welcome back, ${email.split('@')[0]} — ${new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+  if (role === 'crown') document.getElementById('crownSection').style.display = 'block';
+  loadDashboardStats();
+  renderOverviewArtGrid();
+  renderArtworksTable();
+  track('admin_dashboard_opened', {role});
+}
+
+function closeAdminDashboard() {
+  document.getElementById('adminDashboard').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function admTab(name, btn) {
+  document.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.adm-nav-item').forEach(n => n.classList.remove('active'));
+  const tab = document.getElementById('tab-'+name);
+  if (tab) tab.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'orders') loadOrders();
+  if (name === 'likes') renderLikesTab();
+  if (name === 'users') loadUsers();
+  if (name === 'artworks') renderArtworksTable();
+}
+
+async function loadDashboardStats() {
+  if (!window.fetchDashboardStats) return;
+  const stats = await window.fetchDashboardStats();
+  document.getElementById('stat-orders').textContent    = stats.totalOrders;
+  document.getElementById('stat-pending').textContent   = stats.pending;
+  document.getElementById('stat-completed').textContent = stats.complete;
+  document.getElementById('stat-likes').textContent     = stats.totalLikes || 0;
+  document.getElementById('stat-revenue').textContent   = stats.revenue > 0 ? `${stats.revenue.toLocaleString()} KES` : '—';
+  if (stats.pending > 0) {
+    const b = document.getElementById('pendingBadge');
+    b.textContent = stats.pending; b.style.display = 'inline-flex';
+  }
+}
+
+function renderOverviewArtGrid() {
+  const g = document.getElementById('overviewArtGrid');
+  g.innerHTML = artworks.slice(0,8).map(a => `
+    <div style="text-align:center;">
+      <img src="${a.image}" alt="${a.title}" style="width:100%;height:80px;object-fit:cover;border-radius:4px;background:#222;cursor:pointer;" onclick="openZoom('${a.image}','${a.title.replace(/'/g,"\\'")}');document.getElementById('adminDashboard').style.zIndex='2999'" onerror="this.style.background='#2c2510';this.style.height='80px'">
+      <div style="font-size:0.7rem;color:var(--adm-text);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</div>
+      <div style="font-size:0.66rem;color:var(--adm-gold);">${a.price}</div>
+    </div>`).join('');
+}
+
+async function renderArtworksTable() {
+  const tbody = document.getElementById('artworksTbody');
+  const titleEl = document.getElementById('artworkTableTitle');
+  // Get likes counts for sorting
+  const likeCounts = window._firestoreLikeCounts || {};
+  // Sort artworks by likes descending
+  const sorted = [...artworks].sort((a, b) => {
+    const la = likeCounts[String(a.id)] || 0;
+    const lb = likeCounts[String(b.id)] || 0;
+    return lb - la;
+  });
+  if (titleEl) titleEl.textContent = `All Artworks (${sorted.length}) — sorted by likes`;
+  tbody.innerHTML = sorted.map((a, i) => {
+    const lc = likeCounts[String(a.id)] || 0;
+    return `
+    <tr>
+      <td style="color:var(--adm-muted);font-size:0.72rem;font-weight:700;">#${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='images/placeholder.jpg'">
+          <div>
+            <div style="font-weight:600;">${a.title}</div>
+            <div style="font-size:0.7rem;color:var(--adm-muted);margin-top:2px;">${a.desc ? a.desc.slice(0,50)+'…' : ''}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <input class="adm-input" type="text" value="${a.price}" style="width:110px;padding:5px 8px;font-size:0.78rem;" onchange="updateArtworkPrice('${a.id}',this.value)" title="Edit price">
+      </td>
+      <td>
+        <select class="adm-status-select" onchange="updateArtworkStatus('${a.id}',this.value)">
+          <option value="available" ${(a.status||'available')==='available'?'selected':''}>Available</option>
+          <option value="featured" ${a.status==='featured'?'selected':''}>Featured</option>
+          <option value="sold" ${a.status==='sold'?'selected':''}>Sold</option>
+        </select>
+      </td>
+      <td>
+        <span class="adm-like-badge">
+          <svg viewBox="0 0 24 24" fill="#e05252" stroke="#e05252" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          ${lc}
+        </span>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="adm-btn-sm" onclick="openZoom('${a.image}','${a.title.replace(/'/g,"\\'")}');document.getElementById('adminDashboard').style.zIndex='2999'">View</button>
+          <button class="adm-btn-sm danger" onclick="confirmRemoveArtwork('${a.id}','${a.title.replace(/'/g,"\\'")}')">Remove</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateArtworkPrice(id, val) {
+  const art = artworks.find(a => String(a.id) === String(id));
+  if (!art) return;
+  const trimmed = val.trim();
+  art.price = trimmed;
+  const num = parseInt(trimmed);
+  if (!isNaN(num)) art.priceNum = num;
+  if (window.adminUpdateArtwork) window.adminUpdateArtwork(String(id), {price: trimmed, priceNum: isNaN(num)?art.priceNum:num});
+  showToast(`✅ Price updated for "${art.title}"`);
+  renderGallery(currentSearch);
+}
+
+function updateArtworkStatus(id, status) {
+  const art = artworks.find(a => String(a.id) === String(id));
+  if (!art) return;
+  art.status = status;
+  if (window.adminUpdateArtwork) window.adminUpdateArtwork(String(id), {status});
+  showToast(`✅ Status updated to "${status}"`);
+  renderGallery(currentSearch);
+}
+
+function confirmRemoveArtwork(id, title) {
+  if (!confirm(`Remove "${title}" from the collection?\n\nThis will soft-delete the artwork. You can restore it from the Recovery Panel.`)) return;
+  const idx = artworks.findIndex(a => String(a.id) === String(id));
+  if (idx > -1) artworks.splice(idx, 1);
+  if (window.adminDeleteArtwork) window.adminDeleteArtwork(String(id));
+  showToast(`🗑️ "${title}" soft-deleted — recoverable`);
+  renderArtworksTable();
+  renderGallery(currentSearch);
+  renderOverviewArtGrid();
+}
+async function loadRecoveryPanel() {
+  const el = document.getElementById('recoveryPanelContent');
+  if (!el) return;
+  if (!window.fetchDeletedArtworks) { el.innerHTML = '<div style="color:var(--adm-muted);font-size:0.84rem;">Recovery requires Firebase.</div>'; return; }
+  el.innerHTML = '<div class="adm-loader">Loading deleted items…</div>';
+  const deleted = await window.fetchDeletedArtworks();
+  if (!deleted.length) { el.innerHTML = '<div style="color:var(--adm-muted);font-size:0.84rem;">No deleted artworks found.</div>'; return; }
+  el.innerHTML = deleted.map(a => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--adm-border);">
+    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='images/placeholder.jpg'">
+    <div style="flex:1;"><div style="font-size:0.82rem;color:var(--adm-text);font-weight:600;">${a.title}</div><div style="font-size:0.7rem;color:var(--adm-muted);">${a.price}</div></div>
+    <button class="adm-btn-sm" style="color:var(--adm-green);border-color:var(--adm-green);" onclick="restoreArtwork('${a.id}','${(a.title||'').replace(/'/g,"\\'")}')">↩ Restore</button>
+  </div>`).join('');
+}
+async function restoreArtwork(id, title) {
+  if (!window.adminRestoreArtwork) return;
+  await window.adminRestoreArtwork(id);
+  // Re-add to artworks list
+  showToast(`✅ "${title}" restored to collection`);
+  loadRecoveryPanel();
+}
+
+function handleImageUpload(input) {
+  const file = input.files[0]; if (!file) return;
+  if (!window.uploadArtworkImage) { showToast('Firebase Storage not ready'); return; }
+  const prog = document.getElementById('uploadProgress'), bar = document.getElementById('uploadBar');
+  prog.style.display = 'block'; bar.style.width = '0%';
+  window.uploadArtworkImage(file,
+    pct => { bar.style.width = pct + '%'; },
+    url => { uploadedImageUrl = url; document.getElementById('uploadedUrl').textContent = '✅ Uploaded: ' + url; prog.style.display = 'none'; showToast('📷 Image uploaded!'); },
+    err => { prog.style.display = 'none'; showToast('❌ Upload failed: ' + err.message); }
+  );
+}
+
+async function submitAddArtwork() {
+  const title      = document.getElementById('newTitle').value.trim();
+  const price      = document.getElementById('newPrice').value.trim();
+  const desc       = document.getElementById('newDesc').value.trim();
+  const localImage = document.getElementById('newImage').value.trim();
+  const status     = document.getElementById('newStatus').value || 'available';
+  if (!title || !price) { showToast('⚠️ Title and price are required'); return; }
+  const image    = uploadedImageUrl || (localImage ? localImage : 'images/placeholder.jpg');
+  const priceNum = parseInt(price) || 0;
+  const newArt   = { id: 'local_' + Date.now(), title, price:`${price} KES`, priceNum, image, desc: desc || 'A new original piece.', status };
+  artworks.push(newArt);
+  if (window.adminAddArtwork) {
+    const ref = await window.adminAddArtwork({ title, price:`${price} KES`, priceNum, image, desc: newArt.desc, status });
+    if (ref) newArt.id = ref.id;
+  }
+  showToast(`✅ "${title}" added to collection`);
+  clearAddForm();
+  renderGallery(currentSearch);
+  renderArtworksTable();
+  renderOverviewArtGrid();
+}
+
+function clearAddForm() {
+  ['newTitle','newPrice','newDesc','newImage'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('uploadedUrl').textContent = '';
+  document.getElementById('uploadProgress').style.display = 'none';
+  uploadedImageUrl = '';
+}
+
+let _ordersUnsubscribe = null;
+function loadOrders() {
+  const el = document.getElementById('ordersContent');
+  el.innerHTML = '<div class="adm-loader">⏳ Connecting real-time orders feed…</div>';
+  if (!window._db) { el.innerHTML = '<div class="adm-empty">Connect Firestore to view orders.</div>'; return; }
+  if (_ordersUnsubscribe) { _ordersUnsubscribe(); _ordersUnsubscribe = null; }
+  const { collection: col, query: q, orderBy: ob, onSnapshot: ons } = window._db._delegate ? { collection: window._collection, query: window._query, orderBy: window._orderBy, onSnapshot: window._onSnapshot } : {};
+  // Use Firebase directly via module scope — call through window bridge
+  if (!window._ordersSnapFn) {
+    el.innerHTML = '<div class="adm-empty">Real-time orders require Firebase SDK. Using manual fetch.</div>';
+    loadOrdersFallback();
+    return;
+  }
+  _ordersUnsubscribe = window._ordersSnapFn((orders) => {
+    renderOrdersTable(orders);
+    const pending = orders.filter(o => o.status === 'pending').length;
+    if (pending > 0) { const b = document.getElementById('pendingBadge'); if(b){b.textContent=pending;b.style.display='inline-flex';} }
+  });
+}
+async function loadOrdersFallback() {
+  const el = document.getElementById('ordersContent');
+  if (!window.fetchOrders) { el.innerHTML = '<div class="adm-empty">Connect Firestore to view orders.</div>'; return; }
+  const orders = await window.fetchOrders();
+  renderOrdersTable(orders);
+}
+function renderOrdersTable(orders) {
+  const el = document.getElementById('ordersContent');
+  if (!orders.length) { el.innerHTML = '<div class="adm-empty">No orders yet. When customers place orders, they will appear here.</div>'; return; }
+  el.innerHTML = `<div style="overflow-x:auto;"><table class="adm-table">
+    <thead><tr><th>Date/Time</th><th>Buyer Name</th><th>Phone</th><th>Items</th><th>Total</th><th>Purchase Method</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${orders.map(o => {
+      const ts = o.createdAt?.toDate?.();
+      const date = ts ? ts.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'}) : '—';
+      const time = ts ? ts.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
+      const name  = o.customerInfo?.name || o.buyer_name || 'Unknown';
+      const phone = o.customerInfo?.phone || o.phone || '—';
+      const items = (o.items||[]).map(i => i.title||i).join(', ') || '—';
+      const total = o.totalPrice ? `${o.totalPrice.toLocaleString()} KES` : '—';
+      const method = o.channel || o.purchase_method || '—';
+      const st    = o.status || 'pending';
+      return `<tr>
+        <td style="font-size:0.74rem;color:var(--adm-muted);">${date}<br><span style="font-size:0.66rem;">${time}</span></td>
+        <td style="font-weight:600;">${name}</td>
+        <td style="font-size:0.78rem;">${phone}</td>
+        <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${items}">${items}</td>
+        <td style="color:var(--adm-gold);font-weight:600;">${total}</td>
+        <td style="font-size:0.76rem;text-transform:capitalize;">${method}</td>
+        <td><span class="adm-status-badge ${st}">${st}</span></td>
+        <td>
+          <div style="display:flex;gap:5px;">
+            ${st==='pending'?`<button class="adm-btn-sm" style="color:var(--adm-green);border-color:var(--adm-green);" onclick="markOrderComplete('${o.id}')">✓ Done</button>`:''}
+            <button class="adm-btn-sm danger" onclick="deleteOrder('${o.id}')">✕</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+function confirmClearOrders() {
+  if (!confirm('⚠️ CONFIRM: This will permanently delete ALL orders from Firestore.\n\nAre you absolutely sure?')) return;
+  if (!confirm('Second confirmation: Delete all orders? This cannot be undone.')) return;
+  clearAllOrders();
+}
+async function clearAllOrders() {
+  if (!window.fetchOrders) { showToast('❌ Firestore not connected'); return; }
+  showToast('⏳ Clearing all orders…');
+  const orders = await window.fetchOrders();
+  let deleted = 0;
+  for (const o of orders) {
+    if (window.adminDeleteOrder) { await window.adminDeleteOrder(o.id); deleted++; }
+  }
+  showToast(`✅ ${deleted} orders cleared`);
+  loadOrders();
+  loadDashboardStats();
+}
+function exportOrders() {
+  if (!window.fetchOrders) { showToast('❌ Firestore not connected'); return; }
+  window.fetchOrders().then(orders => {
+    if (!orders.length) { showToast('No orders to export'); return; }
+    const rows = [['Date','Buyer Name','Phone','Items','Total (KES)','Purchase Method','Status']];
+    orders.forEach(o => {
+      const ts = o.createdAt?.toDate?.();
+      const date = ts ? ts.toLocaleDateString('en-KE') : '';
+      const name = o.customerInfo?.name || o.buyer_name || '';
+      const phone = o.customerInfo?.phone || o.phone || '';
+      const items = (o.items||[]).map(i=>i.title||i).join('; ');
+      const total = o.totalPrice || '';
+      const method = o.channel || o.purchase_method || '';
+      const status = o.status || '';
+      rows.push([date,name,phone,items,total,method,status]);
+    });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `orders_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast('✅ Orders exported as CSV');
+  });
+}
+
+async function markOrderComplete(id) {
+  if (!window.adminUpdateOrder) return;
+  await window.adminUpdateOrder(id, {status:'completed'});
+  showToast('✅ Order marked complete');
+  loadOrders(); loadDashboardStats();
+}
+async function deleteOrder(id) {
+  if (!confirm('Delete this order?')) return;
+  if (!window.adminDeleteOrder) return;
+  await window.adminDeleteOrder(id);
+  showToast('🗑️ Order deleted');
+  loadOrders(); loadDashboardStats();
+}
+
+async function renderLikesTab() {
+  const el = document.getElementById('likesContent');
+  const likeCounts = window._firestoreLikeCounts || {};
+  // Sort artworks by likes descending
+  const sorted = [...artworks]
+    .map(a => ({...a, likeCount: likeCounts[String(a.id)] || 0}))
+    .filter(a => a.likeCount > 0)
+    .sort((a, b) => b.likeCount - a.likeCount);
+  if (!sorted.length) {
+    el.innerHTML = '<div style="color:var(--adm-muted);font-size:0.84rem;">No likes yet. Likes will appear here in real-time.</div>';
+    return;
+  }
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+    ${sorted.map((a,i) => `<div style="background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:6px;overflow:hidden;position:relative;">
+      <div style="position:absolute;top:6px;left:6px;background:var(--adm-gold);color:var(--adm-bg);font-size:0.62rem;font-weight:800;padding:2px 7px;border-radius:50px;">#${i+1}</div>
+      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='images/placeholder.jpg'">
+      <div style="padding:8px;">
+        <div style="font-size:0.76rem;color:var(--adm-text);font-weight:600;">${a.title}</div>
+        <div style="font-size:0.7rem;color:var(--adm-gold);">${a.price}</div>
+        <div style="font-size:0.68rem;color:#e05252;margin-top:4px;">❤️ ${a.likeCount} like${a.likeCount!==1?'s':''}</div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function loadUsers() {
+  const el = document.getElementById('usersContent');
+  if (window._currentRole !== 'crown') { el.innerHTML = '<div class="adm-empty">👑 Crown-level access required to manage users.</div>'; return; }
+  el.innerHTML = '<div class="adm-loader">⏳ Loading users…</div>';
+  if (!window.fetchUsers) { el.innerHTML = '<div class="adm-empty">Connect Firestore to view users.</div>'; return; }
+  const users = await window.fetchUsers();
+  if (!users.length) { el.innerHTML = '<div class="adm-empty">No users found in Firestore users collection.</div>'; return; }
+  el.innerHTML = `<div style="overflow-x:auto;"><table class="adm-table">
+    <thead><tr><th>UID</th><th>Email / ID</th><th>Role</th><th>Actions</th></tr></thead>
+    <tbody>${users.map(u => `<tr>
+      <td style="font-size:0.7rem;color:var(--adm-muted);font-family:monospace;">${u.id.slice(0,12)}…</td>
+      <td>${u.email||u.id}</td>
+      <td>
+        <select class="adm-role-select" onchange="changeUserRole('${u.id}',this.value)">
+          <option ${u.role==='crown'?'selected':''}>crown</option>
+          <option ${u.role==='admin'?'selected':''}>admin</option>
+          <option ${u.role==='editor'?'selected':''}>editor</option>
+          <option ${u.role==='viewer'?'selected':''}>viewer</option>
+        </select>
+      </td>
+      <td><button class="adm-btn-sm" onclick="navigator.clipboard.writeText('${u.id}').then(()=>showToast('UID copied'))">Copy UID</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+async function changeUserRole(uid, newRole) {
+  if (!window.adminUpdateUser) return;
+  await window.adminUpdateUser(uid, {role: newRole});
+  showToast(`✅ Role updated to "${newRole}"`);
+}
+
+async function handleAdminLogout() {
+  await window.firebaseAdminLogout?.();
+  closeAdminDashboard();
+  document.getElementById('adminPanelTrigger').classList.remove('active');
+  document.getElementById('adminPanelTrigger').title = 'Admin Login';
+  document.getElementById('crownSection').style.display = 'none';
+}
+
+/* ══ KEYBOARD ══ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeZoom();
+    closeImageModal && closeImageModal();
+    closeStory();
+    closeOrder();
+    closeCommission();
+    closeCart();
+    closeAdminLogin();
+    closeCommentModal();
+    closeAccessDenied();
+    closeHamburger();
+    if (!document.getElementById('adminDashboard').classList.contains('active'))
+      document.body.style.overflow = '';
+  }
+});
+
+document.addEventListener('click', e => {
+  const nav = document.getElementById('headerNav'), tog = document.getElementById('navToggle');
+  if (nav.classList.contains('open') && !nav.contains(e.target) && !tog.contains(e.target)) nav.classList.remove('open');
+  const ham = document.getElementById('hamburgerMenu'), btn = document.getElementById('hamburgerBtn');
+  if (ham.classList.contains('open') && !ham.contains(e.target) && !btn.contains(e.target)) closeHamburger();
+  // Reset dashboard z-index after zoom close
+  if (e.target.id === 'imgZoomOverlay' || e.target.closest('.img-zoom-close')) {
+    setTimeout(() => { document.getElementById('adminDashboard').style.zIndex = ''; }, 100);
+  }
+});
+
+/* ══ INIT ══ */
+function init() {
+  renderGallery('');
+  updateCartCount();
+  updateStoryLikeCount();
+  if (storyLiked) {
+    document.getElementById('storyLikeBtn').classList.add('liked');
+    document.getElementById('storyLikeIcon').setAttribute('fill','#e05252');
+    document.getElementById('storyLikeIcon').setAttribute('stroke','#e05252');
+  }
+  track('page_view');
+  console.log('✅ Art Is Life Foundation — init complete');
+}
+init();
 </script>
+
 </body>
 </html>
