@@ -433,6 +433,7 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif;}
 @keyframes goldPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4);}50%{box-shadow:0 0 0 8px rgba(201,168,76,0);}}
 @keyframes accessDeniedIn{from{opacity:0;transform:scale(0.88) translateY(24px);}to{opacity:1;transform:scale(1) translateY(0);}}
 @keyframes heartBeat{0%{transform:scale(1);}14%{transform:scale(1.3);}28%{transform:scale(1);}42%{transform:scale(1.2);}70%{transform:scale(1);}}
+@keyframes adminHeartbeat{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}25%{transform:scale(1.22);box-shadow:0 0 10px 4px rgba(201,168,76,0.7);}50%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}75%{transform:scale(1.18);box-shadow:0 0 8px 3px rgba(201,168,76,0.55);}}
 @keyframes heartCenterBounce{0%{transform:translate(-50%,-50%) scale(0);opacity:1;}30%{transform:translate(-50%,-50%) scale(1.4);opacity:1;}60%{transform:translate(-50%,-50%) scale(1.1);opacity:0.8;}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0;}}
 @keyframes commentSlide{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
@@ -464,9 +465,9 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 .header-nav a{font-size:0.78rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);padding:7px 14px;border-radius:50px;transition:color 0.25s,background 0.25s;}
 .header-nav a:hover{color:var(--charcoal);background:var(--gold-subtle);}
 .header-right{display:flex;align-items:center;gap:10px;}
-#adminPanelTrigger{cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid rgba(201,168,76,0.3);background:transparent;transition:background 0.25s,border-color 0.25s,transform 0.2s;flex-shrink:0;user-select:none;}
-#adminPanelTrigger:hover{background:var(--gold-subtle);border-color:var(--gold);transform:scale(1.07);}
-#adminPanelTrigger.active{background:rgba(201,168,76,0.18);border-color:var(--gold);animation:goldPulse 2s ease infinite;}
+#adminPanelTrigger{cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(201,168,76,0.5);background:transparent;flex-shrink:0;user-select:none;animation:adminHeartbeat 0.5s ease infinite;transition:border-color 0.25s;}
+#adminPanelTrigger:hover{background:var(--gold-subtle);border-color:var(--gold);}
+#adminPanelTrigger.active{background:rgba(201,168,76,0.18);border-color:var(--gold);}
 .cart-btn{display:flex;align-items:center;gap:7px;padding:8px 16px;border:1px solid rgba(201,168,76,0.35);border-radius:50px;background:transparent;font-size:0.82rem;font-weight:600;color:var(--ink);transition:all 0.3s;flex-shrink:0;}
 .cart-btn:hover{border-color:var(--gold);background:var(--gold-subtle);}
 #cartCount{background:var(--gold);color:white;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform 0.3s;}
@@ -570,7 +571,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 .art-zoom-icon svg{width:20px;height:20px;color:var(--charcoal);}
 .art-card:hover .art-zoom-icon{opacity:1;transform:scale(1);}
 .badge-available{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,var(--green) 0%,#2dd872 50%,var(--green) 100%);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
-.badge-sold{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#666,#999,#666);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;}
+.badge-sold{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#b3261e 0%,#e05252 50%,#b3261e 100%);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
 .badge-featured{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#2563eb 0%,#60a5fa 50%,#2563eb 100%);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
 .like-btn{position:absolute;top:10px;right:10px;width:34px;height:34px;background:rgba(255,255,255,0.93);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform 0.3s,box-shadow 0.3s;box-shadow:0 2px 10px rgba(0,0,0,0.12);}
 .like-btn:hover{transform:scale(1.18);box-shadow:0 4px 14px rgba(0,0,0,0.2);}
@@ -925,11 +926,8 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     <a href="#social-section">Connect</a>
   </nav>
   <div class="header-right">
-    <button class="nav-toggle" id="navToggle" onclick="toggleNav()" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
     <div id="adminPanelTrigger" title="Admin Login" onclick="openAdminLogin()" aria-label="Admin access">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="filter:drop-shadow(0 0 3px rgba(201,168,76,0.6))"><path d="M2 20h20M5 20V10l7-7 7 7v10" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20v-6h6v6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>
+      <img src="admin_icon.png" alt="Admin" width="22" height="22" style="border-radius:50%;object-fit:contain;filter:drop-shadow(0 0 4px rgba(201,168,76,0.8));" onerror="this.style.display='none';this.parentNode.innerHTML+='&#9881;'">
     </div>
     <button class="cart-btn" onclick="openCart()" aria-label="Open cart">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
