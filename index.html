@@ -1,22 +1,5 @@
 <!DOCTYPE html>
 
-<!--
-================= FIRESTORE RULES =================
-rules_version='2';
-service cloud.firestore{
-match /databases/{database}/documents{
-function isAuth(){return request.auth!=null;}
-function role(){return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;}
-function isAdmin(){return role() in ['admin','crown'];}
-match /users/{uid}{allow read:if isAuth()&&request.auth.uid==uid;allow write:if false;}
-match /artworks/{id}{allow read:if true;allow write:if isAdmin();}
-match /orders/{id}{allow read,write:if isAdmin();allow create:if true;}
-match /likes/{id}{allow read,write:if isAuth();}
-match /comments/{id}{allow read:if true;allow create:if isAuth();}
-}}
-=================================================
--->
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -50,7 +33,7 @@ function track(event, data={}){ gtag('event', event, data); }
   import {
     getFirestore,
     doc, getDoc, getDocs,
-    collection, addDoc, query, orderBy, limit, where,
+    collection, addDoc, query, orderBy, limit,
     updateDoc, deleteDoc, setDoc,
     onSnapshot,
     serverTimestamp,
@@ -133,10 +116,11 @@ function track(event, data={}){ gtag('event', event, data); }
             status: data.status || 'available'
           };
         });
-        // Always use Firestore data when available (even single item) — full authoritative source
-        window._firestoreArtworks = firestoreArts;
-        window.dispatchEvent(new Event("artworks_updated"));
-        console.log(`✅ Artworks synced: ${firestoreArts.length} items`);
+        if (firestoreArts.length > 0) {
+          window._firestoreArtworks = firestoreArts;
+          window.dispatchEvent(new Event("artworks_updated"));
+          console.log(`✅ Artworks synced: ${firestoreArts.length} items`);
+        }
       },
       (err) => {
         console.warn("Artworks sync error (using local data):", err.message);
@@ -160,8 +144,13 @@ function track(event, data={}){ gtag('event', event, data); }
   // ── REAL-TIME COMMENTS SYNC ──
   window.startCommentsSync = function(artworkId, callback) {
     return onSnapshot(
-      query(collection(db, "comments"), where("artworkId","==",artworkId)),
-      s=>callback(s.docs.map(d=>({id:d.id,...d.data()})))
+      query(collection(db, "comments"), orderBy("createdAt", "asc")),
+      (snap) => {
+        const comments = snap.docs
+          .map(d => ({id: d.id, ...d.data()}))
+          .filter(c => c.artworkId === artworkId);
+        callback(comments);
+      }
     );
   };
 
@@ -290,16 +279,7 @@ function track(event, data={}){ gtag('event', event, data); }
     if (!window._firebaseAdmin) { if(typeof showToast==='function') showToast('⛔ Admin role required.'); return false; }
     return true;
   }
-  window.adminAddArtwork    = async (data, file) => {
-    if (!requireAdmin()) return;
-    if (file) {
-      const storageRef = ref(storage, "artworks/" + file.name);
-      await uploadBytesResumable(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      data = {...data, image: url};
-    }
-    return await addDoc(collection(db,"artworks"), {...data, createdAt:serverTimestamp()});
-  };
+  window.adminAddArtwork    = async (data) => { if (!requireAdmin()) return; return await addDoc(collection(db,"artworks"), {...data, createdAt:serverTimestamp()}); };
   window.adminUpdateArtwork = async (id, updates) => { if (!requireAdmin()) return; await updateDoc(doc(db,"artworks",id), updates); };
   window.adminDeleteArtwork = async (id) => { if (!requireAdmin()) return; await deleteDoc(doc(db,"artworks",id)); };
   window.adminUpdateOrder   = async (id, updates) => { if (!requireAdmin()) return; await updateDoc(doc(db,"orders",id), updates); };
@@ -437,10 +417,6 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif;}
 @keyframes accessDeniedIn{from{opacity:0;transform:scale(0.88) translateY(24px);}to{opacity:1;transform:scale(1) translateY(0);}}
 @keyframes heartBeat{0%{transform:scale(1);}14%{transform:scale(1.3);}28%{transform:scale(1);}42%{transform:scale(1.2);}70%{transform:scale(1);}}
 @keyframes commentSlide{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-@keyframes heartPop{0%{transform:scale(.5);opacity:0}40%{transform:scale(1.3);opacity:1}100%{transform:scale(1);opacity:0}}
-.like-burst{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.like-burst svg{width:80px;height:80px;color:#e05252;animation:heartPop 1.5s ease forwards}
-.skeleton{height:200px;background:linear-gradient(90deg,#eee,#ddd,#eee);animation:shimmer 1.5s infinite}
 
 /* ── HAMBURGER (TOP LEFT) ── */
 .hamburger-wrap{position:fixed;top:14px;left:16px;z-index:1800;}
@@ -576,16 +552,11 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 .art-zoom-icon svg{width:20px;height:20px;color:var(--charcoal);}
 .art-card:hover .art-zoom-icon{opacity:1;transform:scale(1);}
 .badge-available{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,var(--green) 0%,#2dd872 50%,var(--green) 100%);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
-.badge-sold{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#b3261e,#e05252,#b3261e);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;}
-.badge-featured{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#1d4ed8,#3b82f6,#1d4ed8);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;animation:badgePulse 3s ease infinite;}
-.like-btn{display:none;}
-.like-btn-inline{display:inline-flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:50px;transition:transform 0.2s,background 0.2s;flex-shrink:0;}
-.like-btn-inline:hover{background:rgba(224,82,82,0.08);transform:scale(1.12);}
-.like-btn-inline svg{width:17px;height:17px;transition:all 0.3s;}
-.like-btn-inline.liked svg{fill:#e05252;color:#e05252;}
-.like-btn-count{font-size:0.72rem;color:var(--muted);min-width:12px;}
-.like-btn-inline.liked .like-btn-count{color:#e05252;}
-.art-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;}
+.badge-sold{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#666,#999,#666);background-size:200% auto;color:white;font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 10px;border-radius:2px;pointer-events:none;}
+.like-btn{position:absolute;top:10px;right:10px;width:34px;height:34px;background:rgba(255,255,255,0.93);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform 0.3s,box-shadow 0.3s;box-shadow:0 2px 10px rgba(0,0,0,0.12);}
+.like-btn:hover{transform:scale(1.18);box-shadow:0 4px 14px rgba(0,0,0,0.2);}
+.like-btn svg{width:16px;height:16px;transition:all 0.3s;}
+.like-btn.liked svg{fill:#e05252;color:#e05252;}
 .art-info{padding:18px 18px 12px;}
 .art-title{font-family:'Cormorant Garamond',serif;font-size:1.12rem;font-weight:600;color:var(--charcoal);margin-bottom:4px;line-height:1.2;}
 .art-price{color:var(--gold-dark);font-weight:700;font-size:0.88rem;margin-bottom:8px;letter-spacing:0.04em;}
@@ -916,8 +887,17 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     </button>
     <button class="ham-menu-item" onclick="scrollToGallery();closeHamburger()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-      Art Collections
+      Collection
     </button>
+    <button class="ham-menu-item" onclick="openAdminLogin();closeHamburger()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Admin Login
+    </button>
+    <div class="ham-menu-divider"></div>
+    <div class="ham-menu-url">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      <a href="https://artislife-44968.web.app" target="_blank" rel="noopener">artislife-44968.web.app</a>
+    </div>
   </div>
 </div>
 
@@ -934,8 +914,11 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     <a href="#social-section">Connect</a>
   </nav>
   <div class="header-right">
+    <button class="nav-toggle" id="navToggle" onclick="toggleNav()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <div id="adminPanelTrigger" title="Admin Login" onclick="openAdminLogin()" aria-label="Admin access">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M2 20h20M4 20V10l8-7 8 7v10"/><polyline points="4,10 2,8 12,3 22,8 20,10"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
     </div>
     <button class="cart-btn" onclick="openCart()" aria-label="Open cart">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
@@ -1069,20 +1052,9 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
       WhatsApp
     </a>
-    <a class="social-link" href="https://www.tiktok.com/@USERNAME" target="_blank" rel="noopener" onclick="track('tiktok_click')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 12a4 4 0 100 8 4 4 0 000-8z"/><path d="M15 8a4 4 0 004 4V4a4 4 0 01-4 4z"/><path d="M15 8v8"/></svg>
-      TikTok
-    </a>
-    <a class="social-link" href="https://x.com/Gitonga_LE44047" target="_blank" rel="noopener" onclick="track('x_click')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4l16 16M4 20L20 4"/></svg>
-      X
-    </a>
-    <a class="social-link" href="https://www.youtube.com/@lewis.gitonga.artislife" target="_blank" rel="noopener" onclick="track('youtube_click')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.96A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
-      YouTube
-    </a>
   </div>
 </div>
+<footer>© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.<br>Each artwork is an original, one-time creation. Nairobi, Kenya.</footer>
 
 <!-- CART DRAWER -->
 
@@ -1249,7 +1221,7 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     </button>
     <div class="admin-login-body">
       <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M2 20h20M5 20V10l7-6 7 6v10"/><path d="M9 20v-6h6v6"/><circle cx="12" cy="6" r="1.5" fill="currentColor"/><path d="M2 10l3 3M22 10l-3 3M12 4V2"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         Admin Access
       </h3>
       <p class="admin-subtitle">Firebase RBAC — crown &amp; admin roles required.</p>
@@ -1521,8 +1493,8 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     <div class="adm-form-section">
       <h4 style="color:var(--adm-red);">Danger Zone</h4>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="adm-btn-sm danger" onclick="exportOrders()">Export All Orders</button>
-        <button class="adm-btn-sm danger" onclick="clearOrders()">Clear Orders</button>
+        <button class="adm-btn-sm danger" onclick="showToast('⚠️ Export — connect to backend')">Export All Orders</button>
+        <button class="adm-btn-sm danger" onclick="showToast('⚠️ Disabled in production')">Clear Orders</button>
       </div>
     </div>
   </div>
@@ -1586,7 +1558,7 @@ const saveCart  = () => localStorage.setItem('ail_cart',  JSON.stringify(cart));
 
 /* ══ REAL-TIME SYNC LISTENERS ══ */
 window.addEventListener('artworks_updated', () => {
-  if (window._firestoreArtworks) {
+  if (window._firestoreArtworks && window._firestoreArtworks.length > 0) {
     artworks = window._firestoreArtworks;
     renderGallery(currentSearch);
     const count = artworks.length;
@@ -1665,12 +1637,10 @@ function renderGallery(filter) {
     const status = a.status || 'available';
     const badge = status === 'sold'
       ? `<div class="badge-sold">✦ Sold</div>`
-      : status === 'featured'
-      ? `<div class="badge-featured">✦ Featured</div>`
       : `<div class="badge-available">✦ Available</div>`;
     return `
     <div class="art-card" style="animation-delay:${i*0.06}s">
-      <div class="art-img-wrap" id="imgwrap-${a.id}" onclick="openZoom('${a.image}','${a.title.replace(/'/g,"\\'")}')">
+      <div class="art-img-wrap" onclick="openZoom('${a.image}','${a.title.replace(/'/g,"\\'")}')">
         <img src="${a.image}" alt="${a.title}" loading="lazy" onerror="this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='270px'">
         <div class="art-img-overlay">
           <div class="art-zoom-icon">
@@ -1678,17 +1648,15 @@ function renderGallery(filter) {
           </div>
         </div>
         ${badge}
+        <button class="like-btn${isLiked?' liked':''}" onclick="event.stopPropagation();toggleLike('${a.id}')" title="${isLiked?'Unlike':'Like'}" aria-label="${isLiked?'Unlike':'Like'}">
+          <svg viewBox="0 0 24 24" fill="${isLiked?'#e05252':'none'}" stroke="${isLiked?'#e05252':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        </button>
       </div>
       <div class="art-info">
-        <div class="art-title-row">
-          <div class="art-title">${a.title}</div>
-          <button class="like-btn-inline${isLiked?' liked':''}" onclick="event.stopPropagation();toggleLike('${a.id}')" title="${isLiked?'Unlike':'Like'}" aria-label="${isLiked?'Unlike':'Like'}">
-            <svg viewBox="0 0 24 24" fill="${isLiked?'#e05252':'none'}" stroke="${isLiked?'#e05252':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-            <span class="like-btn-count">${likeCount > 0 ? likeCount : ''}</span>
-          </button>
-        </div>
+        <div class="art-title">${a.title}</div>
         <div class="art-price">${a.price}</div>
         <div class="art-desc">${a.desc}</div>
+        ${likeCount > 0 ? `<div class="art-like-count"><svg viewBox="0 0 24 24" fill="#e05252" stroke="#e05252" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${likeCount} like${likeCount!==1?'s':''}</div>` : ''}
       </div>
       <div class="art-actions">
         <button class="art-btn art-btn-order" onclick="openOrder('${a.id}')">
@@ -1730,15 +1698,6 @@ function clearSearch() {
   renderGallery('');
 }
 
-/* ══ LIKE ANIMATION ══ */
-function showLikeAnim(el) {
-  const wrap = document.createElement("div");
-  wrap.className = "like-burst";
-  wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-6-4.35-9-7.5C-1 9 2 3 7 5c2 1 3 3 5 5 2-2 3-4 5-5 5-2 8 4 4 8.5C18 16.65 12 21 12 21z"/></svg>`;
-  el.appendChild(wrap);
-  setTimeout(() => wrap.remove(), 1500);
-}
-
 /* ══ LIKES (Firestore-backed) ══ */
 async function toggleLike(id) {
   const sid = String(id);
@@ -1750,27 +1709,9 @@ async function toggleLike(id) {
     likes.push(sid);
     showToast('❤️ Added to favourites');
     track('like_clicked', {artwork_id: id});
-    // Show heart burst animation centered on the painting image wrap
-    const imgWrap = document.getElementById('imgwrap-' + sid);
-    if (imgWrap) showLikeAnim(imgWrap);
   }
   localStorage.setItem('ail_likes', JSON.stringify(likes));
-  // Re-render only the affected card's like button inline — no full gallery re-render
-  const btn = document.querySelector(`.like-btn-inline[onclick*="'${sid}'"]`);
-  if (btn) {
-    const isNowLiked = likes.includes(sid);
-    btn.className = `like-btn-inline${isNowLiked?' liked':''}`;
-    const svg = btn.querySelector('svg');
-    const countEl = btn.querySelector('.like-btn-count');
-    if (svg) {
-      svg.setAttribute('fill', isNowLiked ? '#e05252' : 'none');
-      svg.setAttribute('stroke', isNowLiked ? '#e05252' : 'currentColor');
-    }
-    if (countEl) {
-      const newCount = getLikeCount(sid) + (isNowLiked ? 1 : -1);
-      countEl.textContent = newCount > 0 ? newCount : '';
-    }
-  }
+  renderGallery(currentSearch);
   // Sync to Firestore
   if (window.toggleLikeFirestore) {
     window.toggleLikeFirestore(sid).catch(e => console.warn('Like sync error:', e));
@@ -2181,15 +2122,4 @@ function admTab(name, btn) {
   document.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.adm-nav-item').forEach(n => n.classList.remove('active'));
   const tab = document.getElementById('tab-'+name);
-  if (tab) tab.classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (name === 'orders') loadOrders();
-  if (name === 'likes') renderLikesTab();
-  if (name === 'users') loadUsers();
-  if (name === 'artworks') renderArtworksTable();
-}
-
-async function loadDashboardStats() {
-  if (!window.fetchDashboardStats) return;
-  const stats = await window.fetchDashboardStats();
-  document.getElementById('stat-orders').tex
+  if (tab) tab.classList.
