@@ -56,7 +56,7 @@ function track(event, data={}){ gtag('event', event, data); }
 
     doc, getDoc, getDocs,
 
-    collection, addDoc, query, orderBy, limit,
+    collection, addDoc, query, orderBy, limit, where,
 
     updateDoc, deleteDoc, setDoc,
 
@@ -166,6 +166,54 @@ function track(event, data={}){ gtag('event', event, data); }
 
   // ── REAL-TIME ARTWORKS SYNC ──
 
+  // 🔧 FIRESTORE SECURITY RULES (SERVER-SIDE ENFORCEMENT)
+  // IMPLEMENT THE FOLLOWING IN FIRESTORE CONSOLE:
+  /*
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        
+        // ✅ ARTWORKS: Admin/Crown only can modify
+        match /artworks/{artworkId} {
+          allow read: if true;
+          allow create, update, delete: if hasRole(['admin', 'crown']);
+        }
+        
+        // ✅ ORDERS: Admin/Crown can manage
+        match /orders/{orderId} {
+          allow read: if request.auth != null && hasRole(['admin', 'crown']);
+          allow create: if true;
+          allow update, delete: if hasRole(['admin', 'crown']);
+        }
+        
+        // ✅ LIKES: Users can create 1 per artwork; public read
+        match /likes/{likeId} {
+          allow read: if true;
+          allow create: if request.auth != null || request.resource.data.userId != null;
+          allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+        }
+        
+        // ✅ COMMENTS: Public read/create; admin can manage
+        match /comments/{commentId} {
+          allow read: if true;
+          allow create: if true;
+          allow update, delete: if hasRole(['admin', 'crown']);
+        }
+        
+        // ✅ USERS: Admin/Crown only
+        match /users/{userId} {
+          allow read, write: if hasRole(['admin', 'crown']);
+        }
+        
+        // Helper function
+        function hasRole(roles) {
+          return request.auth != null && 
+                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+        }
+      }
+    }
+  */
+
   window._artworksUnsubscribe = null;
 
   window.startArtworksSync = function() {
@@ -198,7 +246,7 @@ function track(event, data={}){ gtag('event', event, data); }
 
               priceNum,
 
-              image: data.image || 'images/placeholder.jpg',
+              image: (data.image && data.image.trim() !== '' && data.image.trim() !== 'images/placeholder.jpg') ? data.image.trim() : 'placeholder.jpg',
 
               desc: data.desc || data.description || '',
 
@@ -284,27 +332,53 @@ function track(event, data={}){ gtag('event', event, data); }
 
   // ── REAL-TIME COMMENTS SYNC ──
 
+  // 🔧 COMMENTS QUERY FIX START - Filter by artworkId in Firestore query instead of client-side
   window.startCommentsSync = function(artworkId, callback) {
 
-    return onSnapshot(
+    try {
 
-      query(collection(db, "comments"), orderBy("createdAt", "asc")),
+      return onSnapshot(
 
-      (snap) => {
+        query(
 
-        const comments = snap.docs
+          collection(db, "comments"),
 
-          .map(d => ({id: d.id, ...d.data()}))
+          where("artworkId", "==", artworkId),
 
-          .filter(c => c.artworkId === artworkId);
+          orderBy("createdAt", "asc")
 
-        callback(comments);
+        ),
 
-      }
+        (snap) => {
 
-    );
+          const comments = snap.docs.map(d => ({id: d.id, ...d.data()}));
+
+          callback(comments);
+
+          console.log(`📝 Comments loaded for artwork ${artworkId}: ${comments.length} items`);
+
+        },
+
+        (err) => {
+
+          console.error(`⚠️ Comments sync error for ${artworkId}:`, err.message);
+
+          callback([]);
+
+        }
+
+      );
+
+    } catch(e) {
+
+      console.error("Comments sync setup error:", e);
+
+      callback([]);
+
+    }
 
   };
+  // 🔧 COMMENTS QUERY FIX END
 
   onAuthStateChanged(auth, async (user) => {
 
@@ -448,6 +522,7 @@ function track(event, data={}){ gtag('event', event, data); }
 
   // ── LIKES — stored per user in Firestore ──
 
+  // 🔧 LIKE SYSTEM SCALING START - Optional per-artwork like count using increment()
   window.toggleLikeFirestore = async function(artworkId) {
 
     const user = auth.currentUser;
@@ -466,13 +541,35 @@ function track(event, data={}){ gtag('event', event, data); }
 
       if (snap.exists()) {
 
+        // User already liked — remove like
         await deleteDoc(likeRef);
+
+        // 🔧 OPTIONAL: Decrement artwork like count
+        try {
+          await updateDoc(doc(db, "artworks", artworkId), {
+            likeCount: increment(-1)
+          });
+          console.log(`➖ Artwork like count decremented for ${artworkId}`);
+        } catch(e) {
+          console.warn(`⚠️ Could not decrement like count:`, e.message);
+        }
 
         return 'unliked';
 
       } else {
 
+        // User hasn't liked — add like
         await setDoc(likeRef, { userId: user?.uid || 'anon', artworkId, createdAt: serverTimestamp() });
+
+        // 🔧 OPTIONAL: Increment artwork like count
+        try {
+          await updateDoc(doc(db, "artworks", artworkId), {
+            likeCount: increment(1)
+          });
+          console.log(`➕ Artwork like count incremented for ${artworkId}`);
+        } catch(e) {
+          console.warn(`⚠️ Could not increment like count:`, e.message);
+        }
 
         return 'liked';
 
@@ -487,6 +584,7 @@ function track(event, data={}){ gtag('event', event, data); }
     }
 
   };
+  // 🔧 LIKE SYSTEM SCALING END
 
   // ── COMMENTS ──
 
@@ -496,7 +594,10 @@ function track(event, data={}){ gtag('event', event, data); }
 
     try {
 
-      await addDoc(collection(db, "comments"), {
+      // 🔧 ERROR LOGGING ENHANCEMENT START
+      console.log(`📝 Attempting to save comment for artwork ${artworkId}...`);
+
+      const docRef = await addDoc(collection(db, "comments"), {
 
         artworkId,
 
@@ -508,11 +609,24 @@ function track(event, data={}){ gtag('event', event, data); }
 
       });
 
+      console.log(`✅ Comment saved successfully:`, docRef.id);
+      // 🔧 ERROR LOGGING ENHANCEMENT END
+
       return true;
 
     } catch(e) {
 
-      console.error("Comment error:", e);
+      console.error("❌ Comment save failed:", {
+
+        error: e.message,
+
+        code: e.code,
+
+        artworkId,
+
+        timestamp: new Date().toISOString()
+
+      });
 
       return false;
 
@@ -1676,31 +1790,27 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
 
   <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleHamburger()" aria-label="Open menu">
 
-```
 <span></span><span></span><span></span>
-```
 
   </button>
 
   <div class="hamburger-menu" id="hamburgerMenu">
 
-```
 <button class="ham-menu-item" onclick="openStory();closeHamburger()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
 
-  My Story
+My Story
 
 </button>
 
 <button class="ham-menu-item" onclick="scrollToGallery();closeHamburger()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
 
-  Collections
+Collections
 
 </button>
-```
 
   </div>
 
@@ -1712,29 +1822,24 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
 
   <div class="header-brand">
 
-```
 <div class="header-brand-dot"></div>
 
 ART IS LIFE <span>FOUNDATION</span>
-```
 
   </div>
 
   <nav class="header-nav" id="headerNav">
 
-```
 <a href="#gallery-section" onclick="scrollToGallery()">Collection</a>
 
 <a href="#" onclick="openStory();return false;">Our Story</a>
 
 <a href="#social-section">Connect</a>
-```
 
   </nav>
 
   <div class="header-right">
 
-```
 <div id="adminPanelTrigger" title="Admin Login" onclick="openAdminLogin()" aria-label="Admin access">
 
   <img src="admin_icon.png" alt="Admin" width="22" height="22" style="border-radius:50%;object-fit:contain;filter:drop-shadow(0 0 4px rgba(201,168,76,0.8));" onerror="this.style.display='none';this.parentNode.innerHTML+='&#9881;'">
@@ -1743,12 +1848,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
 <button class="cart-btn" onclick="openCart()" aria-label="Open cart">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
 
-  <span id="cartCount">0</span>
+<span id="cartCount">0</span>
 
 </button>
-```
 
   </div>
 
@@ -1760,15 +1864,12 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="hero-bg">
 
-```
-<img src="images/cover.jpg" alt="Art is Life — Lewis Gitonga" loading="eager" onerror="this.src='images/placeholder.jpg'">
-```
+<img src="cover.jpg" alt="Art is Life — Lewis Gitonga" loading="eager" onerror="this.src='placeholder.jpg'">
 
   </div>
 
   <div class="hero-content">
 
-```
 <div class="hero-eyebrow">Lewis Gitonga · Nairobi, Kenya</div>
 
 <h1 class="hero-title">Art is<br><em>evidence</em><br><strong>of life.</strong></h1>
@@ -1777,12 +1878,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
 <div class="hero-actions">
 
-  <button class="btn-primary" onclick="scrollToGallery()">Explore Collection <span>→</span></button>
+<button class="btn-primary" onclick="scrollToGallery()">Explore Collection <span>→</span></button>
 
-  <button class="btn-ghost" onclick="openStory()">The Untold Canvas</button>
+<button class="btn-ghost" onclick="openStory()">The Untold Canvas</button>
 
 </div>
-```
 
   </div>
 
@@ -1790,13 +1890,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="hero-stats">
 
-```
 <div class="hero-stat"><div class="hero-stat-num" id="heroWorkCount">12</div><div class="hero-stat-label">Works</div></div>
 
 <div class="hero-stat"><div class="hero-stat-num">1</div><div class="hero-stat-label">Artist</div></div>
 
 <div class="hero-stat"><div class="hero-stat-num">∞</div><div class="hero-stat-label">Emotion</div></div>
-```
 
   </div>
 
@@ -1808,7 +1906,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="marquee-track">
 
-```
 <span class="marquee-item">Original</span><span class="marquee-sep">✦</span>
 
 <span class="marquee-item">Emotional</span><span class="marquee-sep">✦</span>
@@ -1832,7 +1929,6 @@ ART IS LIFE <span>FOUNDATION</span>
 <span class="marquee-item">Art Is Life Foundation</span><span class="marquee-sep">✦</span>
 
 <span class="marquee-item">Lewis Gitonga</span><span class="marquee-sep">✦</span>
-```
 
   </div>
 
@@ -1844,7 +1940,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="about-text">
 
-```
 <div class="section-eyebrow">The Artist's Journey</div>
 
 <h2 class="about-title">The <em>Untold Canvas</em> — My Origin</h2>
@@ -1863,46 +1958,49 @@ ART IS LIFE <span>FOUNDATION</span>
 
 <div class="about-cta-row">
 
-  <button class="btn-outline" onclick="openStory()">✦ Explore the Full Journey</button>
+<button class="btn-outline" onclick="openStory()">✦ Explore the Full Journey</button>
 
   <button class="engage-btn" id="storyLikeBtn" onclick="toggleStoryLike()" title="Like this story">
 
-    <svg id="storyLikeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+```
+<svg id="storyLikeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
 
-    <span class="engage-count" id="storyLikeCount">0</span>
+<span class="engage-count" id="storyLikeCount">0</span>
+```
 
   </button>
 
   <button class="engage-btn" onclick="openStoryComments()" title="Leave a comment">
 
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+```
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
 
-    <span class="engage-count" id="storyCommentCount">0</span>
+<span class="engage-count" id="storyCommentCount">0</span>
+```
 
   </button>
 
 </div>
-```
 
   </div>
 
   <div class="about-img-frame">
 
-```
 <div class="about-img-inner">
 
-  <img src="images/story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga · CEO &amp; Founder')" onerror="this.src='images/placeholder.jpg';this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='460px'">
+  <img src="story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga · CEO &amp; Founder')" onerror="this.src='placeholder.jpg';this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='460px'">
 
   <div class="about-img-overlay">
 
-    <div class="about-img-caption">Lewis Gitonga · CEO &amp; Founder, Art Is Life Foundation</div>
+```
+<div class="about-img-caption">Lewis Gitonga · CEO &amp; Founder, Art Is Life Foundation</div>
+```
 
   </div>
 
 </div>
 
 <div class="about-badge"><div class="about-badge-num" id="aboutBadgeNum">12</div><div class="about-badge-text">Works</div></div>
-```
 
   </div>
 
@@ -1916,21 +2014,18 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="search-inner">
 
-```
 <input class="search-field" type="text" id="searchInput" placeholder="Search by title, mood, emotion…" oninput="handleSearch(this.value)" autocomplete="off">
 
 <span class="search-ico">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
 
 </span>
-```
 
   </div>
 
   <div class="filter-row">
 
-```
 <button class="filter-chip active" onclick="applyFilter(this,'')">All Works</button>
 
 <button class="filter-chip" onclick="applyFilter(this,'nature')">Nature</button>
@@ -1942,7 +2037,6 @@ ART IS LIFE <span>FOUNDATION</span>
 <button class="filter-chip" onclick="applyFilter(this,'light')">Light</button>
 
 <button class="filter-chip" onclick="applyFilter(this,'bloom')">Bloom</button>
-```
 
   </div>
 
@@ -1954,11 +2048,9 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="gallery-header">
 
-```
 <h2 class="gallery-title">The <span>Collection</span></h2>
 
 <div class="gallery-meta"><span class="gallery-count" id="galleryCount">12 works</span></div>
-```
 
   </div>
 
@@ -1976,55 +2068,53 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="social-links">
 
-```
 <a class="social-link" href="https://www.tiktok.com/@lewis_art.is.life" target="_blank" rel="noopener" onclick="track('tiktok_click')">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/></svg>
 
-  TikTok
+TikTok
 
 </a>
 
 <a class="social-link" href="https://x.com/Gitonga_LE44047" target="_blank" rel="noopener" onclick="track('x_click')">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4l16 16M20 4L4 20"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 4l16 16M20 4L4 20"/></svg>
 
-  X
+X
 
 </a>
 
 <a class="social-link" href="https://www.youtube.com/@lewis.gitonga.artislife" target="_blank" rel="noopener" onclick="track('youtube_click')">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.47a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.47a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/></svg>
 
-  YouTube
+YouTube
 
 </a>
 
 <a class="social-link" href="https://www.facebook.com/lewis_art.is.life" target="_blank" rel="noopener" onclick="track('facebook_click')">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
 
-  Facebook
+Facebook
 
 </a>
 
 <a class="social-link" href="https://instagram.com/lewis_art.is.life" target="_blank" rel="noopener" onclick="track('instagram_click')">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
 
-  Instagram
+Instagram
 
 </a>
 
 <a class="social-link" href="https://wa.me/254704708178" target="_blank" rel="noopener" onclick="track('whatsapp_direct')">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
-  WhatsApp
+WhatsApp
 
 </a>
-```
 
   </div>
 
@@ -2040,27 +2130,27 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="cart-head">
 
-```
 <h3>
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
 
-  Your Cart
+Your Cart
 
 </h3>
 
 <div class="cart-head-right">
 
-  <button class="cart-clear-btn" onclick="clearCart()" id="cartClearBtn" style="display:none">Clear All</button>
+<button class="cart-clear-btn" onclick="clearCart()" id="cartClearBtn" style="display:none">Clear All</button>
 
   <button class="cart-close-btn" onclick="closeCart()">
 
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+```
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+```
 
   </button>
 
 </div>
-```
 
   </div>
 
@@ -2068,7 +2158,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="cart-footer" id="cartFooter">
 
-```
 <div class="cart-summary">
 
   <div class="cart-count-row"><span>Items selected</span><span id="cartItemCount">0</span></div>
@@ -2079,12 +2168,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
 <button class="btn-checkout" onclick="checkoutFromCart()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
 
-  Proceed to Order
+Proceed to Order
 
 </button>
-```
 
   </div>
 
@@ -2096,15 +2184,13 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="img-zoom-inner" onclick="event.stopPropagation()">
 
-```
 <button class="img-zoom-close" onclick="closeZoom()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
 </button>
 
 <img id="zoomImg" src="" alt="Artwork zoomed view">
-```
 
   </div>
 
@@ -2118,36 +2204,37 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="modal-box story-box" onclick="event.stopPropagation()">
 
-```
 <button class="modal-close" onclick="closeStory()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
 </button>
 
-<img class="story-hero-img" src="images/story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga — CEO')" onerror="this.src='images/placeholder.jpg'">
+<img class="story-hero-img" src="story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga — CEO')" onerror="this.src='placeholder.jpg'">
 
 <div class="story-body">
 
-  <span class="story-eyebrow">Lewis Gitonga · Art Is Life Foundation</span>
+<span class="story-eyebrow">Lewis Gitonga · Art Is Life Foundation</span>
 
   <h2>How It All Started — My Untold Story</h2>
 
   <div class="story-chapter"><h4>My Identity — CEO of Art Is Life</h4><p>This is who I am. Art Is Life Foundation is not just a brand — it is my identity, my voice, and my purpose. As its CEO and founder, every decision I make, every stroke I paint, carries the weight of who I am and who I am becoming.</p></div>
 
-  <div class="story-img-grid full"><img src="images/story_01_identity.jpg" alt="Lewis Gitonga" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+  <div class="story-img-grid full"><img src="story_01_identity.jpg" alt="Lewis Gitonga" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga')" onerror="this.src='placeholder.jpg';this.style.minHeight='240px'"></div>
 
   <div class="story-chapter"><h4>The Beginning — Early Artworks &amp; Foundation</h4><p>From a young age, I was drawn to creativity in a way I could not fully explain. I didn't just want to draw; I wanted to express feeling, emotion, and meaning through every line.</p></div>
 
-  <div class="story-img-grid full"><img src="images/story_02_early_journey.jpg" alt="Early journey" loading="lazy" onclick="openZoom(this.src,'Early Journey')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+  <div class="story-img-grid full"><img src="story_02_early_journey.jpg" alt="Early journey" loading="lazy" onclick="openZoom(this.src,'Early Journey')" onerror="this.src='placeholder.jpg';this.style.minHeight='240px'"></div>
 
   <div class="story-chapter"><h4>The Turning Point — Africa Kidpreneur Summit &amp; Elvis</h4><p>A defining moment came at the Africa Kidpreneur Summit. Elvis introduced us to the foundations of painting — how to blend colors, control the brush, and most importantly, how to express emotion through art. That moment changed everything.</p></div>
 
   <div class="story-img-grid cols-2">
 
-    <img src="images/story_03_summit.jpg" alt="Summit" loading="lazy" onclick="openZoom(this.src,'Africa Kidpreneur Summit')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='200px'">
+```
+<img src="story_03_summit.jpg" alt="Summit" loading="lazy" onclick="openZoom(this.src,'Africa Kidpreneur Summit')" onerror="this.src='placeholder.jpg';this.style.minHeight='200px'">
 
-    <img src="images/story_04_elvis_teaching.jpg" alt="Elvis teaching" loading="lazy" onclick="openZoom(this.src,'Elvis Teaching')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='200px'">
+<img src="story_04_elvis_teaching.jpg" alt="Elvis teaching" loading="lazy" onclick="openZoom(this.src,'Elvis Teaching')" onerror="this.src='placeholder.jpg';this.style.minHeight='200px'">
+```
 
   </div>
 
@@ -2155,16 +2242,15 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="story-chapter"><h4>The Vision — What I Aim to Build &amp; Become</h4><p>I see a future where my art reaches the world — galleries, collections, conversations across continents. Art Is Life Foundation is my dream institution: one that uplifts artists across Kenya.</p></div>
 
-  <div class="story-img-grid full"><img src="images/story_05_vision.jpg" alt="Vision" loading="lazy" onclick="openZoom(this.src,'The Vision')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+  <div class="story-img-grid full"><img src="story_05_vision.jpg" alt="Vision" loading="lazy" onclick="openZoom(this.src,'The Vision')" onerror="this.src='placeholder.jpg';this.style.minHeight='240px'"></div>
 
   <div class="story-chapter"><h4>Current Work — Present Skill, Progress &amp; Maturity</h4><p>This is where I stand today. The progress is real. The skill is sharper. Each piece now carries not just emotion, but mastery. Today, my work tells human stories that words cannot fully capture.</p></div>
 
-  <div class="story-img-grid full"><img src="images/story_06_current_work.jpg" alt="Current work" loading="lazy" onclick="openZoom(this.src,'Current Work')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
+  <div class="story-img-grid full"><img src="story_06_current_work.jpg" alt="Current work" loading="lazy" onclick="openZoom(this.src,'Current Work')" onerror="this.src='placeholder.jpg';this.style.minHeight='240px'"></div>
 
   <div class="story-blockquote"><p>"Art for me is not just life — it is evidence of life itself."</p></div>
 
 </div>
-```
 
   </div>
 
@@ -2176,10 +2262,9 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="modal-box order-box" onclick="event.stopPropagation()">
 
-```
 <button class="modal-close" onclick="closeOrder()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
 </button>
 
@@ -2187,7 +2272,7 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <h3>Order Artwork</h3>
 
-  <span class="order-artwork-tag" id="orderArtworkName"></span>
+<span class="order-artwork-tag" id="orderArtworkName"></span>
 
   <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="orderName" placeholder="Full name" autocomplete="name"></div>
 
@@ -2195,46 +2280,49 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="form-group"><label class="form-label">Phone (optional)</label><input class="form-input" type="tel" id="orderPhone" placeholder="+254…"></div>
 
-  <span class="channel-label">Send your order via:</span>
+<span class="channel-label">Send your order via:</span>
 
   <div class="channel-grid">
 
-    <button class="channel-opt sel-wa sel" id="ch-wa" onclick="selectChannel('wa')">
+```
+<button class="channel-opt sel-wa sel" id="ch-wa" onclick="selectChannel('wa')">
 
-      <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+  <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
-      WhatsApp
+  WhatsApp
 
-    </button>
+</button>
 
-    <button class="channel-opt sel-email" id="ch-email" onclick="selectChannel('email')">
+<button class="channel-opt sel-email" id="ch-email" onclick="selectChannel('email')">
 
-      <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+  <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
 
-      Email
+  Email
 
-    </button>
+</button>
 
-    <button class="channel-opt sel-sms" id="ch-sms" onclick="selectChannel('sms')">
+<button class="channel-opt sel-sms" id="ch-sms" onclick="selectChannel('sms')">
 
-      <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+  <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
 
-      SMS
+  SMS
 
-    </button>
+</button>
+```
 
   </div>
 
   <button class="btn-send btn-wa" id="sendBtn" onclick="sendOrder()">
 
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+```
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
-    Send via WhatsApp
+Send via WhatsApp
+```
 
   </button>
 
 </div>
-```
 
   </div>
 
@@ -2246,10 +2334,9 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="modal-box commission-box" onclick="event.stopPropagation()">
 
-```
 <button class="modal-close" onclick="closeCommission()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
 </button>
 
@@ -2263,9 +2350,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="form-row">
 
-    <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="cName" placeholder="Full name"></div>
+```
+<div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="cName" placeholder="Full name"></div>
 
-    <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="cPhone" placeholder="+254…"></div>
+<div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="cPhone" placeholder="+254…"></div>
+```
 
   </div>
 
@@ -2273,19 +2362,21 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="form-row">
 
-    <div class="form-group"><label class="form-label">Mood / Emotion</label>
+```
+<div class="form-group"><label class="form-label">Mood / Emotion</label>
 
-      <select class="form-select" id="cMood"><option value="">Select mood…</option><option>Peaceful &amp; Calm</option><option>Bold &amp; Energetic</option><option>Melancholic &amp; Deep</option><option>Joyful &amp; Vibrant</option><option>Mysterious &amp; Dark</option><option>Romantic &amp; Warm</option><option>Spiritual &amp; Transcendent</option></select>
+  <select class="form-select" id="cMood"><option value="">Select mood…</option><option>Peaceful &amp; Calm</option><option>Bold &amp; Energetic</option><option>Melancholic &amp; Deep</option><option>Joyful &amp; Vibrant</option><option>Mysterious &amp; Dark</option><option>Romantic &amp; Warm</option><option>Spiritual &amp; Transcendent</option></select>
 
-    </div>
+</div>
 
-    <div class="form-group"><label class="form-label">Size</label>
+<div class="form-group"><label class="form-label">Size</label>
 
-      <select class="form-select" id="cSize" onchange="handleCustomSizeSelect(this.value)"><option value="">Select size…</option><option>Small (A4 / 8×10 in)</option><option>Medium (A3 / 12×16 in)</option><option>Large (18×24 in)</option><option>Extra Large (24×36 in)</option><option value="custom">Custom Size</option></select>
+  <select class="form-select" id="cSize" onchange="handleCustomSizeSelect(this.value)"><option value="">Select size…</option><option>Small (A4 / 8×10 in)</option><option>Medium (A3 / 12×16 in)</option><option>Large (18×24 in)</option><option>Extra Large (24×36 in)</option><option value="custom">Custom Size</option></select>
 
-      <input class="form-input" type="text" id="cSizeCustom" placeholder="Enter your required size manually" style="margin-top:8px;display:none;">
+  <input class="form-input" type="text" id="cSizeCustom" placeholder="Enter your required size manually" style="margin-top:8px;display:none;">
 
-    </div>
+</div>
+```
 
   </div>
 
@@ -2294,6 +2385,7 @@ ART IS LIFE <span>FOUNDATION</span>
   <div class="form-group"><label class="form-label">Delivery Address</label><input class="form-input" type="text" id="cAddress" placeholder="Your address"></div>
 
   <!-- POLICY AGREEMENT — bottom of form, before channel & send -->
+
   <div id="commissionPolicyBox" style="background:#fffbf0;border:1.5px solid rgba(201,168,76,0.4);border-radius:6px;padding:18px 20px;margin:18px 0 4px;">
     <p style="font-size:0.84rem;color:#4a3a00;line-height:1.7;margin-bottom:14px;">
       <strong style="display:block;margin-bottom:6px;font-size:0.9rem;color:#2c2c2c;">📋 Our Commission Policy</strong>
@@ -2308,50 +2400,52 @@ ART IS LIFE <span>FOUNDATION</span>
   </div>
 
   <!-- Channel + Send — hidden until policy agreed -->
+
   <div id="commissionSendSection" style="display:none;">
 
-    <span class="channel-label">Send commission request via:</span>
+```
+<span class="channel-label">Send commission request via:</span>
 
-    <div class="channel-grid">
+<div class="channel-grid">
 
-      <button class="channel-opt sel-wa sel" id="cc-wa" onclick="selectCommissionChannel('wa')">
+  <button class="channel-opt sel-wa sel" id="cc-wa" onclick="selectCommissionChannel('wa')">
 
-        <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+    <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
-        WhatsApp
+    WhatsApp
 
-      </button>
+  </button>
 
-      <button class="channel-opt sel-email" id="cc-email" onclick="selectCommissionChannel('email')">
+  <button class="channel-opt sel-email" id="cc-email" onclick="selectCommissionChannel('email')">
 
-        <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
 
-        Email
+    Email
 
-      </button>
+  </button>
 
-      <button class="channel-opt sel-sms" id="cc-sms" onclick="selectCommissionChannel('sms')">
+  <button class="channel-opt sel-sms" id="cc-sms" onclick="selectCommissionChannel('sms')">
 
-        <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
 
-        SMS
+    SMS
 
-      </button>
+  </button>
 
-    </div>
+</div>
 
-    <button class="btn-send btn-wa" id="commissionSendBtn" onclick="sendCommission()">
+<button class="btn-send btn-wa" id="commissionSendBtn" onclick="sendCommission()">
 
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
-      Proceed with order
+  Proceed with order
 
-    </button>
+</button>
+```
 
   </div>
 
 </div>
-```
 
   </div>
 
@@ -2363,10 +2457,9 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="modal-box admin-login-box" onclick="event.stopPropagation()">
 
-```
 <button class="modal-close" onclick="closeAdminLogin()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
 </button>
 
@@ -2374,9 +2467,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <h3>
 
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color:var(--gold);filter:drop-shadow(0 0 4px rgba(201,168,76,0.7))"><path d="M2 20h20M5 20V10l7-7 7 7v10"/><path d="M9 20v-6h6v6"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>
+```
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color:var(--gold);filter:drop-shadow(0 0 4px rgba(201,168,76,0.7))"><path d="M2 20h20M5 20V10l7-7 7 7v10"/><path d="M9 20v-6h6v6"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>
 
-    Admin Access
+Admin Access
+```
 
   </h3>
 
@@ -2390,32 +2485,35 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="admin-uid-box" id="adminUidBox">
 
-    <h5>🔧 FIRESTORE SETUP REQUIRED</h5>
+```
+<h5>🔧 FIRESTORE SETUP REQUIRED</h5>
 
-    <p style="margin-bottom:8px;">Your login is valid but no Firestore role record exists. Create this document in Firebase Console:</p>
+<p style="margin-bottom:8px;">Your login is valid but no Firestore role record exists. Create this document in Firebase Console:</p>
 
-    <p><strong>Collection:</strong> users &nbsp;|&nbsp; <strong>Document ID:</strong></p>
+<p><strong>Collection:</strong> users &nbsp;|&nbsp; <strong>Document ID:</strong></p>
 
-    <code id="adminUidDisplay">—</code>
+<code id="adminUidDisplay">—</code>
 
-    <button class="admin-uid-copy" onclick="copyUid()">📋 Copy UID</button>
+<button class="admin-uid-copy" onclick="copyUid()">📋 Copy UID</button>
 
-    <p style="margin-top:10px;"><strong>Field:</strong> role = <code style="background:#1e293b;color:#7dd3fc;padding:1px 6px;border-radius:3px;font-size:0.8rem;">crown</code></p>
+<p style="margin-top:10px;"><strong>Field:</strong> role = <code style="background:#1e293b;color:#7dd3fc;padding:1px 6px;border-radius:3px;font-size:0.8rem;">crown</code></p>
 
-    <p style="margin-top:8px;opacity:0.8;">After creating the document, click Sign In again.</p>
+<p style="margin-top:8px;opacity:0.8;">After creating the document, click Sign In again.</p>
+```
 
   </div>
 
   <button class="btn-admin-login" id="adminLoginBtn" onclick="handleAdminLogin()">
 
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+```
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
 
-    Sign In with Firebase
+Sign In with Firebase
+```
 
   </button>
 
 </div>
-```
 
   </div>
 
@@ -2427,10 +2525,9 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="access-denied-box" onclick="event.stopPropagation()">
 
-```
 <div class="access-denied-icon">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
 
 </div>
 
@@ -2439,7 +2536,6 @@ ART IS LIFE <span>FOUNDATION</span>
 <p>Oops. Access denied. This section is for <strong>Lewis, the CEO</strong>, only.</p>
 
 <button class="access-denied-close" onclick="closeAccessDenied()">Understood</button>
-```
 
   </div>
 
@@ -2451,10 +2547,9 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="modal-box comment-modal-box" onclick="event.stopPropagation()">
 
-```
 <button class="modal-close" onclick="closeCommentModal()">
 
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
 </button>
 
@@ -2462,20 +2557,21 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <h3 id="commentModalTitle">Comments</h3>
 
-  <span class="comment-artwork-tag" id="commentModalSub"></span>
+<span class="comment-artwork-tag" id="commentModalSub"></span>
 
   <div class="comment-list" id="commentList"><div class="comment-empty">No comments yet. Be the first!</div></div>
 
   <div class="comment-input-row">
 
-    <input class="comment-input" type="text" id="commentInput" placeholder="Write a comment…" maxlength="280" onkeydown="if(event.key==='Enter')submitComment()">
+```
+<input class="comment-input" type="text" id="commentInput" placeholder="Write a comment…" maxlength="280" onkeydown="if(event.key==='Enter')submitComment()">
 
-    <button class="comment-submit" onclick="submitComment()">Post</button>
+<button class="comment-submit" onclick="submitComment()">Post</button>
+```
 
   </div>
 
 </div>
-```
 
   </div>
 
@@ -2487,12 +2583,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-topbar">
 
-```
 <div class="adm-topbar-brand">
 
   <div class="adm-topbar-brand-dot"></div>
 
-  ART IS LIFE &nbsp;·&nbsp; <span style="font-style:italic;opacity:0.7">Admin Dashboard</span>
+ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</span>
 
 </div>
 
@@ -2500,124 +2595,135 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-user-chip">
 
-    <span id="admEmail" style="color:#f5f0e8;"></span>
+```
+<span id="admEmail" style="color:#f5f0e8;"></span>
 
-    <span class="adm-role-pip crown" id="admRolePip">crown</span>
+<span class="adm-role-pip crown" id="admRolePip">crown</span>
+```
 
   </div>
 
   <button class="adm-close-btn" onclick="closeAdminDashboard()" title="Close">
 
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+```
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+```
 
   </button>
 
 </div>
-```
 
   </div>
 
   <div class="adm-body">
 
-```
 <div class="adm-sidebar">
 
   <div class="adm-nav-section">
 
-    <span class="adm-nav-label">Overview</span>
+```
+<span class="adm-nav-label">Overview</span>
 
-    <button class="adm-nav-item active" onclick="admTab('overview',this)">
+<button class="adm-nav-item active" onclick="admTab('overview',this)">
 
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
 
-      Dashboard
+  Dashboard
 
-    </button>
-
-  </div>
-
-  <div class="adm-nav-section">
-
-    <span class="adm-nav-label">Content</span>
-
-    <button class="adm-nav-item" onclick="admTab('artworks',this)">
-
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
-
-      Artworks
-
-    </button>
-
-    <button class="adm-nav-item" onclick="admTab('add_artwork',this)">
-
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
-
-      Add Artwork
-
-    </button>
+</button>
+```
 
   </div>
 
   <div class="adm-nav-section">
 
-    <span class="adm-nav-label">Commerce</span>
+```
+<span class="adm-nav-label">Content</span>
 
-    <button class="adm-nav-item" onclick="admTab('orders',this)" id="navOrders">
+<button class="adm-nav-item" onclick="admTab('artworks',this)">
 
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
 
-      Orders
+  Artworks
 
-      <span class="adm-nav-badge" id="pendingBadge" style="display:none">0</span>
+</button>
 
-    </button>
+<button class="adm-nav-item" onclick="admTab('add_artwork',this)">
 
-    <button class="adm-nav-item" onclick="admTab('likes',this)">
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
 
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>
+  Add Artwork
 
-      Favourites
+</button>
+```
 
-    </button>
+  </div>
+
+  <div class="adm-nav-section">
+
+```
+<span class="adm-nav-label">Commerce</span>
+
+<button class="adm-nav-item" onclick="admTab('orders',this)" id="navOrders">
+
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+
+  Orders
+
+  <span class="adm-nav-badge" id="pendingBadge" style="display:none">0</span>
+
+</button>
+
+<button class="adm-nav-item" onclick="admTab('likes',this)">
+
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>
+
+  Favourites
+
+</button>
+```
 
   </div>
 
   <div class="adm-nav-section" id="crownSection" style="display:none">
 
-    <span class="adm-nav-label">Crown Only</span>
+```
+<span class="adm-nav-label">Crown Only</span>
 
-    <button class="adm-nav-item" onclick="admTab('users',this)">
+<button class="adm-nav-item" onclick="admTab('users',this)">
 
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
 
-      Users
+  Users
 
-    </button>
+</button>
 
-    <button class="adm-nav-item" onclick="admTab('settings',this)">
+<button class="adm-nav-item" onclick="admTab('settings',this)">
 
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
 
-      Settings
+  Settings
 
-    </button>
+</button>
+```
 
   </div>
 
   <div style="margin-top:auto;padding:16px 10px 10px;">
 
-    <button class="adm-nav-item" style="color:#e05252;" onclick="handleAdminLogout()">
+```
+<button class="adm-nav-item" style="color:#e05252;" onclick="handleAdminLogout()">
 
-      <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
 
-      Sign Out
+  Sign Out
 
-    </button>
+</button>
+```
 
   </div>
 
 </div>
-```
 
 <div class="adm-main" id="admMain">
 
@@ -2625,7 +2731,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-tab active" id="tab-overview">
 
-```
 <div class="adm-page-header">
 
   <div class="adm-page-title">Dashboard Overview</div>
@@ -2660,16 +2765,17 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-table-head">
 
-    <span class="adm-table-title">Collection Quick View</span>
+```
+<span class="adm-table-title">Collection Quick View</span>
 
-    <div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add New</button></div>
+<div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add New</button></div>
+```
 
   </div>
 
   <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="overviewArtGrid"></div>
 
 </div>
-```
 
   </div>
 
@@ -2677,7 +2783,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-tab" id="tab-artworks">
 
-```
 <div class="adm-page-header">
 
   <div class="adm-page-title">Manage Artworks</div>
@@ -2690,21 +2795,25 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-table-head">
 
-    <span class="adm-table-title" id="artworkTableTitle">All Artworks</span>
+```
+<span class="adm-table-title" id="artworkTableTitle">All Artworks</span>
 
-    <div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add Artwork</button></div>
+<div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add Artwork</button></div>
+```
 
   </div>
 
   <div style="overflow-x:auto;">
 
-    <table class="adm-table" id="artworksTable">
+```
+<table class="adm-table" id="artworksTable">
 
-      <thead><tr><th>Rank</th><th>Title</th><th>Price</th><th>Status</th><th>Likes</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Rank</th><th>Title</th><th>Price</th><th>Status</th><th>Likes</th><th>Actions</th></tr></thead>
 
-      <tbody id="artworksTbody"></tbody>
+  <tbody id="artworksTbody"></tbody>
 
-    </table>
+</table>
+```
 
   </div>
 
@@ -2717,7 +2826,6 @@ ART IS LIFE <span>FOUNDATION</span>
   <div id="recoveryPanelContent" style="font-size:0.82rem;color:var(--adm-muted);">Click Load to view soft-deleted artworks.</div>
 
 </div>
-```
 
   </div>
 
@@ -2725,7 +2833,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-tab" id="tab-add_artwork">
 
-```
 <div class="adm-page-header">
 
   <div class="adm-page-title">Add New Artwork</div>
@@ -2740,9 +2847,11 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-form-row">
 
-    <div class="adm-form-group"><label class="adm-form-label">Title *</label><input class="adm-input" type="text" id="newTitle" placeholder="e.g. Resonant Rhythms"></div>
+```
+<div class="adm-form-group"><label class="adm-form-label">Title *</label><input class="adm-input" type="text" id="newTitle" placeholder="e.g. Resonant Rhythms"></div>
 
-    <div class="adm-form-group"><label class="adm-form-label">Price (KES) *</label><input class="adm-input" type="number" id="newPrice" placeholder="e.g. 1200"></div>
+<div class="adm-form-group"><label class="adm-form-label">Price (KES) *</label><input class="adm-input" type="number" id="newPrice" placeholder="e.g. 1200"></div>
+```
 
   </div>
 
@@ -2750,15 +2859,17 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-form-group"><label class="adm-form-label">Status</label>
 
-    <select class="adm-input" id="newStatus">
+```
+<select class="adm-input" id="newStatus">
 
-      <option value="available">Available</option>
+  <option value="available">Available</option>
 
-      <option value="featured">Featured</option>
+  <option value="featured">Featured</option>
 
-      <option value="sold">Sold</option>
+  <option value="sold">Sold</option>
 
-    </select>
+</select>
+```
 
   </div>
 
@@ -2766,34 +2877,37 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-form-group">
 
-    <label class="adm-form-label">Upload Image (Firebase Storage)</label>
+```
+<label class="adm-form-label">Upload Image (Firebase Storage)</label>
 
-    <div class="adm-upload-zone" onclick="document.getElementById('imgFileInput').click()">
+<div class="adm-upload-zone" onclick="document.getElementById('imgFileInput').click()">
 
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
 
-      Click or tap to upload image
+  Click or tap to upload image
 
-      <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+  <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
 
-    </div>
+</div>
 
-    <div class="adm-progress" id="uploadProgress"><div class="adm-progress-bar" id="uploadBar" style="width:0%"></div></div>
+<div class="adm-progress" id="uploadProgress"><div class="adm-progress-bar" id="uploadBar" style="width:0%"></div></div>
 
-    <div id="uploadedUrl" style="font-size:0.75rem;color:var(--adm-gold);margin-top:6px;word-break:break-all;"></div>
+<div id="uploadedUrl" style="font-size:0.75rem;color:var(--adm-gold);margin-top:6px;word-break:break-all;"></div>
+```
 
   </div>
 
   <div style="display:flex;gap:10px;margin-top:6px;">
 
-    <button class="adm-btn-sm primary" onclick="submitAddArtwork()" style="padding:10px 24px;font-size:0.82rem;">✦ Save Artwork</button>
+```
+<button class="adm-btn-sm primary" onclick="submitAddArtwork()" style="padding:10px 24px;font-size:0.82rem;">✦ Save Artwork</button>
 
-    <button class="adm-btn-sm" onclick="clearAddForm()">Clear</button>
+<button class="adm-btn-sm" onclick="clearAddForm()">Clear</button>
+```
 
   </div>
 
 </div>
-```
 
   </div>
 
@@ -2801,7 +2915,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-tab" id="tab-orders">
 
-```
 <div class="adm-page-header">
 
   <div class="adm-page-title">Orders</div>
@@ -2814,24 +2927,25 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-table-head">
 
-    <span class="adm-table-title">All Orders</span>
+```
+<span class="adm-table-title">All Orders</span>
 
-    <div class="adm-table-actions">
+<div class="adm-table-actions">
 
-      <button class="adm-btn-sm" onclick="loadOrders()">↺ Refresh</button>
+  <button class="adm-btn-sm" onclick="loadOrders()">↺ Refresh</button>
 
-      <button class="adm-btn-sm" onclick="exportOrders()" style="color:var(--adm-blue);border-color:var(--adm-blue);">⬇ Export CSV</button>
+  <button class="adm-btn-sm" onclick="exportOrders()" style="color:var(--adm-blue);border-color:var(--adm-blue);">⬇ Export CSV</button>
 
-      <button class="adm-btn-sm danger" onclick="confirmClearOrders()">✕ Clear All</button>
+  <button class="adm-btn-sm danger" onclick="confirmClearOrders()">✕ Clear All</button>
 
-    </div>
+</div>
+```
 
   </div>
 
   <div id="ordersContent"><div class="adm-loader">Loading orders…</div></div>
 
 </div>
-```
 
   </div>
 
@@ -2839,7 +2953,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-tab" id="tab-likes">
 
-```
 <div class="adm-page-header">
 
   <div class="adm-page-title">Favourites</div>
@@ -2855,7 +2968,6 @@ ART IS LIFE <span>FOUNDATION</span>
   <div style="padding:20px;"><div id="likesContent"></div></div>
 
 </div>
-```
 
   </div>
 
@@ -2863,7 +2975,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-tab" id="tab-users">
 
-```
 <div class="adm-page-header">
 
   <div class="adm-page-title">User Management</div>
@@ -2879,7 +2990,6 @@ ART IS LIFE <span>FOUNDATION</span>
   <div id="usersContent"><div class="adm-loader">Loading users…</div></div>
 
 </div>
-```
 
   </div>
 
@@ -2887,7 +2997,6 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-tab" id="tab-settings">
 
-```
 <div class="adm-page-header">
 
   <div class="adm-page-title">System Settings</div>
@@ -2902,21 +3011,25 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="adm-form-row">
 
-    <div class="adm-form-group"><label class="adm-form-label">Artist Name</label><input class="adm-input" type="text" value="Lewis Gitonga" placeholder="Artist name"></div>
+```
+<div class="adm-form-group"><label class="adm-form-label">Artist Name</label><input class="adm-input" type="text" value="Lewis Gitonga" placeholder="Artist name"></div>
 
-    <div class="adm-form-group"><label class="adm-form-label">Foundation Name</label><input class="adm-input" type="text" value="Art Is Life Foundation" placeholder="Foundation name"></div>
+<div class="adm-form-group"><label class="adm-form-label">Foundation Name</label><input class="adm-input" type="text" value="Art Is Life Foundation" placeholder="Foundation name"></div>
+```
 
   </div>
 
   <div class="adm-form-row">
 
-    <div class="adm-form-group"><label class="adm-form-label">WhatsApp Number</label><input class="adm-input" type="text" value="254704708178" placeholder="WhatsApp"></div>
+```
+<div class="adm-form-group"><label class="adm-form-label">WhatsApp Number</label><input class="adm-input" type="text" value="254704708178" placeholder="WhatsApp"></div>
 
-    <div class="adm-form-group"><label class="adm-form-label">Contact Email</label><input class="adm-input" type="text" value="gitongewis190@gmail.com" placeholder="Email"></div>
+<div class="adm-form-group"><label class="adm-form-label">Contact Email</label><input class="adm-input" type="text" value="gitongewis190@gmail.com" placeholder="Email"></div>
+```
 
   </div>
 
-  <button class="adm-btn-sm primary" style="padding:10px 24px;" onclick="showToast('✅ Settings saved')">Save Settings</button>
+<button class="adm-btn-sm primary" style="padding:10px 24px;" onclick="showToast('✅ Settings saved')">Save Settings</button>
 
 </div>
 
@@ -2926,14 +3039,15 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div style="display:flex;gap:10px;flex-wrap:wrap;">
 
-    <button class="adm-btn-sm danger" onclick="showToast('⚠️ Export — connect to backend')">Export All Orders</button>
+```
+<button class="adm-btn-sm danger" onclick="showToast('⚠️ Export — connect to backend')">Export All Orders</button>
 
-    <button class="adm-btn-sm danger" onclick="showToast('⚠️ Disabled in production')">Clear Orders</button>
+<button class="adm-btn-sm danger" onclick="showToast('⚠️ Disabled in production')">Clear Orders</button>
+```
 
   </div>
 
 </div>
-```
 
   </div>
 
@@ -2949,11 +3063,9 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <button class="fab-btn" onclick="openCommission()">
 
-```
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
 
 Commission a Piece
-```
 
   </button>
 
@@ -2981,29 +3093,29 @@ window.App = window.App || {};
 
 const LOCAL_ARTWORKS = [
 
-  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"images/resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
+  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
 
-  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"images/giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
+  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
 
-  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"images/sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
+  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
 
-  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"images/canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
+  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
 
-  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"images/solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
+  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
 
-  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"images/resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
+  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
 
-  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"images/kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
+  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
 
-  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"images/chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
+  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
 
-  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"images/neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
+  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
 
-  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"images/joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
+  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
 
-  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"images/sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
+  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
 
-  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"images/color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
+  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
 
 ];
 
@@ -3155,11 +3267,12 @@ function closeZoom() {
 
 /* ══ resolveImage ══ */
 function resolveImage(image) {
-  if (!image) return 'images/placeholder.jpg';
-  if (typeof image !== 'string') return 'images/placeholder.jpg';
+  if (!image) return 'placeholder.jpg';
+  if (typeof image !== 'string') return 'placeholder.jpg';
   const trimmed = image.trim();
-  if (!trimmed) return 'images/placeholder.jpg';
+  if (!trimmed) return 'placeholder.jpg';
   if (trimmed.startsWith('http')) return trimmed;
+  if (trimmed.startsWith('images/')) return trimmed.substring(7);
   return trimmed;
 }
 
@@ -3225,7 +3338,7 @@ function renderGallery(filter) {
 
       <div class="art-img-wrap" onclick="openZoom('${imgSrc}','${a.title.replace(/'/g,"\\'")}')">
 
-        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='images/placeholder.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
+        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='placeholder.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
 
         <div class="art-img-overlay">
 
@@ -4048,7 +4161,25 @@ function sendCommission() {
 
   closeCommission();
 
-  showToast('🎨 Commission sent! Lewis will respond soon.');
+  // 🔧 COMMISSION FORM RESET START
+  setTimeout(() => {
+    // Clear all form fields
+    const fields = ['cName', 'cPhone', 'cDesc', 'cMood', 'cSize', 'cSizeCustom', 'cColors', 'cAddress'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    
+    // Reset policy box visibility
+    const policyBox = document.getElementById('commissionPolicyBox');
+    const sendSection = document.getElementById('commissionSendSection');
+    if (policyBox) policyBox.style.display = 'block';
+    if (sendSection) sendSection.style.display = 'none';
+    
+    sessionStorage.removeItem('ail_commission_agreed');
+    showToast('🎨 Commission sent! Lewis will respond soon.');
+  }, 300);
+  // 🔧 COMMISSION FORM RESET END
 
 }
 
@@ -4358,7 +4489,7 @@ async function renderArtworksTable() {
 
         <div style="display:flex;align-items:center;gap:10px;">
 
-          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='images/placeholder.jpg'">
+          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='placeholder.jpg'">
 
           <div>
 
@@ -4496,7 +4627,7 @@ async function loadRecoveryPanel() {
 
   el.innerHTML = deleted.map(a => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--adm-border);">
 
-    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='images/placeholder.jpg'">
+    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='placeholder.jpg'">
 
     <div style="flex:1;"><div style="font-size:0.82rem;color:var(--adm-text);font-weight:600;">${a.title}</div><div style="font-size:0.7rem;color:var(--adm-muted);">${a.price}</div></div>
 
@@ -4852,7 +4983,7 @@ async function renderLikesTab() {
 
       <div style="position:absolute;top:6px;left:6px;background:var(--adm-gold);color:var(--adm-bg);font-size:0.62rem;font-weight:800;padding:2px 7px;border-radius:50px;">#${i+1}</div>
 
-      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='images/placeholder.jpg'">
+      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='placeholder.jpg'">
 
       <div style="padding:8px;">
 
