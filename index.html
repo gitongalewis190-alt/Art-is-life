@@ -103,24 +103,27 @@ function track(event, data={}){ gtag('event', event, data); }
       query(collection(db, "artworks"), orderBy("createdAt", "desc")),
       (snap) => {
         const firestoreArts = snap.docs.map(d => {
-          const data = d.data();
-          const priceNum = parseInt(data.priceNum || data.price) || 0;
-          return {
-            id: d.id,
-            title: data.title || 'Untitled',
-            price: data.price || `${priceNum} KES`,
-            priceNum,
-            image: data.image || '',
-            desc: data.desc || data.description || '',
-            likes: data.likes || 0,
-            status: data.status || 'available'
-          };
-        });
-        if (firestoreArts.length > 0) {
-          window._firestoreArtworks = firestoreArts;
-          window.dispatchEvent(new Event("artworks_updated"));
-          console.log(`✅ Artworks synced: ${firestoreArts.length} items`);
-        }
+          try {
+            const data = d.data();
+            const priceNum = parseInt(data.priceNum || data.price) || 0;
+            return {
+              id: d.id,
+              title: data.title || 'Untitled',
+              price: data.price || `${priceNum} KES`,
+              priceNum,
+              image: data.image || 'images/placeholder.jpg',
+              desc: data.desc || data.description || '',
+              likes: data.likes || 0,
+              status: data.status || 'available'
+            };
+          } catch(docErr) {
+            console.warn(`⚠️ Skipping malformed Firestore doc ${d.id}:`, docErr);
+            return null;
+          }
+        }).filter(Boolean);
+        window._firestoreArtworks = firestoreArts;
+        window.dispatchEvent(new Event("artworks_updated"));
+        console.log(`✅ Artworks synced: ${firestoreArts.length} Firestore items`);
       },
       (err) => {
         console.warn("Artworks sync error (using local data):", err.message);
@@ -931,7 +934,7 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
 
 <section class="hero">
   <div class="hero-bg">
-    <img src="cover.jpg" alt="Art is Life — Lewis Gitonga" loading="eager" onerror="this.style.display='none'">
+    <img src="images/cover.jpg" alt="Art is Life — Lewis Gitonga" loading="eager" onerror="this.src='images/placeholder.jpg'">
   </div>
   <div class="hero-content">
     <div class="hero-eyebrow">Lewis Gitonga · Nairobi, Kenya</div>
@@ -995,7 +998,7 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
   </div>
   <div class="about-img-frame">
     <div class="about-img-inner">
-      <img src="story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga · CEO &amp; Founder')" onerror="this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='460px'">
+      <img src="images/story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga · CEO &amp; Founder')" onerror="this.src='images/placeholder.jpg';this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='460px'">
       <div class="about-img-overlay">
         <div class="about-img-caption">Lewis Gitonga · CEO &amp; Founder, Art Is Life Foundation</div>
       </div>
@@ -1104,24 +1107,24 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
     <button class="modal-close" onclick="closeStory()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <img class="story-hero-img" src="story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga — CEO')" onerror="this.style.display='none'">
+    <img class="story-hero-img" src="images/story_01_identity.jpg" alt="Lewis Gitonga — CEO, Art Is Life Foundation" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga — CEO')" onerror="this.src='images/placeholder.jpg'">
     <div class="story-body">
       <span class="story-eyebrow">Lewis Gitonga · Art Is Life Foundation</span>
       <h2>How It All Started — My Untold Story</h2>
       <div class="story-chapter"><h4>My Identity — CEO of Art Is Life</h4><p>This is who I am. Art Is Life Foundation is not just a brand — it is my identity, my voice, and my purpose. As its CEO and founder, every decision I make, every stroke I paint, carries the weight of who I am and who I am becoming.</p></div>
-      <div class="story-img-grid full"><img src="story_01_identity.jpg" alt="Lewis Gitonga" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga')" onerror="this.style.background='#f0ead6';this.style.height='240px'"></div>
+      <div class="story-img-grid full"><img src="images/story_01_identity.jpg" alt="Lewis Gitonga" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
       <div class="story-chapter"><h4>The Beginning — Early Artworks &amp; Foundation</h4><p>From a young age, I was drawn to creativity in a way I could not fully explain. I didn't just want to draw; I wanted to express feeling, emotion, and meaning through every line.</p></div>
-      <div class="story-img-grid full"><img src="story_02_early_journey.jpg" alt="Early journey" loading="lazy" onclick="openZoom(this.src,'Early Journey')" onerror="this.style.background='#e8d48b33';this.style.height='240px'"></div>
+      <div class="story-img-grid full"><img src="images/story_02_early_journey.jpg" alt="Early journey" loading="lazy" onclick="openZoom(this.src,'Early Journey')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
       <div class="story-chapter"><h4>The Turning Point — Africa Kidpreneur Summit &amp; Elvis</h4><p>A defining moment came at the Africa Kidpreneur Summit. Elvis introduced us to the foundations of painting — how to blend colors, control the brush, and most importantly, how to express emotion through art. That moment changed everything.</p></div>
       <div class="story-img-grid cols-2">
-        <img src="story_03_summit.jpg" alt="Summit" loading="lazy" onclick="openZoom(this.src,'Africa Kidpreneur Summit')" onerror="this.style.background='#c9a84c22';this.style.height='200px'">
-        <img src="story_04_elvis_teaching.jpg" alt="Elvis teaching" loading="lazy" onclick="openZoom(this.src,'Elvis Teaching')" onerror="this.style.background='#1a1a1a11';this.style.height='200px'">
+        <img src="images/story_03_summit.jpg" alt="Summit" loading="lazy" onclick="openZoom(this.src,'Africa Kidpreneur Summit')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='200px'">
+        <img src="images/story_04_elvis_teaching.jpg" alt="Elvis teaching" loading="lazy" onclick="openZoom(this.src,'Elvis Teaching')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='200px'">
       </div>
       <div class="story-blockquote"><p>"That moment changed how I saw creativity — it was no longer just a skill, but a language."</p></div>
       <div class="story-chapter"><h4>The Vision — What I Aim to Build &amp; Become</h4><p>I see a future where my art reaches the world — galleries, collections, conversations across continents. Art Is Life Foundation is my dream institution: one that uplifts artists across Kenya.</p></div>
-      <div class="story-img-grid full"><img src="story_05_vision.jpg" alt="Vision" loading="lazy" onclick="openZoom(this.src,'The Vision')" onerror="this.style.background='#c9a84c22';this.style.height='240px'"></div>
+      <div class="story-img-grid full"><img src="images/story_05_vision.jpg" alt="Vision" loading="lazy" onclick="openZoom(this.src,'The Vision')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
       <div class="story-chapter"><h4>Current Work — Present Skill, Progress &amp; Maturity</h4><p>This is where I stand today. The progress is real. The skill is sharper. Each piece now carries not just emotion, but mastery. Today, my work tells human stories that words cannot fully capture.</p></div>
-      <div class="story-img-grid full"><img src="story_06_current_work.jpg" alt="Current work" loading="lazy" onclick="openZoom(this.src,'Current Work')" onerror="this.style.background='#1aa34a11';this.style.height='240px'"></div>
+      <div class="story-img-grid full"><img src="images/story_06_current_work.jpg" alt="Current work" loading="lazy" onclick="openZoom(this.src,'Current Work')" onerror="this.src='images/placeholder.jpg';this.style.minHeight='240px'"></div>
       <div class="story-blockquote"><p>"Art for me is not just life — it is evidence of life itself."</p></div>
     </div>
   </div>
@@ -1523,18 +1526,18 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
    ARTWORK DATA (local fallback)
 ═══════════════════════════════ */
 const LOCAL_ARTWORKS = [
-  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
-  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
-  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
-  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
-  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
-  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
-  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
-  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
-  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
-  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
-  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
-  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
+  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"images/resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
+  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"images/giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
+  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"images/sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
+  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"images/canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
+  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"images/solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
+  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"images/resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
+  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"images/kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
+  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"images/chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
+  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"images/neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
+  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"images/joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
+  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"images/sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
+  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"images/color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
 ];
 
 // Active artworks — populated from Firestore or fallback
@@ -1558,14 +1561,21 @@ const saveCart  = () => localStorage.setItem('ail_cart',  JSON.stringify(cart));
 
 /* ══ REAL-TIME SYNC LISTENERS ══ */
 window.addEventListener('artworks_updated', () => {
-  if (window._firestoreArtworks && window._firestoreArtworks.length > 0) {
-    artworks = window._firestoreArtworks;
-    renderGallery(currentSearch);
-    const count = artworks.length;
-    document.getElementById('heroWorkCount').textContent = count;
-    document.getElementById('aboutBadgeNum').textContent = count;
-    console.log('🔄 Gallery updated from Firestore');
+  const firestoreArts = window._firestoreArtworks || [];
+  console.log(`🔄 artworks_updated fired — Firestore items: ${firestoreArts.length}`);
+  if (firestoreArts.length > 0) {
+    // Merge: keep LOCAL_ARTWORKS as base, append Firestore-only items
+    const localIds = new Set(LOCAL_ARTWORKS.map(a => a.id));
+    const fsOnly = firestoreArts.filter(a => !localIds.has(a.id));
+    artworks = [...LOCAL_ARTWORKS, ...fsOnly];
+  } else {
+    artworks = [...LOCAL_ARTWORKS];
   }
+  renderGallery(currentSearch);
+  const count = artworks.length;
+  document.getElementById('heroWorkCount').textContent = count;
+  document.getElementById('aboutBadgeNum').textContent = count;
+  console.log(`🔄 Gallery updated — total ${count} artworks`);
 });
 
 window.addEventListener('likes_updated', () => {
@@ -1620,6 +1630,7 @@ function getLikeCount(id) {
 }
 
 function renderGallery(filter) {
+  console.log(`🖼️ renderGallery called — artworks: ${artworks.length}, filter: "${filter||''}"`);
   const grid = document.getElementById('gallery');
   const term = (filter||'').toLowerCase().trim();
   const filtered = artworks.filter(a =>
@@ -1641,7 +1652,7 @@ function renderGallery(filter) {
     return `
     <div class="art-card" style="animation-delay:${i*0.06}s">
       <div class="art-img-wrap" onclick="openZoom('${a.image}','${a.title.replace(/'/g,"\\'")}')">
-        <img src="${a.image}" alt="${a.title}" loading="lazy" onerror="this.style.background='linear-gradient(135deg,#f0ead6,#c9a84c22)';this.style.minHeight='270px'">
+        <img src="${a.image || 'images/placeholder.jpg'}" alt="${a.title}" loading="lazy" onerror="this.src='images/placeholder.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
         <div class="art-img-overlay">
           <div class="art-zoom-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
@@ -2110,16 +2121,4 @@ function openAdminDashboard() {
   loadDashboardStats();
   renderOverviewArtGrid();
   renderArtworksTable();
-  track('admin_dashboard_opened', {role});
-}
-
-function closeAdminDashboard() {
-  document.getElementById('adminDashboard').classList.remove('active');
-  document.body.style.overflow = '';
-}
-
-function admTab(name, btn) {
-  document.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.adm-nav-item').forEach(n => n.classList.remove('active'));
-  const tab = document.getElementById('tab-'+name);
-  if (tab) tab.classList.
+  track('admin_dash
