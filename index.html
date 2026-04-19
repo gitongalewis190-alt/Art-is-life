@@ -914,7 +914,7 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif;}
 
 @keyframes heartBeat{0%{transform:scale(1);}14%{transform:scale(1.3);}28%{transform:scale(1);}42%{transform:scale(1.2);}70%{transform:scale(1);}}
 
-@keyframes adminHeartbeat{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}25%{transform:scale(1.22);box-shadow:0 0 10px 4px rgba(201,168,76,0.7);}50%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}75%{transform:scale(1.18);box-shadow:0 0 8px 3px rgba(201,168,76,0.55);}}
+@keyframes adminHeartbeat{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}8%{transform:scale(1.24);box-shadow:0 0 14px 5px rgba(201,168,76,0.78);}18%{transform:scale(1.04);box-shadow:0 0 4px 1px rgba(201,168,76,0.25);}28%{transform:scale(1.17);box-shadow:0 0 9px 3px rgba(201,168,76,0.52);}42%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,168,76,0);}}
 
 @keyframes heartCenterBounce{0%{transform:translate(-50%,-50%) scale(0);opacity:1;}30%{transform:translate(-50%,-50%) scale(1.4);opacity:1;}60%{transform:translate(-50%,-50%) scale(1.1);opacity:0.8;}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0;}}
 
@@ -972,7 +972,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .header-right{display:flex;align-items:center;gap:10px;}
 
-#adminPanelTrigger{cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(201,168,76,0.5);background:transparent;flex-shrink:0;user-select:none;animation:adminHeartbeat 0.5s ease infinite;transition:border-color 0.25s;}
+#adminPanelTrigger{cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(201,168,76,0.5);background:transparent;flex-shrink:0;user-select:none;animation:adminHeartbeat 1.5s ease infinite;transition:border-color 0.25s;}
 
 #adminPanelTrigger:hover{background:var(--gold-subtle);border-color:var(--gold);}
 
@@ -3187,7 +3187,50 @@ window.addEventListener('artworks_updated', () => {
 
 window.addEventListener('likes_updated', () => {
 
-  renderGallery(currentSearch);
+  // ⚡ PERFORMANCE FIX: only update like-count nodes per card — no full gallery re-render
+  const counts = window._firestoreLikeCounts || {};
+
+  document.querySelectorAll('.art-card').forEach(card => {
+
+    const likeBtn = card.querySelector('.like-btn');
+
+    if (!likeBtn) return;
+
+    const onclickAttr = likeBtn.getAttribute('onclick') || '';
+
+    const match = onclickAttr.match(/toggleLike\('([^']+)'\)/);
+
+    if (!match) return;
+
+    const artId = match[1];
+
+    const lc = counts[String(artId)] || 0;
+
+    let lcEl = card.querySelector('.art-like-count');
+
+    if (lc > 0) {
+
+      if (!lcEl) {
+
+        lcEl = document.createElement('div');
+
+        lcEl.className = 'art-like-count';
+
+        const artInfo = card.querySelector('.art-info');
+
+        if (artInfo) artInfo.appendChild(lcEl);
+
+      }
+
+      lcEl.innerHTML = `<svg viewBox="0 0 24 24" fill="#e05252" stroke="#e05252" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${lc} like${lc!==1?'s':''}`;
+
+    } else if (lcEl) {
+
+      lcEl.remove();
+
+    }
+
+  });
 
   updateStoryLikeCount();
 
@@ -4665,7 +4708,50 @@ function handleImageUpload(input) {
 
     pct => { bar.style.width = pct + '%'; },
 
-    url => { uploadedImageUrl = url; document.getElementById('uploadedUrl').textContent = '✅ Uploaded: ' + url; prog.style.display = 'none'; showToast('📷 Image uploaded!'); },
+    url => {
+
+      uploadedImageUrl = url;
+
+      document.getElementById('uploadedUrl').textContent = '✅ Uploaded: ' + url;
+
+      prog.style.display = 'none';
+
+      showToast('📷 Image uploaded! Publishing to gallery…');
+
+      // Auto-publish: immediately create Firestore doc with current form values
+      const title  = (document.getElementById('newTitle')?.value || '').trim();
+      const price  = (document.getElementById('newPrice')?.value || '').trim();
+      const desc   = (document.getElementById('newDesc')?.value  || '').trim();
+      const status = document.getElementById('newStatus')?.value || 'available';
+
+      if (title && price && window.adminAddArtwork) {
+
+        const priceNum = parseInt(price) || 0;
+
+        const artData  = {
+          title,
+          price: price.endsWith('KES') ? price : `${price} KES`,
+          priceNum,
+          image: url,
+          desc: desc || 'A new original piece.',
+          status
+        };
+
+        window.adminAddArtwork(artData).then(ref => {
+
+          if (ref) {
+
+            showToast(`✅ "${title}" published to gallery!`);
+
+            clearAddForm();
+
+          }
+
+        }).catch(e => showToast('❌ Publish failed: ' + e.message));
+
+      }
+
+    },
 
     err => { prog.style.display = 'none'; showToast('❌ Upload failed: ' + err.message); }
 
