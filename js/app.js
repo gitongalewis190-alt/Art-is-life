@@ -15,29 +15,18 @@ window.App = window.App || {};
 
 const LOCAL_ARTWORKS = [
 
-  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
-
-  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
-
-  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
-
-  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
-
-  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
-
-  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
-
-  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
-
-  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
-
-  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
-
-  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
-
-  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
-
-  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
+  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"assets/artworks/resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
+  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"assets/artworks/giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
+  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"assets/artworks/sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
+  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"assets/artworks/canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
+  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"assets/artworks/solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
+  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"assets/artworks/resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
+  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"assets/artworks/kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
+  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"assets/artworks/chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
+  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"assets/artworks/neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
+  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"assets/artworks/joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
+  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"assets/artworks/sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
+  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"assets/artworks/color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
 
 ];
 
@@ -230,15 +219,19 @@ function closeZoom() {
 
 }
 
-/* ══ resolveImage ══ */
+/* ══ resolveImage ══
+   Accepts: full URL, assets/artworks/x.jpg, bare filename x.jpg
+   Always returns a usable src string.                            */
 function resolveImage(image) {
-  if (!image) return 'placeholder.jpg';
-  if (typeof image !== 'string') return 'placeholder.jpg';
+  if (!image) return 'assets/brand/placeholder.jpg';
+  if (typeof image !== 'string') return 'assets/brand/placeholder.jpg';
   const trimmed = image.trim();
-  if (!trimmed) return 'placeholder.jpg';
+  if (!trimmed) return 'assets/brand/placeholder.jpg';
   if (trimmed.startsWith('http')) return trimmed;
-  if (trimmed.startsWith('images/')) return trimmed.substring(7);
-  return trimmed;
+  if (trimmed.startsWith('assets/')) return trimmed;
+  // Legacy bare filename from Firestore — assume it's an artwork
+  if (trimmed.startsWith('images/')) return 'assets/artworks/' + trimmed.substring(7);
+  return 'assets/artworks/' + trimmed;
 }
 
 /* ══ GALLERY RENDER ══ */
@@ -303,7 +296,7 @@ function renderGallery(filter) {
 
       <div class="art-img-wrap" onclick="openZoom('${imgSrc}','${a.title.replace(/'/g,"\\'")}')">
 
-        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='placeholder.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
+        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='assets/brand/placeholder.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
 
         <div class="art-img-overlay">
 
@@ -1464,7 +1457,7 @@ async function renderArtworksTable() {
 
         <div style="display:flex;align-items:center;gap:10px;">
 
-          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='placeholder.jpg'">
+          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/placeholder.jpg'">
 
           <div>
 
@@ -1602,7 +1595,7 @@ async function loadRecoveryPanel() {
 
   el.innerHTML = deleted.map(a => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--adm-border);">
 
-    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='placeholder.jpg'">
+    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/placeholder.jpg'">
 
     <div style="flex:1;"><div style="font-size:0.82rem;color:var(--adm-text);font-weight:600;">${a.title}</div><div style="font-size:0.7rem;color:var(--adm-muted);">${a.price}</div></div>
 
@@ -2001,7 +1994,7 @@ async function renderLikesTab() {
 
       <div style="position:absolute;top:6px;left:6px;background:var(--adm-gold);color:var(--adm-bg);font-size:0.62rem;font-weight:800;padding:2px 7px;border-radius:50px;">#${i+1}</div>
 
-      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='placeholder.jpg'">
+      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='assets/brand/placeholder.jpg'">
 
       <div style="padding:8px;">
 
@@ -2043,7 +2036,7 @@ function viewArtworkDetails(artworkId) {
 
         <h3 style="color:var(--charcoal);margin-bottom:12px;font-size:1.3rem;">${artwork.title}</h3>
 
-        <img src="${resolveImage(artwork.image)}" alt="${artwork.title}" style="width:100%;height:300px;object-fit:cover;border-radius:6px;margin-bottom:16px;" onerror="this.src='placeholder.jpg'">
+        <img src="${resolveImage(artwork.image)}" alt="${artwork.title}" style="width:100%;height:300px;object-fit:cover;border-radius:6px;margin-bottom:16px;" onerror="this.src='assets/brand/placeholder.jpg'">
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
 

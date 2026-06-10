@@ -211,7 +211,7 @@
 
               priceNum,
 
-              image: (data.image && data.image.trim() !== '' && data.image.trim() !== 'images/placeholder.jpg') ? data.image.trim() : 'placeholder.jpg',
+              image: (data.image && data.image.trim() !== '' && data.image.trim() !== 'images/placeholder.jpg') ? data.image.trim() : 'assets/brand/placeholder.jpg',
 
               desc: data.desc || data.description || '',
 

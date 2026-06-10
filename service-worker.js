@@ -6,7 +6,7 @@
      • cross-origin (Firebase, gstatic, YouTube, GA) -> always network (never cached)
    Bump CACHE on releases to retire old assets.
    ═══════════════════════════════════════════════════════════════════════ */
-const CACHE = "ail-v1";
+const CACHE = "ail-v2";
 const SHELL = [
   "./",
   "./index.html",
@@ -21,8 +21,8 @@ const SHELL = [
   "./js/services/analytics.js",
   "./js/services/siteConfig.js",
   "./js/services/daraja.js",
-  "./cover.jpg",
-  "./placeholder.jpg"
+  "./assets/brand/cover.jpg",
+  "./assets/brand/placeholder.jpg"
 ];
 
 self.addEventListener("install", (e) => {
