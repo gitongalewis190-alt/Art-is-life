@@ -1,20 +1,188 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   console.js — Control Console (Developer Hub)  (Phase 2)
-   Renders into the admin dashboard's #tab-console panel. Crown-gated by the
-   existing RBAC (the nav item lives in #crownSection). Edits apply live for
-   the editing admin, then "Publish" pushes to Firestore for ALL visitors.
+   console.js — Control Console (Developer Hub)  (Phase 3)
+   Neural-network canvas background + Cloudinary image upload
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
   var esc = function (s) { return window.escapeHtml ? window.escapeHtml(s) : String(s == null ? "" : s); };
 
   var LAYOUTS = [
-    { id: "1", name: "Editorial",  desc: "Classic gallery" },
-    { id: "2", name: "Dense Grid", desc: "Contact sheet" },
-    { id: "3", name: "Spotlight",  desc: "Spacious" },
-    { id: "4", name: "Soft Glass", desc: "Frosted app" },
+    { id: "1", name: "Editorial",   desc: "Classic gallery" },
+    { id: "2", name: "Dense Grid",  desc: "Contact sheet" },
+    { id: "3", name: "Spotlight",   desc: "Spacious" },
+    { id: "4", name: "Soft Glass",  desc: "Frosted app" },
     { id: "5", name: "Gallery Dark", desc: "Museum wall" }
   ];
 
+  /* ─── Neural-network particle canvas ─── */
+  var _neuralRAF = null;
+  function startNeural(canvas) {
+    if (!canvas) return;
+    var ctx = canvas.getContext("2d");
+    var W, H, nodes = [], MAX = 55, LINK_DIST = 130;
+
+    function resize() {
+      W = canvas.width  = canvas.offsetWidth;
+      H = canvas.height = canvas.offsetHeight;
+    }
+    resize();
+    new ResizeObserver(resize).observe(canvas);
+
+    for (var i = 0; i < MAX; i++) {
+      nodes.push({
+        x: Math.random() * (W || 800),
+        y: Math.random() * (H || 600),
+        vx: (Math.random() - 0.5) * 0.42,
+        vy: (Math.random() - 0.5) * 0.42,
+        r: 2.2 + Math.random() * 2,
+        pulse: Math.random() * Math.PI * 2
+      });
+    }
+
+    function draw() {
+      _neuralRAF = requestAnimationFrame(draw);
+      ctx.clearRect(0, 0, W, H);
+
+      var gold = "201,168,76", purple = "120,60,220", blue = "37,99,235";
+      var palette = [gold, gold, purple, blue];
+
+      nodes.forEach(function (n, i) {
+        n.x += n.vx; n.y += n.vy; n.pulse += 0.025;
+        if (n.x < 0 || n.x > W) n.vx *= -1;
+        if (n.y < 0 || n.y > H) n.vy *= -1;
+
+        // Draw links
+        for (var j = i + 1; j < nodes.length; j++) {
+          var m = nodes[j];
+          var dx = n.x - m.x, dy = n.y - m.y;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < LINK_DIST) {
+            var alpha = (1 - dist / LINK_DIST) * 0.28;
+            var col = palette[(i + j) % palette.length];
+            ctx.beginPath();
+            ctx.moveTo(n.x, n.y);
+            ctx.lineTo(m.x, m.y);
+            ctx.strokeStyle = "rgba(" + col + "," + alpha + ")";
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
+          }
+        }
+
+        // Draw node
+        var glow = 0.55 + Math.sin(n.pulse) * 0.3;
+        var col2 = palette[i % palette.length];
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * (0.9 + Math.sin(n.pulse) * 0.2), 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(" + col2 + "," + glow + ")";
+        ctx.fill();
+
+        // Halo
+        var grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 5);
+        grad.addColorStop(0, "rgba(" + col2 + "," + (glow * 0.25) + ")");
+        grad.addColorStop(1, "rgba(" + col2 + ",0)");
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * 5, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      });
+    }
+    if (_neuralRAF) cancelAnimationFrame(_neuralRAF);
+    draw();
+  }
+  function stopNeural() {
+    if (_neuralRAF) { cancelAnimationFrame(_neuralRAF); _neuralRAF = null; }
+  }
+  window._stopNeural = stopNeural;
+
+  /* ─── Cloudinary upload logic ─── */
+  var _uploadedUrls = [];
+
+  function getCloudinaryCfg() {
+    var cfg = (window.SiteConfig && window.SiteConfig.current) || {};
+    return cfg.cloudinary || {};
+  }
+
+  function renderUploadThumbs() {
+    var grid = document.getElementById("cc_thumbgrid");
+    if (!grid) return;
+    if (!_uploadedUrls.length) { grid.innerHTML = ""; return; }
+    grid.innerHTML = _uploadedUrls.map(function (url, idx) {
+      return '<div class="cc-upload-thumb">' +
+        '<img src="' + esc(url) + '" loading="lazy">' +
+        '<button class="cc-upload-thumb-del" onclick="window._ccDelThumb(' + idx + ')">×</button>' +
+        '</div>';
+    }).join("");
+  }
+
+  window._ccDelThumb = function (idx) {
+    _uploadedUrls.splice(idx, 1);
+    renderUploadThumbs();
+  };
+
+  async function uploadToCloudinary(file) {
+    var cc = getCloudinaryCfg();
+    var cloudName = cc.cloudName || "";
+    var preset    = cc.uploadPreset || "";
+    if (!cloudName || !preset) {
+      return { error: "Set your Cloudinary Cloud Name and Upload Preset in the fields above first." };
+    }
+    var fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", preset);
+    fd.append("folder", "art-is-life/artworks");
+    try {
+      var res = await fetch("https://api.cloudinary.com/v1_1/" + encodeURIComponent(cloudName) + "/image/upload", {
+        method: "POST", body: fd
+      });
+      var json = await res.json();
+      if (json.secure_url) return { url: json.secure_url };
+      return { error: (json.error && json.error.message) || "Upload failed." };
+    } catch (e) {
+      return { error: "Network error: " + e.message };
+    }
+  }
+
+  function wireUpload() {
+    var zone = document.getElementById("cc_uploadzone");
+    var input = document.getElementById("cc_fileinput");
+    var prog  = document.getElementById("cc_upprog");
+    if (!zone || !input) return;
+
+    zone.addEventListener("click", function () { input.click(); });
+    zone.addEventListener("dragover", function (e) { e.preventDefault(); zone.classList.add("drag"); });
+    zone.addEventListener("dragleave", function () { zone.classList.remove("drag"); });
+    zone.addEventListener("drop", function (e) {
+      e.preventDefault(); zone.classList.remove("drag");
+      handleFiles(e.dataTransfer.files);
+    });
+    input.addEventListener("change", function () { handleFiles(input.files); input.value = ""; });
+
+    async function handleFiles(files) {
+      if (!files || !files.length) return;
+      prog.textContent = "Uploading " + files.length + " file(s)…";
+      prog.className = "cc-upload-progress uploading";
+      var errors = [];
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        if (!f.type.startsWith("image/")) { errors.push(f.name + " is not an image"); continue; }
+        var result = await uploadToCloudinary(f);
+        if (result.url) {
+          _uploadedUrls.push(result.url);
+          renderUploadThumbs();
+        } else {
+          errors.push(f.name + ": " + result.error);
+        }
+      }
+      if (errors.length) {
+        prog.textContent = errors.join(" · ");
+        prog.className = "cc-upload-progress err";
+      } else {
+        prog.textContent = "✓ " + files.length + " image(s) uploaded. Copy URL(s) below for artworks.";
+        prog.className = "cc-upload-progress done";
+      }
+    }
+  }
+
+  /* ─── Form helpers ─── */
   function field(label, id, val, type, ph) {
     return '<label class="cc-label">' + esc(label) + '</label>' +
       (type === "textarea"
@@ -26,15 +194,22 @@
       '<input type="color" id="' + id + '" value="' + esc(val) + '"></div>';
   }
 
+  /* ─── Main render ─── */
   window.renderConsole = function () {
     var el = document.getElementById("tab-console");
     if (!el) return;
+    stopNeural();
+
     var cfg = (window.SiteConfig && window.SiteConfig.current) || {};
     var t = cfg.theme || {}, c = cfg.content || {}, d = cfg.daraja || {};
+    var cl = cfg.cloudinary || {};
 
     el.innerHTML =
+      '<div class="cc-shell">' +
+      '<canvas class="cc-neural-canvas" id="cc_neural"></canvas>' +
+
       '<div class="adm-page-header"><div class="adm-page-title">Control Console</div>' +
-      '<div class="adm-page-sub">Live theme, layout & content — published to every visitor</div></div>' +
+      '<div class="adm-page-sub">Live theme, layout & content — published to every visitor instantly</div></div>' +
 
       '<div class="cc-grid">' +
 
@@ -47,8 +222,8 @@
           '<label class="cc-label">Corner radius</label>' +
           '<input class="cc-input" id="cc_radius" type="text" value="' + esc(t.radius || "4px") + '">' +
           '<label class="cc-label">Glass opacity — <span id="cc_alphaVal">' + (t.glassAlpha != null ? t.glassAlpha : 0.72) + '</span></label>' +
-          '<input id="cc_alpha" type="range" min="0.3" max="1" step="0.02" value="' + (t.glassAlpha != null ? t.glassAlpha : 0.72) + '" style="width:100%">' +
-          '<label class="cc-check"><input type="checkbox" id="cc_optics" ' + (t.optics ? "checked" : "") + '> Animated background optics</label>' +
+          '<input id="cc_alpha" type="range" min="0.02" max="1" step="0.02" value="' + (t.glassAlpha != null ? t.glassAlpha : 0.72) + '" style="width:100%">' +
+          '<label class="cc-check"><input type="checkbox" id="cc_optics" ' + (t.optics !== false ? "checked" : "") + '> Animated background optics</label>' +
         '</section>' +
 
         // LAYOUT
@@ -73,6 +248,22 @@
           field("Remark attribution", "cc_remarkBy", c.ownerRemarkBy) +
         '</section>' +
 
+        // IMAGE UPLOAD — Cloudinary
+        '<section class="cc-card"><h4>🖼 Image Upload (Cloudinary)</h4>' +
+          '<p class="cc-hint">Free Cloudinary account → Dashboard → Cloud name + create an <em>unsigned</em> upload preset. Paste below. Your images go to the <code>art-is-life/artworks</code> folder.</p>' +
+          field("Cloud Name", "cc_cld_name", cl.cloudName, "text", "your-cloud-name") +
+          field("Upload Preset (unsigned)", "cc_cld_preset", cl.uploadPreset, "text", "art_unsigned") +
+          '<div id="cc_uploadzone" class="cc-upload-zone">' +
+            '<input type="file" id="cc_fileinput" multiple accept="image/*">' +
+            '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:6px"><path d="M12 16V8m0 0-3 3m3-3 3 3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>' +
+            '<div>Drop images here or <strong>click to browse</strong></div>' +
+            '<div style="font-size:.7rem;margin-top:4px;opacity:.6">JPG, PNG, WEBP — any size</div>' +
+          '</div>' +
+          '<div id="cc_upprog" class="cc-upload-progress"></div>' +
+          '<div id="cc_thumbgrid" class="cc-upload-thumb-grid"></div>' +
+          '<p class="cc-hint" style="margin-top:10px">After upload, copy the URL and paste it into the Artwork image field in the admin artworks panel.</p>' +
+        '</section>' +
+
         // DARAJA (non-secret)
         '<section class="cc-card"><h4>💳 M-Pesa / Daraja</h4>' +
           '<p class="cc-hint">Only the PUBLIC endpoint URL goes here. Secret keys live on the server — never in this panel.</p>' +
@@ -87,13 +278,19 @@
         '<button class="cc-btn cc-publish" id="cc_publish">Publish to all visitors</button>' +
         '<button class="cc-btn cc-reset" id="cc_reset">Revert preview</button>' +
         '<span class="cc-status" id="cc_status"></span>' +
-      '</div>';
+      '</div>' +
+      '</div>'; // .cc-shell
+
+    // Start neural canvas
+    var canvas = document.getElementById("cc_neural");
+    if (canvas) setTimeout(function () { startNeural(canvas); }, 60);
 
     wire();
+    wireUpload();
     updateKeyStatus();
+    renderUploadThumbs();
   };
 
-  // Build a config object from the current form state
   function collect() {
     var g = function (id) { var n = document.getElementById(id); return n ? n.value : ""; };
     var ck = function (id) { var n = document.getElementById(id); return !!(n && n.checked); };
@@ -103,11 +300,15 @@
         gold: g("cc_gold"), accent: g("cc_accent"), ink: g("cc_ink"), cream: g("cc_cream"),
         radius: g("cc_radius"), glassAlpha: parseFloat(g("cc_alpha")) || 0.72, optics: ck("cc_optics")
       },
-      layout: sel ? sel.getAttribute("data-layout") : (window.SiteConfig.current.layout || "1"),
+      layout: sel ? sel.getAttribute("data-layout") : (window.SiteConfig.current.layout || "5"),
       content: {
         foundationName: g("cc_name"), footerText: g("cc_footer"), footerSub: g("cc_footerSub"),
         whatsapp: g("cc_wa").replace(/[^\d]/g, ""), email: g("cc_email"), instagram: g("cc_ig"),
         address: g("cc_addr"), ownerRemark: g("cc_remark"), ownerRemarkBy: g("cc_remarkBy")
+      },
+      cloudinary: {
+        cloudName: g("cc_cld_name").trim(),
+        uploadPreset: g("cc_cld_preset").trim()
       },
       daraja: { businessName: g("cc_dbiz"), endpoint: g("cc_dep").trim() }
     };
@@ -118,11 +319,11 @@
   function updateKeyStatus() {
     var box = document.getElementById("cc_keystatus");
     if (!box) return;
-    var live = (document.getElementById("cc_dep").value || "").trim();
-    box.className = "cc-keystatus " + (live ? "ok" : "warn");
-    box.textContent = live
+    var live = (document.getElementById("cc_dep") || {}).value || "";
+    box.className = "cc-keystatus " + (live.trim() ? "ok" : "warn");
+    box.textContent = live.trim()
       ? "✓ Endpoint set — donations will trigger a live STK push."
-      : "⚠ No endpoint yet — Donate button shows a friendly “coming soon”. Deploy the Cloud Function, then paste its URL here.";
+      : "⚠ No endpoint yet — Donate button shows a friendly "coming soon". Deploy the Cloud Function, then paste its URL here.";
   }
 
   function wire() {
@@ -137,7 +338,7 @@
     });
     var a = document.getElementById("cc_alpha");
     if (a) a.addEventListener("input", function () {
-      document.getElementById("cc_alphaVal").textContent = a.value; preview();
+      document.getElementById("cc_alphaVal").textContent = parseFloat(a.value).toFixed(2); preview();
     });
     var dep = document.getElementById("cc_dep");
     if (dep) dep.addEventListener("input", updateKeyStatus);
@@ -156,8 +357,8 @@
     });
   }
 
-  // Revert preview = re-apply last known good config from Firestore cache
   window.addEventListener("siteconfig_revert", function () {
     if (window.SiteConfig) window.SiteConfig.apply(window.SiteConfig.current);
   });
+
 })();

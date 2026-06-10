@@ -1357,6 +1357,9 @@ function admTab(name, btn) {
 
   document.querySelectorAll('.adm-nav-item').forEach(n => n.classList.remove('active'));
 
+  // Stop neural canvas when leaving the console tab
+  if (name !== 'console' && typeof window._stopNeural === 'function') window._stopNeural();
+
   const tab = document.getElementById('tab-'+name);
 
   if (tab) tab.classList.add('active');

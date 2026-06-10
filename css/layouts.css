@@ -149,7 +149,17 @@ html[data-layout="5"] .filter-chip.active{
 /* ══ THE ARTWORK CARDS — iOS 26 Liquid Glass ══
    True glass: near-zero fill, maximum blur, specular top edge,
    inner edge glow, deep floating shadow.                        */
-html[data-layout="5"] .gallery-grid{ gap:28px !important; }
+html[data-layout="5"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr)) !important;
+  gap:44px !important;
+  padding:0 8px !important;
+}
+@media (max-width:640px){
+  html[data-layout="5"] .gallery-grid{
+    grid-template-columns:1fr !important;
+    gap:28px !important;
+  }
+}
 
 html[data-layout="5"] .artwork-card{
   background:rgba(255,255,255,0.04) !important;
@@ -339,6 +349,117 @@ html[data-layout="5"] .studio-tab.sel{
   background:rgba(201,168,76,0.18) !important;
   border-color:rgba(201,168,76,0.35) !important;
   color:var(--gold-light) !important;
+}
+
+/* ── Artwork card action buttons — dark mode visibility ── */
+html[data-layout="5"] .art-btn-call{
+  background:rgba(255,255,255,0.08) !important;
+  border:1px solid rgba(255,255,255,0.16) !important;
+  color:#ede9df !important;
+}
+html[data-layout="5"] .art-btn-call:hover{
+  background:rgba(224,82,82,0.25) !important;
+  border-color:rgba(224,82,82,0.5) !important;
+  color:#ff8a80 !important;
+}
+html[data-layout="5"] .art-btn-order{
+  background:rgba(26,163,74,0.25) !important;
+  border:1px solid rgba(26,163,74,0.45) !important;
+  color:#6ee7a0 !important;
+}
+html[data-layout="5"] .art-btn-order:hover{
+  background:rgba(26,163,74,0.4) !important;
+  border-color:rgba(26,163,74,0.7) !important;
+}
+html[data-layout="5"] .art-btn-cart{
+  background:rgba(201,168,76,0.22) !important;
+  border:1px solid rgba(201,168,76,0.4) !important;
+  color:var(--gold-light, #e0c97a) !important;
+}
+html[data-layout="5"] .art-btn-cart:hover{
+  background:rgba(201,168,76,0.38) !important;
+}
+
+/* ── Quantity controls in cart ── */
+html[data-layout="5"] .qty-btn{
+  background:rgba(255,255,255,0.08) !important;
+  border-color:rgba(255,255,255,0.14) !important;
+  color:#ede9df !important;
+}
+html[data-layout="5"] .cart-close-btn{
+  border-color:rgba(255,255,255,0.12) !important;
+  color:#9a9288 !important;
+}
+html[data-layout="5"] .cart-close-btn:hover{
+  border-color:rgba(224,82,82,0.5) !important;
+  color:#ff8a80 !important;
+}
+
+/* ── Engage / like buttons on artwork cards ── */
+html[data-layout="5"] .engage-btn{
+  border-color:rgba(255,255,255,0.14) !important;
+  color:#9a9288 !important;
+}
+html[data-layout="5"] .engage-btn:hover{
+  border-color:rgba(201,168,76,0.5) !important;
+  color:var(--gold-light, #e0c97a) !important;
+  background:rgba(201,168,76,0.08) !important;
+}
+
+/* ── Channel options (order/commission contact method) ── */
+html[data-layout="5"] .channel-opt{
+  background:rgba(255,255,255,0.05) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#9a9288 !important;
+}
+html[data-layout="5"] .channel-opt:hover,
+html[data-layout="5"] .channel-opt.sel{
+  background:rgba(201,168,76,0.12) !important;
+  border-color:rgba(201,168,76,0.4) !important;
+  color:#ede9df !important;
+}
+html[data-layout="5"] .channel-opt.sel-wa.sel{
+  background:rgba(37,211,102,0.1) !important;
+  border-color:rgba(37,211,102,0.4) !important;
+}
+html[data-layout="5"] .channel-opt.sel-email.sel{
+  background:rgba(37,99,235,0.1) !important;
+  border-color:rgba(37,99,235,0.4) !important;
+}
+html[data-layout="5"] .channel-opt.sel-sms.sel{
+  background:rgba(234,88,12,0.1) !important;
+  border-color:rgba(234,88,12,0.4) !important;
+}
+
+/* ── Send/submit buttons in modals ── */
+html[data-layout="5"] .btn-send{
+  background:rgba(26,163,74,0.3) !important;
+  color:#6ee7a0 !important;
+  border:1px solid rgba(26,163,74,0.5) !important;
+}
+html[data-layout="5"] .btn-send:hover{
+  background:rgba(26,163,74,0.5) !important;
+}
+html[data-layout="5"] .btn-wa{
+  background:rgba(37,211,102,0.25) !important;
+  color:#6ee7a0 !important;
+}
+html[data-layout="5"] .btn-email{
+  background:rgba(37,99,235,0.25) !important;
+  color:#93c5fd !important;
+}
+html[data-layout="5"] .btn-sms{
+  background:rgba(234,88,12,0.25) !important;
+  color:#fdba74 !important;
+}
+
+/* ── Splash "Enter gallery" button — revealed after remark ── */
+html[data-layout="5"] #splashSkip{
+  background:rgba(255,255,255,0.06) !important;
+  border:1px solid rgba(255,255,255,0.18) !important;
+  color:#ede9df !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
 }
 
 /* ── Splash stays dark always (no changes needed) ── */

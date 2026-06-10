@@ -168,16 +168,31 @@ body::before{
 .splash-remark .by{ display:block; margin-top:10px; font-style:normal; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold-dim); }
 
 .splash-skip{
-  position:absolute; bottom:max(28px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
-  z-index:3; padding:9px 18px; font-size:.78rem; letter-spacing:.06em; color:rgba(250,248,243,0.7);
-  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:999px;
-  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); cursor:pointer; transition:all .2s;
-  opacity:0; animation:brandIn .6s ease 2s forwards;
+  position:absolute; bottom:max(28px, env(safe-area-inset-bottom)); left:50%;
+  transform:translateX(-50%) translateY(10px);
+  z-index:3; padding:12px 36px; font-size:.82rem; letter-spacing:.1em; color:rgba(250,248,243,0.8);
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.22); border-radius:999px;
+  -webkit-backdrop-filter:blur(16px) saturate(1.5); backdrop-filter:blur(16px) saturate(1.5);
+  cursor:pointer; opacity:0; pointer-events:none;
+  transition:opacity .6s ease, transform .6s ease, background .2s, color .2s, border-color .2s;
 }
-.splash-skip:hover{ background:rgba(255,255,255,0.12); color:#fff; }
+.splash-skip.visible{
+  opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto;
+}
+.splash-skip:hover{ background:rgba(255,255,255,0.14); color:#fff; border-color:rgba(255,255,255,0.38); }
 
 /* Lock scroll while splash is up */
 body.splash-active{ overflow:hidden; }
+
+/* ═══════════════ CONTROL CONSOLE NEURAL CANVAS ═══════════════ */
+.cc-neural-canvas{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  opacity:0.55;
+}
+.cc-shell{
+  position:relative; min-height:100%;
+}
+.cc-shell > *:not(.cc-neural-canvas){ position:relative; z-index:1; }
 
 /* ═══════════════ CONTROL CONSOLE ═══════════════ */
 .cc-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; }
@@ -218,6 +233,36 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 .cc-status{ font-size:.82rem; font-weight:600; }
 .cc-status.ok{ color:var(--green); }
 .cc-status.err{ color:var(--red); }
+
+/* ── Cloudinary image upload ── */
+.cc-upload-zone{
+  border:2px dashed rgba(201,168,76,0.35); border-radius:10px;
+  padding:22px; text-align:center; cursor:pointer;
+  transition:all .2s; color:var(--muted); font-size:.82rem; margin-top:8px;
+}
+.cc-upload-zone:hover,.cc-upload-zone.drag{
+  border-color:var(--gold); background:var(--gold-subtle); color:var(--gold-dark);
+}
+.cc-upload-zone input[type=file]{ display:none; }
+.cc-upload-thumb-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+.cc-upload-thumb{
+  position:relative; aspect-ratio:1; border-radius:6px; overflow:hidden;
+  background:rgba(0,0,0,0.1);
+}
+.cc-upload-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.cc-upload-thumb-del{
+  position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%;
+  background:rgba(0,0,0,0.6); color:#fff; border:none; cursor:pointer;
+  font-size:10px; display:flex; align-items:center; justify-content:center; line-height:1;
+}
+.cc-upload-progress{ margin-top:6px; font-size:.74rem; color:var(--muted); min-height:18px; }
+.cc-upload-progress.uploading{ color:var(--gold-dark); }
+.cc-upload-progress.done{ color:var(--green); }
+.cc-upload-progress.err{ color:var(--red); }
+.cc-copy-url{
+  display:inline-flex; align-items:center; gap:5px; margin-top:4px;
+  font-size:.74rem; color:var(--gold-dark); cursor:pointer; text-decoration:underline;
+}
 
 /* ═══════════════ STUDIO / EXHIBITION WING ═══════════════ */
 .studio-tabs{ display:flex; gap:8px; justify-content:center; margin:0 auto 36px; flex-wrap:wrap; }
