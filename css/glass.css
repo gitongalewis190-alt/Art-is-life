@@ -1,0 +1,180 @@
+/* ═══════════════════════════════════════════════════════════
+   GLASS.CSS — Spatial design layer (Phase 1)
+   Additive only. Loads AFTER main.css so it can refine, never
+   rewrite. Uses the existing :root tokens from main.css.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Honor reduced-motion preferences (store/accessibility) ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; }
+}
+
+/* ═══════════════ AMBIENT BACKGROUND OPTICS ═══════════════
+   Soft, GPU-cheap drifting light fields behind all content.
+   Kept low-opacity + pointer-events:none so it never interferes
+   with layout, taps, or readability on an iPhone XR.            */
+body::before{
+  content:"";
+  position:fixed; inset:-20vmax; z-index:-2;
+  pointer-events:none;
+  background:
+    radial-gradient(38vmax 38vmax at 18% 22%, rgba(201,168,76,0.12), transparent 60%),
+    radial-gradient(34vmax 34vmax at 82% 18%, rgba(37,99,235,0.08), transparent 62%),
+    radial-gradient(40vmax 40vmax at 70% 88%, rgba(26,163,74,0.08), transparent 60%);
+  filter:saturate(1.1);
+  animation:auroraDrift 28s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift{
+  0%  { transform:translate3d(0,0,0) scale(1); }
+  50% { transform:translate3d(2%,-2%,0) scale(1.06); }
+  100%{ transform:translate3d(-2%,2%,0) scale(1.03); }
+}
+
+/* ═══════════════ GLASS PANEL PRIMITIVE ═══════════════ */
+.glass-panel{
+  background:rgba(255,254,249,0.72)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(1.4);
+  backdrop-filter:blur(22px) saturate(1.4);
+  border:1px solid rgba(255,255,255,0.5)!important;
+  box-shadow:
+    0 24px 64px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Frost the existing modal shells without touching their markup */
+.modal-box{
+  -webkit-backdrop-filter:blur(18px) saturate(1.3);
+  backdrop-filter:blur(18px) saturate(1.3);
+}
+.modal-overlay{
+  -webkit-backdrop-filter:blur(3px);
+  backdrop-filter:blur(3px);
+}
+
+/* ═══════════════ FAB — DONATE BUTTON ═══════════════ */
+.fab-wrap{ display:flex; gap:10px; flex-wrap:wrap; }
+.fab-donate{
+  background:linear-gradient(135deg, var(--gold-light), var(--gold)) !important;
+  color:var(--charcoal) !important;
+  border:1px solid rgba(255,255,255,0.5) !important;
+  box-shadow:0 10px 28px rgba(201,168,76,0.45);
+}
+.fab-donate:hover{
+  transform:translateY(-2px) scale(1.02);
+  box-shadow:0 16px 36px rgba(201,168,76,0.55);
+}
+.fab-btn{ transition:transform var(--transition), box-shadow var(--transition); will-change:transform; }
+
+/* ═══════════════ DONATE MODAL ═══════════════ */
+.donate-box{ max-width:480px; }
+.donate-body{ padding:40px; }
+.donate-body h3{ font-size:1.65rem; font-weight:400; margin:8px 0; color:var(--ink); }
+.donate-subtitle{ font-size:0.85rem; color:var(--muted); margin-bottom:24px; line-height:1.6; }
+.donate-label{
+  display:block; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--muted); margin:16px 0 7px; font-weight:700;
+}
+.donate-input{
+  width:100%; padding:13px 15px; font-size:1rem; color:var(--ink);
+  background:rgba(255,255,255,0.6); border:1.5px solid rgba(0,0,0,0.12);
+  border-radius:var(--radius); transition:border-color .2s, box-shadow .2s;
+  -webkit-appearance:none; appearance:none;
+}
+.donate-input:focus{
+  outline:none; border-color:var(--gold);
+  box-shadow:0 0 0 3px var(--gold-subtle);
+}
+.donate-amounts{ display:flex; gap:8px; margin-top:4px; flex-wrap:wrap; }
+.donate-chip{
+  flex:1 1 60px; padding:11px 8px; font-weight:700; font-size:0.9rem; color:var(--ink);
+  background:rgba(255,255,255,0.5); border:1.5px solid rgba(0,0,0,0.1);
+  border-radius:var(--radius); transition:all .18s; cursor:pointer;
+}
+.donate-chip:hover,.donate-chip.sel{
+  background:var(--gold-subtle); border-color:var(--gold); color:var(--gold-dark);
+}
+.btn-donate{
+  width:100%; margin-top:22px; display:flex; align-items:center; justify-content:center; gap:9px;
+  padding:15px; font-weight:700; font-size:0.95rem; color:var(--charcoal);
+  background:linear-gradient(135deg, var(--gold-light), var(--gold));
+  border:none; border-radius:var(--radius); cursor:pointer;
+  transition:transform .18s, box-shadow .18s; box-shadow:0 8px 22px rgba(201,168,76,0.4);
+}
+.btn-donate:hover{ transform:translateY(-1px); box-shadow:0 12px 28px rgba(201,168,76,0.5); }
+.btn-donate:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+.donate-note{
+  margin-top:14px; font-size:0.78rem; line-height:1.55; color:var(--muted);
+  text-align:center; min-height:1.2em;
+}
+.donate-note.err{ color:var(--red); }
+.donate-note.ok{ color:var(--green); }
+
+/* ═══════════════════════════════════════════════════════════
+   LAUNCH / SPLASH SEQUENCE
+   ═══════════════════════════════════════════════════════════ */
+.splash{
+  position:fixed; inset:0; z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:radial-gradient(120vmax 120vmax at 50% 40%, #20201c 0%, #141310 55%, #0d0c0a 100%);
+  overflow:hidden;
+  transition:opacity .9s ease, visibility .9s ease;
+}
+.splash.is-leaving{ opacity:0; visibility:hidden; }
+.splash.is-gone{ display:none; }
+
+.splash-aurora{
+  position:absolute; inset:-30vmax; pointer-events:none;
+  background:
+    radial-gradient(36vmax 36vmax at 30% 30%, rgba(201,168,76,0.22), transparent 60%),
+    radial-gradient(30vmax 30vmax at 72% 68%, rgba(37,99,235,0.16), transparent 62%);
+  animation:auroraDrift 16s ease-in-out infinite alternate;
+}
+
+.splash-stage{ position:relative; text-align:center; z-index:2; padding:24px; }
+
+/* Phase 1 — the mark draws itself in */
+.splash-mark{ opacity:0; transform:scale(.7); animation:markIn 1s cubic-bezier(.2,.8,.2,1) .15s forwards; }
+.splash-ring{
+  stroke-dasharray:290; stroke-dashoffset:290;
+  animation:ringDraw 1.3s ease-out .35s forwards;
+}
+.splash-dot{ opacity:0; animation:dotPulse 1.1s ease .9s forwards; }
+@keyframes markIn{ to{ opacity:1; transform:scale(1); } }
+@keyframes ringDraw{ to{ stroke-dashoffset:0; } }
+@keyframes dotPulse{ 0%{opacity:0;transform-origin:center;} 60%{opacity:1;} 100%{opacity:1;} }
+
+/* Phase 2 — brand typography reveal */
+.splash-brand{
+  margin-top:26px; display:flex; flex-direction:column; gap:4px;
+  opacity:0; transform:translateY(14px); animation:brandIn .9s ease 1.5s forwards;
+}
+.splash-line1{
+  font-size:clamp(1.8rem,7vw,2.8rem); font-weight:300; letter-spacing:.32em;
+  color:#faf8f3; padding-left:.32em;
+}
+.splash-line2{
+  font-size:clamp(.7rem,2.6vw,.95rem); font-weight:600; letter-spacing:.5em;
+  color:var(--gold-light); padding-left:.5em;
+}
+@keyframes brandIn{ to{ opacity:1; transform:translateY(0); } }
+
+/* Phase 3 — owner remark */
+.splash-remark{
+  margin-top:22px; max-width:420px; font-size:.9rem; line-height:1.7; font-style:italic;
+  color:rgba(250,248,243,0.78);
+  opacity:0; transform:translateY(10px); transition:opacity .8s ease, transform .8s ease;
+}
+.splash-remark.show{ opacity:1; transform:translateY(0); }
+.splash-remark .by{ display:block; margin-top:10px; font-style:normal; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold-dim); }
+
+.splash-skip{
+  position:absolute; bottom:max(28px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+  z-index:3; padding:9px 18px; font-size:.78rem; letter-spacing:.06em; color:rgba(250,248,243,0.7);
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:999px;
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); cursor:pointer; transition:all .2s;
+  opacity:0; animation:brandIn .6s ease 2s forwards;
+}
+.splash-skip:hover{ background:rgba(255,255,255,0.12); color:#fff; }
+
+/* Lock scroll while splash is up */
+body.splash-active{ overflow:hidden; }

@@ -1,0 +1,15 @@
+{
+  "name": "Art is Life Foundation",
+  "short_name": "Art is Life",
+  "description": "Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces. Commissions open.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141310",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    { "src": "cover.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" },
+    { "src": "admin_icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }
+  ]
+}
