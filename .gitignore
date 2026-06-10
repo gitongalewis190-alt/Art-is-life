@@ -1,0 +1,18 @@
+# Dependencies
+functions/node_modules/
+node_modules/
+
+# Firebase
+.firebase/
+firebase-debug.log
+functions/.env
+*-debug.log
+
+# Secrets — never commit Daraja / API credentials
+.env
+.env.*
+secrets.json
+
+# OS / editor
+.DS_Store
+Thumbs.db

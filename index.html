@@ -24,6 +24,7 @@
 <!-- STYLES -->
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/glass.css">
+<link rel="stylesheet" href="css/layouts.css">
 </head>
 
 <body>
@@ -232,21 +233,17 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <button class="engage-btn" id="storyLikeBtn" onclick="toggleStoryLike()" title="Like this story">
 
-```
 <svg id="storyLikeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
 
 <span class="engage-count" id="storyLikeCount">0</span>
-```
 
   </button>
 
   <button class="engage-btn" onclick="openStoryComments()" title="Leave a comment">
 
-```
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
 
 <span class="engage-count" id="storyCommentCount">0</span>
-```
 
   </button>
 
@@ -262,9 +259,7 @@ ART IS LIFE <span>FOUNDATION</span>
 
   <div class="about-img-overlay">
 
-```
 <div class="about-img-caption">Lewis Gitonga · CEO &amp; Founder, Art Is Life Foundation</div>
-```
 
   </div>
 
@@ -328,6 +323,39 @@ ART IS LIFE <span>FOUNDATION</span>
 
 </section>
 
+<!-- ════════ STUDIO / EXHIBITION WING ════════ -->
+<section class="gallery-section" id="studio-section">
+
+  <div class="gallery-header">
+
+<h2 class="gallery-title">The <span>Studio</span></h2>
+
+<div class="gallery-meta"><span class="gallery-count">Process &amp; Archive</span></div>
+
+  </div>
+
+  <div class="studio-tabs">
+
+<button class="studio-tab sel" data-studio="process" onclick="studioView('process')">Process Studio</button>
+
+<button class="studio-tab" data-studio="archive" onclick="studioView('archive')">Archive</button>
+
+  </div>
+
+  <div class="studio-view" id="studioProcess">
+
+<div class="studio-grid" id="studioVideoGrid"></div>
+
+  </div>
+
+  <div class="studio-view" id="studioArchive" style="display:none">
+
+<div class="studio-archive-grid" id="studioArchiveGrid"></div>
+
+  </div>
+
+</section>
+
 <!-- SOCIAL -->
 
 <div class="social-section" id="social-section">
@@ -370,7 +398,7 @@ Facebook
 
 </a>
 
-<a class="social-link" href="https://instagram.com/lewis_art.is.life" target="_blank" rel="noopener" onclick="track('instagram_click')">
+<a class="social-link" data-cfg-href="instagram" href="https://instagram.com/lewis_art.is.life" target="_blank" rel="noopener" onclick="track('instagram_click')">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
 
@@ -378,7 +406,7 @@ Instagram
 
 </a>
 
-<a class="social-link" href="https://wa.me/254704708178" target="_blank" rel="noopener" onclick="track('whatsapp_direct')">
+<a class="social-link" data-cfg-href="whatsapp" href="https://wa.me/254704708178" target="_blank" rel="noopener" onclick="track('whatsapp_direct')">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
@@ -390,7 +418,7 @@ WhatsApp
 
 </div>
 
-<footer>© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.<br>Each artwork is an original, one-time creation. Nairobi, Kenya.</footer>
+<footer><span data-cfg="footerText">© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.</span><br><span data-cfg="footerSub">Each artwork is an original, one-time creation. Nairobi, Kenya.</span></footer>
 
 <!-- CART DRAWER -->
 
@@ -414,9 +442,7 @@ Your Cart
 
   <button class="cart-close-btn" onclick="closeCart()">
 
-```
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-```
 
   </button>
 
@@ -500,11 +526,9 @@ Proceed to Order
 
   <div class="story-img-grid cols-2">
 
-```
 <img src="story_03_summit.jpg" alt="Summit" loading="lazy" onclick="openZoom(this.src,'Africa Kidpreneur Summit')" onerror="this.src='placeholder.jpg';this.style.minHeight='200px'">
 
 <img src="story_04_elvis_teaching.jpg" alt="Elvis teaching" loading="lazy" onclick="openZoom(this.src,'Elvis Teaching')" onerror="this.src='placeholder.jpg';this.style.minHeight='200px'">
-```
 
   </div>
 
@@ -554,7 +578,6 @@ Proceed to Order
 
   <div class="channel-grid">
 
-```
 <button class="channel-opt sel-wa sel" id="ch-wa" onclick="selectChannel('wa')">
 
   <svg class="ch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
@@ -578,17 +601,14 @@ Proceed to Order
   SMS
 
 </button>
-```
 
   </div>
 
   <button class="btn-send btn-wa" id="sendBtn" onclick="sendOrder()">
 
-```
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
 Send via WhatsApp
-```
 
   </button>
 
@@ -620,11 +640,9 @@ Send via WhatsApp
 
   <div class="form-row">
 
-```
 <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="cName" placeholder="Full name"></div>
 
 <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="cPhone" placeholder="+254…"></div>
-```
 
   </div>
 
@@ -632,7 +650,6 @@ Send via WhatsApp
 
   <div class="form-row">
 
-```
 <div class="form-group"><label class="form-label">Mood / Emotion</label>
 
   <select class="form-select" id="cMood"><option value="">Select mood…</option><option>Peaceful &amp; Calm</option><option>Bold &amp; Energetic</option><option>Melancholic &amp; Deep</option><option>Joyful &amp; Vibrant</option><option>Mysterious &amp; Dark</option><option>Romantic &amp; Warm</option><option>Spiritual &amp; Transcendent</option></select>
@@ -646,7 +663,6 @@ Send via WhatsApp
   <input class="form-input" type="text" id="cSizeCustom" placeholder="Enter your required size manually" style="margin-top:8px;display:none;">
 
 </div>
-```
 
   </div>
 
@@ -673,7 +689,6 @@ Send via WhatsApp
 
   <div id="commissionSendSection" style="display:none;">
 
-```
 <span class="channel-label">Send commission request via:</span>
 
 <div class="channel-grid">
@@ -711,7 +726,6 @@ Send via WhatsApp
   Proceed with order
 
 </button>
-```
 
   </div>
 
@@ -737,11 +751,9 @@ Send via WhatsApp
 
   <h3>
 
-```
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" style="color:var(--gold);filter:drop-shadow(0 0 4px rgba(201,168,76,0.7))"><path d="M2 20h20M5 20V10l7-7 7 7v10"/><path d="M9 20v-6h6v6"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>
 
 Admin Access
-```
 
   </h3>
 
@@ -755,7 +767,6 @@ Admin Access
 
   <div class="admin-uid-box" id="adminUidBox">
 
-```
 <h5>🔧 FIRESTORE SETUP REQUIRED</h5>
 
 <p style="margin-bottom:8px;">Your login is valid but no Firestore role record exists. Create this document in Firebase Console:</p>
@@ -769,17 +780,14 @@ Admin Access
 <p style="margin-top:10px;"><strong>Field:</strong> role = <code style="background:#1e293b;color:#7dd3fc;padding:1px 6px;border-radius:3px;font-size:0.8rem;">crown</code></p>
 
 <p style="margin-top:8px;opacity:0.8;">After creating the document, click Sign In again.</p>
-```
 
   </div>
 
   <button class="btn-admin-login" id="adminLoginBtn" onclick="handleAdminLogin()">
 
-```
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
 
 Sign In with Firebase
-```
 
   </button>
 
@@ -833,11 +841,9 @@ Sign In with Firebase
 
   <div class="comment-input-row">
 
-```
 <input class="comment-input" type="text" id="commentInput" placeholder="Write a comment…" maxlength="280" onkeydown="if(event.key==='Enter')submitComment()">
 
 <button class="comment-submit" onclick="submitComment()">Post</button>
-```
 
   </div>
 
@@ -865,19 +871,15 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-user-chip">
 
-```
 <span id="admEmail" style="color:#f5f0e8;"></span>
 
 <span class="adm-role-pip crown" id="admRolePip">crown</span>
-```
 
   </div>
 
   <button class="adm-close-btn" onclick="closeAdminDashboard()" title="Close">
 
-```
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-```
 
   </button>
 
@@ -891,7 +893,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-nav-section">
 
-```
 <span class="adm-nav-label">Overview</span>
 
 <button class="adm-nav-item active" onclick="admTab('overview',this)">
@@ -901,13 +902,11 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   Dashboard
 
 </button>
-```
 
   </div>
 
   <div class="adm-nav-section">
 
-```
 <span class="adm-nav-label">Content</span>
 
 <button class="adm-nav-item" onclick="admTab('artworks',this)">
@@ -925,13 +924,11 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   Add Artwork
 
 </button>
-```
 
   </div>
 
   <div class="adm-nav-section">
 
-```
 <span class="adm-nav-label">Commerce</span>
 
 <button class="adm-nav-item" onclick="admTab('orders',this)" id="navOrders">
@@ -951,13 +948,11 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   Favourites
 
 </button>
-```
 
   </div>
 
   <div class="adm-nav-section" id="crownSection" style="display:none">
 
-```
 <span class="adm-nav-label">Crown Only</span>
 
 <button class="adm-nav-item" onclick="admTab('users',this)">
@@ -975,13 +970,27 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   Settings
 
 </button>
-```
+
+<button class="adm-nav-item" onclick="admTab('console',this)">
+
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>
+
+  Control Console
+
+</button>
+
+<button class="adm-nav-item" onclick="admTab('studio',this)">
+
+  <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>
+
+  Studio Manager
+
+</button>
 
   </div>
 
   <div style="margin-top:auto;padding:16px 10px 10px;">
 
-```
 <button class="adm-nav-item" style="color:#e05252;" onclick="handleAdminLogout()">
 
   <span class="adm-nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
@@ -989,7 +998,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   Sign Out
 
 </button>
-```
 
   </div>
 
@@ -1037,11 +1045,9 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-table-head">
 
-```
 <span class="adm-table-title">Collection Quick View</span>
 
 <div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add New</button></div>
-```
 
   </div>
 
@@ -1067,17 +1073,14 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-table-head">
 
-```
 <span class="adm-table-title" id="artworkTableTitle">All Artworks</span>
 
 <div class="adm-table-actions"><button class="adm-btn-sm primary" onclick="admTab('add_artwork',document.querySelector('[onclick*=add_artwork]'))">+ Add Artwork</button></div>
-```
 
   </div>
 
   <div style="overflow-x:auto;">
 
-```
 <table class="adm-table" id="artworksTable">
 
   <thead><tr><th>Rank</th><th>Title</th><th>Price</th><th>Status</th><th>Likes</th><th>Actions</th></tr></thead>
@@ -1085,7 +1088,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   <tbody id="artworksTbody"></tbody>
 
 </table>
-```
 
   </div>
 
@@ -1119,11 +1121,9 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-form-row">
 
-```
 <div class="adm-form-group"><label class="adm-form-label">Title *</label><input class="adm-input" type="text" id="newTitle" placeholder="e.g. Resonant Rhythms"></div>
 
 <div class="adm-form-group"><label class="adm-form-label">Price (KES) *</label><input class="adm-input" type="number" id="newPrice" placeholder="e.g. 1200"></div>
-```
 
   </div>
 
@@ -1131,7 +1131,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-form-group"><label class="adm-form-label">Status</label>
 
-```
 <select class="adm-input" id="newStatus">
 
   <option value="available">Available</option>
@@ -1141,7 +1140,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   <option value="sold">Sold</option>
 
 </select>
-```
 
   </div>
 
@@ -1149,7 +1147,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-form-group">
 
-```
 <label class="adm-form-label">Upload Image (Firebase Storage)</label>
 
 <div class="adm-upload-zone" onclick="document.getElementById('imgFileInput').click()">
@@ -1165,17 +1162,14 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 <div class="adm-progress" id="uploadProgress"><div class="adm-progress-bar" id="uploadBar" style="width:0%"></div></div>
 
 <div id="uploadedUrl" style="font-size:0.75rem;color:var(--adm-gold);margin-top:6px;word-break:break-all;"></div>
-```
 
   </div>
 
   <div style="display:flex;gap:10px;margin-top:6px;">
 
-```
 <button class="adm-btn-sm primary" onclick="submitAddArtwork()" style="padding:10px 24px;font-size:0.82rem;">✦ Save Artwork</button>
 
 <button class="adm-btn-sm" onclick="clearAddForm()">Clear</button>
-```
 
   </div>
 
@@ -1199,7 +1193,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-table-head">
 
-```
 <span class="adm-table-title">All Orders</span>
 
 <div class="adm-table-actions">
@@ -1211,7 +1204,6 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   <button class="adm-btn-sm danger" onclick="confirmClearOrders()">✕ Clear All</button>
 
 </div>
-```
 
   </div>
 
@@ -1283,21 +1275,17 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-form-row">
 
-```
 <div class="adm-form-group"><label class="adm-form-label">Artist Name</label><input class="adm-input" type="text" value="Lewis Gitonga" placeholder="Artist name"></div>
 
 <div class="adm-form-group"><label class="adm-form-label">Foundation Name</label><input class="adm-input" type="text" value="Art Is Life Foundation" placeholder="Foundation name"></div>
-```
 
   </div>
 
   <div class="adm-form-row">
 
-```
 <div class="adm-form-group"><label class="adm-form-label">WhatsApp Number</label><input class="adm-input" type="text" value="254704708178" placeholder="WhatsApp"></div>
 
 <div class="adm-form-group"><label class="adm-form-label">Contact Email</label><input class="adm-input" type="text" value="artislifefoundation2023@gmail.com" placeholder="Email"></div>
-```
 
   </div>
 
@@ -1311,17 +1299,21 @@ ART IS LIFE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div style="display:flex;gap:10px;flex-wrap:wrap;">
 
-```
 <button class="adm-btn-sm danger" onclick="showToast('⚠️ Export — connect to backend')">Export All Orders</button>
 
 <button class="adm-btn-sm danger" onclick="showToast('⚠️ Disabled in production')">Clear Orders</button>
-```
 
   </div>
 
 </div>
 
   </div>
+
+  <!-- CONTROL CONSOLE TAB -->
+  <div class="adm-tab" id="tab-console"></div>
+
+  <!-- STUDIO MANAGER TAB -->
+  <div class="adm-tab" id="tab-studio"></div>
 
 </div><!-- end adm-main -->
 
@@ -1412,11 +1404,28 @@ Donate with M-Pesa
 <div id="toast"></div>
 
 
+<!-- VIDEO LIGHTBOX (Process Studio) -->
+<div class="video-overlay" id="videoOverlay" onclick="closeVideo(event)">
+  <button class="video-close" onclick="closeVideo()" aria-label="Close video">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <div class="video-frame" id="videoFrame"></div>
+</div>
+
 <!-- APP LOGIC (classic, runs at body end — order preserved) -->
 <script src="js/app.js"></script>
 
 <!-- LAUNCH SEQUENCE -->
 <script src="js/splash.js"></script>
+
+<!-- CONTROL CONSOLE -->
+<script src="js/console.js"></script>
+
+<!-- STUDIO / EXHIBITION WING (module) -->
+<script type="module" src="js/studio.js"></script>
+
+<!-- GLOBAL CMS / THEME ENGINE (module) -->
+<script type="module" src="js/services/siteConfig.js"></script>
 
 <!-- M-PESA / DARAJA (module) -->
 <script type="module" src="js/services/daraja.js"></script>

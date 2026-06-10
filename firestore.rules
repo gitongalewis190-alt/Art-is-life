@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper — role lookup against users/{uid}.role (RBAC: crown>admin>editor>viewer)
+    function hasRole(roles) {
+      return request.auth != null &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+    }
+
+    // ✅ ARTWORKS: public read; admin/crown write
+    match /artworks/{artworkId} {
+      allow read: if true;
+      allow create, update, delete: if hasRole(['admin', 'crown']);
+    }
+
+    // ✅ ORDERS: anyone can place; admin/crown read & manage
+    match /orders/{orderId} {
+      allow read: if request.auth != null && hasRole(['admin', 'crown']);
+      allow create: if true;
+      allow update, delete: if hasRole(['admin', 'crown']);
+    }
+
+    // ✅ LIKES: public read; one per user
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create: if request.auth != null || request.resource.data.userId != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // ✅ COMMENTS: public read/create; admin manage
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if hasRole(['admin', 'crown']);
+    }
+
+    // ✅ USERS: admin/crown only
+    match /users/{userId} {
+      allow read, write: if hasRole(['admin', 'crown']);
+    }
+
+    // ✅ SITE CONFIG (Control Console): public read (theme/content for visitors);
+    //    only crown may publish. NEVER store secrets here — world-readable.
+    match /siteConfig/{docId} {
+      allow read: if true;
+      allow write: if hasRole(['crown']);
+    }
+
+    // ✅ STUDIO — Process videos: public read; admin/crown manage
+    match /studioVideos/{videoId} {
+      allow read: if true;
+      allow create, update, delete: if hasRole(['admin', 'crown']);
+    }
+
+    // ✅ STUDIO — Archive pieces: public read; admin/crown manage
+    match /studioArchive/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if hasRole(['admin', 'crown']);
+    }
+
+    // ✅ DONATIONS — written only by the trusted server (Cloud Function /
+    //    Admin SDK bypasses rules). Clients may never write or read them.
+    match /donations/{donationId} {
+      allow read, write: if false;
+    }
+  }
+}

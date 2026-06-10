@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   layouts.css — Structural layout presets  (Phase 2)
+   Switched live from the Control Console via  <html data-layout="1..5">.
+   Built as composable overrides on the existing markup (no page rewrites),
+   so business logic and DOM structure stay identical across presets.
+   Slots 6–10 are reserved for later — the switcher already supports them.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Optics toggle (Console -> theme.optics) */
+html[data-optics="off"] body::before{ display:none !important; }
+
+/* Glass opacity is driven by --glass-alpha (Console -> theme.glassAlpha) */
+.glass-panel{ background:rgba(255,254,249,var(--glass-alpha,0.72)) !important; }
+
+/* ─────────────── LAYOUT 1 — Editorial (default) ───────────────
+   The original gallery feel. No structural overrides.            */
+
+/* ─────────────── LAYOUT 2 — Dense Grid ───────────────
+   Tighter, more cards per row — collector "contact sheet".        */
+html[data-layout="2"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr)) !important;
+  gap:10px !important;
+}
+html[data-layout="2"] .artwork-card{ border-radius:2px; }
+html[data-layout="2"] .section-eyebrow{ letter-spacing:.4em; }
+
+/* ─────────────── LAYOUT 3 — Spacious Spotlight ───────────────
+   Big breathing room, large cards, oversized type.               */
+html[data-layout="3"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(360px,1fr)) !important;
+  gap:48px !important;
+}
+html[data-layout="3"] .artwork-card{ border-radius:14px; }
+html[data-layout="3"] section{ padding-top:90px !important; padding-bottom:90px !important; }
+html[data-layout="3"] .section-title{ font-size:clamp(2rem,6vw,3.4rem) !important; }
+
+/* ─────────────── LAYOUT 4 — Soft Glass ───────────────
+   Rounded, frosted cards on the ambient field; modern app look.  */
+html[data-layout="4"] .artwork-card{
+  border-radius:20px;
+  -webkit-backdrop-filter:blur(14px) saturate(1.25);
+  backdrop-filter:blur(14px) saturate(1.25);
+  background:rgba(255,254,249,calc(var(--glass-alpha,0.72) * 0.9));
+  border:1px solid rgba(255,255,255,0.5);
+  box-shadow:0 18px 48px rgba(0,0,0,0.12);
+}
+html[data-layout="4"] .gallery-grid{ gap:30px !important; }
+html[data-layout="4"] .header-brand-dot{ box-shadow:0 0 0 6px var(--gold-subtle); }
+
+/* ─────────────── LAYOUT 5 — Gallery Dark ───────────────
+   Museum-wall dark mode; art pops off a deep ground.             */
+html[data-layout="5"]{ --cream:#15140f; --warm-white:#1c1a14; --ink:#f3efe4; --muted:#b8b1a0; }
+html[data-layout="5"] body{ background:#15140f; color:#f3efe4; }
+html[data-layout="5"] header,
+html[data-layout="5"] footer{ background:rgba(20,19,14,0.7); color:#f3efe4; }
+html[data-layout="5"] .artwork-card{
+  background:#1c1a14; border:1px solid rgba(255,255,255,0.08); border-radius:8px;
+}
+html[data-layout="5"] .section-title,
+html[data-layout="5"] .about-text{ color:#f3efe4; }
+html[data-layout="5"] body::before{ opacity:.7; }

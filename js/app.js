@@ -1371,6 +1371,10 @@ function admTab(name, btn) {
 
   if (name === 'artworks') renderArtworksTable();
 
+  if (name === 'console' && window.renderConsole) window.renderConsole();
+
+  if (name === 'studio' && window.renderStudioManager) window.renderStudioManager();
+
 }
 
 async function loadDashboardStats() {
