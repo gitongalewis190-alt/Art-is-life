@@ -6,13 +6,28 @@
 <title>ART IS LIFE FOUNDATION — Lewis Gitonga</title>
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces. Commissions open.">
 
+<!-- SOCIAL / SEO -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Art is Life Foundation — Lewis Gitonga">
+<meta property="og:description" content="Original Kenyan contemporary emotional artworks. One-off collector pieces. Commissions open.">
+<meta property="og:image" content="cover.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Art is Life Foundation — Lewis Gitonga">
+<meta name="twitter:description" content="Original Kenyan contemporary emotional artworks. One-off collector pieces. Commissions open.">
+<meta name="twitter:image" content="cover.jpg">
+
 <!-- PWA / APP -->
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Art is Life">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="cover.jpg">
 <link rel="apple-touch-icon" href="cover.jpg">
+
+<!-- Splash safety net: if JS never runs, never trap the user behind it -->
+<noscript><style>#splash{display:none!important}</style></noscript>
 
 <!-- GOOGLE ANALYTICS -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
@@ -1417,6 +1432,9 @@ Donate with M-Pesa
 
 <!-- LAUNCH SEQUENCE -->
 <script src="js/splash.js"></script>
+
+<!-- PWA SERVICE WORKER -->
+<script src="js/pwa.js"></script>
 
 <!-- CONTROL CONSOLE -->
 <script src="js/console.js"></script>
