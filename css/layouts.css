@@ -1,41 +1,39 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   layouts.css — Structural layout presets  (Phase 2)
+   layouts.css — Structural layout presets  (Phase 5 visual overhaul)
    Switched live from the Control Console via  <html data-layout="1..5">.
-   Built as composable overrides on the existing markup (no page rewrites),
-   so business logic and DOM structure stay identical across presets.
-   Slots 6–10 are reserved for later — the switcher already supports them.
+   Default: Layout 5 — Gallery Void (dark atmospheric, iOS 26 liquid glass).
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Optics toggle (Console -> theme.optics) */
+/* Optics toggle */
 html[data-optics="off"] body::before{ display:none !important; }
 
-/* Glass opacity is driven by --glass-alpha (Console -> theme.glassAlpha) */
+/* Glass alpha driven by Control Console */
 .glass-panel{ background:rgba(255,254,249,var(--glass-alpha,0.72)) !important; }
 
-/* ─────────────── LAYOUT 1 — Editorial (default) ───────────────
-   The original gallery feel. No structural overrides.            */
+/* ─────────────── LAYOUT 1 — Editorial (Light) ───────────────
+   Clean cream/gold original palette. No overrides needed.      */
 
-/* ─────────────── LAYOUT 2 — Dense Grid ───────────────
-   Tighter, more cards per row — collector "contact sheet".        */
+/* ─────────────── LAYOUT 2 — Dense Grid ─────────────────────
+   Collector contact-sheet: tight, more cards per row.          */
 html[data-layout="2"] .gallery-grid{
-  grid-template-columns:repeat(auto-fill,minmax(170px,1fr)) !important;
-  gap:10px !important;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr)) !important;
+  gap:8px !important;
 }
 html[data-layout="2"] .artwork-card{ border-radius:2px; }
-html[data-layout="2"] .section-eyebrow{ letter-spacing:.4em; }
 
-/* ─────────────── LAYOUT 3 — Spacious Spotlight ───────────────
-   Big breathing room, large cards, oversized type.               */
+/* ─────────────── LAYOUT 3 — Spacious Spotlight ─────────────
+   Exhibition hall: large cards, generous breathing room.       */
 html[data-layout="3"] .gallery-grid{
   grid-template-columns:repeat(auto-fill,minmax(360px,1fr)) !important;
   gap:48px !important;
 }
 html[data-layout="3"] .artwork-card{ border-radius:14px; }
-html[data-layout="3"] section{ padding-top:90px !important; padding-bottom:90px !important; }
-html[data-layout="3"] .section-title{ font-size:clamp(2rem,6vw,3.4rem) !important; }
+html[data-layout="3"] section{ padding-top:80px !important; padding-bottom:80px !important; }
+html[data-layout="3"] .section-title,
+html[data-layout="3"] .gallery-title{ font-size:clamp(2rem,6vw,3.4rem) !important; }
 
-/* ─────────────── LAYOUT 4 — Soft Glass ───────────────
-   Rounded, frosted cards on the ambient field; modern app look.  */
+/* ─────────────── LAYOUT 4 — Soft Glass (Light) ─────────────
+   Rounded frosted cards over the ambient field.                */
 html[data-layout="4"] .artwork-card{
   border-radius:20px;
   -webkit-backdrop-filter:blur(14px) saturate(1.25);
@@ -45,17 +43,302 @@ html[data-layout="4"] .artwork-card{
   box-shadow:0 18px 48px rgba(0,0,0,0.12);
 }
 html[data-layout="4"] .gallery-grid{ gap:30px !important; }
-html[data-layout="4"] .header-brand-dot{ box-shadow:0 0 0 6px var(--gold-subtle); }
 
-/* ─────────────── LAYOUT 5 — Gallery Dark ───────────────
-   Museum-wall dark mode; art pops off a deep ground.             */
-html[data-layout="5"]{ --cream:#15140f; --warm-white:#1c1a14; --ink:#f3efe4; --muted:#b8b1a0; }
-html[data-layout="5"] body{ background:#15140f; color:#f3efe4; }
-html[data-layout="5"] header,
-html[data-layout="5"] footer{ background:rgba(20,19,14,0.7); color:#f3efe4; }
-html[data-layout="5"] .artwork-card{
-  background:#1c1a14; border:1px solid rgba(255,255,255,0.08); border-radius:8px;
+/* ═══════════════════════════════════════════════════════════════════════
+   LAYOUT 5 — GALLERY VOID  (DEFAULT)
+   Art floating in deep space. iOS 26 liquid glass over a near-black void.
+   Atmospheric chromatic orbs create a sense of infinite depth.
+   Every panel is true glass: specular highlights, inner edge, deep shadow.
+   ═══════════════════════════════════════════════════════════════════════ */
+html[data-layout="5"]{
+  --cream:#0a0908;
+  --warm-white:#100f0d;
+  --ink:#ede9df;
+  --muted:#9a9288;
+  --muted-light:#6e6860;
+  --charcoal:#f3efe4;
+  --card-shadow:0 8px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5);
+  --card-hover:0 48px 120px rgba(0,0,0,0.85), 0 12px 40px rgba(0,0,0,0.6);
+  --glass-alpha:0.06;
 }
-html[data-layout="5"] .section-title,
-html[data-layout="5"] .about-text{ color:#f3efe4; }
-html[data-layout="5"] body::before{ opacity:.7; }
+
+/* ── Void base ── */
+html[data-layout="5"] body{
+  background:#0a0908 !important;
+  color:#ede9df;
+}
+
+/* ── Supercharged atmospheric optics on dark ── */
+html[data-layout="5"] body::before{
+  background:
+    radial-gradient(55vmax 55vmax at 15% 15%, rgba(201,168,76,0.20), transparent 65%),
+    radial-gradient(50vmax 50vmax at 88% 10%, rgba(120,60,220,0.14), transparent 65%),
+    radial-gradient(60vmax 60vmax at 8%  85%, rgba(37,99,235,0.16), transparent 65%),
+    radial-gradient(45vmax 45vmax at 90% 82%, rgba(26,163,74,0.12), transparent 65%),
+    radial-gradient(35vmax 35vmax at 50% 50%, rgba(201,168,76,0.07), transparent 70%) !important;
+  opacity:1 !important;
+  animation:auroraDrift 20s ease-in-out infinite alternate !important;
+}
+
+/* ── Header / nav ── */
+html[data-layout="5"] header{
+  background:rgba(10,9,8,0.55) !important;
+  border-bottom:1px solid rgba(255,255,255,0.06) !important;
+  -webkit-backdrop-filter:blur(28px) saturate(1.8) !important;
+  backdrop-filter:blur(28px) saturate(1.8) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,0.06) !important;
+}
+html[data-layout="5"] .header-brand-name,
+html[data-layout="5"] .header-tagline,
+html[data-layout="5"] .nav-link{ color:#ede9df !important; }
+html[data-layout="5"] .header-brand-dot{
+  background:var(--gold) !important;
+  box-shadow:0 0 0 6px rgba(201,168,76,0.15), 0 0 20px rgba(201,168,76,0.3) !important;
+}
+html[data-layout="5"] .hamburger-btn{
+  background:rgba(255,255,255,0.07) !important;
+  border-color:rgba(255,255,255,0.14) !important;
+}
+html[data-layout="5"] .hamburger-btn span{ background:#ede9df !important; }
+
+/* ── Sections ── */
+html[data-layout="5"] section,
+html[data-layout="5"] .gallery-section,
+html[data-layout="5"] .about-section,
+html[data-layout="5"] .hero{
+  background:transparent !important;
+}
+html[data-layout="5"] .section-eyebrow{ color:var(--gold-dim) !important; }
+html[data-layout="5"] .gallery-title,
+html[data-layout="5"] .about-title,
+html[data-layout="5"] .section-title{ color:#f3efe4 !important; }
+html[data-layout="5"] .about-body p,
+html[data-layout="5"] .about-quote{ color:#b8b1a0 !important; }
+
+/* ── Hero ── */
+html[data-layout="5"] .hero-eyebrow{ color:var(--gold) !important; opacity:0.85; }
+html[data-layout="5"] .hero-title{ color:#f8f4ee !important; }
+html[data-layout="5"] .hero-sub{ color:#9a9288 !important; }
+html[data-layout="5"] .hero-count-label{ color:#9a9288 !important; }
+html[data-layout="5"] .hero-count-num{ color:var(--gold-light) !important; }
+
+/* ── Marquee ── */
+html[data-layout="5"] .marquee-band{ background:rgba(255,255,255,0.03) !important; border-color:rgba(255,255,255,0.06) !important; }
+html[data-layout="5"] .marquee-item{ color:#ede9df !important; }
+
+/* ── Search band ── */
+html[data-layout="5"] .search-band{ background:rgba(255,255,255,0.03) !important; border-color:rgba(255,255,255,0.06) !important; }
+html[data-layout="5"] .search-label{ color:#9a9288 !important; }
+html[data-layout="5"] .search-field{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#ede9df !important;
+}
+html[data-layout="5"] .search-field::placeholder{ color:#6e6860 !important; }
+html[data-layout="5"] .filter-chip{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#9a9288 !important;
+}
+html[data-layout="5"] .filter-chip.active{
+  background:var(--gold-subtle) !important;
+  border-color:var(--gold) !important;
+  color:var(--gold-light) !important;
+}
+
+/* ══ THE ARTWORK CARDS — iOS 26 Liquid Glass ══
+   True glass: near-zero fill, maximum blur, specular top edge,
+   inner edge glow, deep floating shadow.                        */
+html[data-layout="5"] .gallery-grid{ gap:28px !important; }
+
+html[data-layout="5"] .artwork-card{
+  background:rgba(255,255,255,0.04) !important;
+  -webkit-backdrop-filter:blur(44px) saturate(2.2) brightness(1.05) !important;
+  backdrop-filter:blur(44px) saturate(2.2) brightness(1.05) !important;
+  border:1px solid rgba(255,255,255,0.1) !important;
+  border-top-color:rgba(255,255,255,0.22) !important;  /* specular highlight */
+  border-radius:18px !important;
+  box-shadow:
+    0 50px 120px rgba(0,0,0,0.75),
+    0 16px 48px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.18),     /* glass top edge */
+    inset 0 -1px 0 rgba(0,0,0,0.25) !important; /* glass bottom edge */
+  transition:transform 0.55s cubic-bezier(0.2,0.8,0.2,1),
+             box-shadow 0.55s cubic-bezier(0.2,0.8,0.2,1) !important;
+  overflow:hidden;
+  position:relative;
+}
+html[data-layout="5"] .artwork-card::before{
+  content:"";
+  position:absolute; inset:0; pointer-events:none; z-index:1;
+  background:linear-gradient(160deg,rgba(255,255,255,0.07) 0%,transparent 50%);
+  border-radius:inherit;
+}
+html[data-layout="5"] .artwork-card:hover{
+  transform:translateY(-8px) scale(1.015) !important;
+  box-shadow:
+    0 70px 160px rgba(0,0,0,0.85),
+    0 24px 64px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    inset 0 -1px 0 rgba(0,0,0,0.3),
+    0 0 0 1px rgba(201,168,76,0.15) !important;
+}
+html[data-layout="5"] .artwork-card img{
+  border-radius:12px 12px 0 0 !important;
+}
+html[data-layout="5"] .art-info{ background:transparent !important; }
+html[data-layout="5"] .art-title{ color:#f0ece3 !important; }
+html[data-layout="5"] .art-price{ color:var(--gold-light) !important; }
+html[data-layout="5"] .art-status.available{ color:rgba(26,163,74,0.9) !important; }
+html[data-layout="5"] .art-status.sold{ color:rgba(179,38,30,0.8) !important; }
+html[data-layout="5"] .art-btn{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.12) !important;
+  color:#d4c9b0 !important;
+}
+html[data-layout="5"] .art-btn:hover{
+  background:rgba(255,255,255,0.12) !important;
+  border-color:rgba(201,168,76,0.4) !important;
+  color:var(--gold-light) !important;
+}
+
+/* ── Modals on dark background ── */
+html[data-layout="5"] .modal-box{
+  background:rgba(18,16,13,0.85) !important;
+  border:1px solid rgba(255,255,255,0.1) !important;
+  border-top-color:rgba(255,255,255,0.2) !important;
+  -webkit-backdrop-filter:blur(44px) saturate(1.8) !important;
+  backdrop-filter:blur(44px) saturate(1.8) !important;
+  box-shadow:0 60px 160px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+}
+html[data-layout="5"] .modal-box h3,
+html[data-layout="5"] .modal-box h4,
+html[data-layout="5"] .modal-box label,
+html[data-layout="5"] .modal-box .section-eyebrow{ color:#ede9df !important; }
+html[data-layout="5"] .modal-close{ color:#9a9288 !important; }
+html[data-layout="5"] .order-body,
+html[data-layout="5"] .commission-body,
+html[data-layout="5"] .donate-body{ background:transparent !important; }
+html[data-layout="5"] input,
+html[data-layout="5"] textarea,
+html[data-layout="5"] select{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#ede9df !important;
+}
+
+/* ── Cart drawer ── */
+html[data-layout="5"] .cart-drawer{
+  background:rgba(14,13,11,0.92) !important;
+  border-left-color:rgba(255,255,255,0.08) !important;
+  -webkit-backdrop-filter:blur(36px) !important;
+  backdrop-filter:blur(36px) !important;
+}
+html[data-layout="5"] .cart-title,
+html[data-layout="5"] .cart-item-title{ color:#ede9df !important; }
+html[data-layout="5"] .cart-item-price,
+html[data-layout="5"] .cart-total-price{ color:var(--gold-light) !important; }
+html[data-layout="5"] .cart-item{ border-bottom-color:rgba(255,255,255,0.06) !important; }
+
+/* ── About section image frame ── */
+html[data-layout="5"] .about-img-frame{
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+}
+html[data-layout="5"] .about-badge{
+  background:rgba(201,168,76,0.15) !important;
+  border:1px solid rgba(201,168,76,0.3) !important;
+}
+html[data-layout="5"] .about-badge-num{ color:var(--gold-light) !important; }
+
+/* ── FAB buttons ── */
+html[data-layout="5"] .fab-btn{
+  -webkit-backdrop-filter:blur(20px) saturate(1.5) !important;
+  backdrop-filter:blur(20px) saturate(1.5) !important;
+  background:rgba(255,255,255,0.08) !important;
+  border:1px solid rgba(255,255,255,0.16) !important;
+  border-top-color:rgba(255,255,255,0.28) !important;
+  color:#f0ece3 !important;
+  box-shadow:0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+}
+html[data-layout="5"] .fab-donate{
+  background:rgba(201,168,76,0.18) !important;
+  border-color:rgba(201,168,76,0.35) !important;
+  color:var(--gold-light) !important;
+}
+
+/* ── Toast ── */
+html[data-layout="5"] #toast{
+  background:rgba(20,18,15,0.9) !important;
+  border:1px solid rgba(255,255,255,0.1) !important;
+  color:#ede9df !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+}
+
+/* ── Footer ── */
+html[data-layout="5"] footer{
+  background:rgba(255,255,255,0.02) !important;
+  border-top:1px solid rgba(255,255,255,0.06) !important;
+  color:#6e6860 !important;
+}
+
+/* ── Admin dashboard (keep readable on dark) ── */
+html[data-layout="5"] .adm-overlay{
+  background:rgba(12,11,9,0.98) !important;
+  -webkit-backdrop-filter:blur(32px) !important;
+  backdrop-filter:blur(32px) !important;
+}
+html[data-layout="5"] .adm-sidebar{
+  background:rgba(255,255,255,0.03) !important;
+  border-right-color:rgba(255,255,255,0.06) !important;
+}
+html[data-layout="5"] .adm-nav-item{ color:#9a9288 !important; }
+html[data-layout="5"] .adm-nav-item.active,
+html[data-layout="5"] .adm-nav-item:hover{ color:#ede9df !important; background:rgba(255,255,255,0.06) !important; }
+html[data-layout="5"] .adm-page-title{ color:#ede9df !important; }
+html[data-layout="5"] .adm-stat-card,
+html[data-layout="5"] .cc-card{
+  background:rgba(255,255,255,0.04) !important;
+  border-color:rgba(255,255,255,0.08) !important;
+}
+html[data-layout="5"] .cc-label,
+html[data-layout="5"] .cc-card h4{ color:#9a9288 !important; }
+html[data-layout="5"] .cc-input{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#ede9df !important;
+}
+html[data-layout="5"] .adm-input{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#ede9df !important;
+}
+html[data-layout="5"] .adm-table th{
+  background:rgba(255,255,255,0.04) !important;
+  color:#9a9288 !important;
+  border-bottom-color:rgba(255,255,255,0.06) !important;
+}
+html[data-layout="5"] .adm-table td{
+  border-bottom-color:rgba(255,255,255,0.04) !important;
+  color:#c8c0b0 !important;
+}
+
+/* ── Studio section on dark ── */
+html[data-layout="5"] .studio-card{
+  background:rgba(255,255,255,0.04) !important;
+  border-color:rgba(255,255,255,0.08) !important;
+}
+html[data-layout="5"] .studio-meta h4{ color:#ede9df !important; }
+html[data-layout="5"] .studio-tab{
+  background:rgba(255,255,255,0.05) !important;
+  border-color:rgba(255,255,255,0.08) !important;
+  color:#9a9288 !important;
+}
+html[data-layout="5"] .studio-tab.sel{
+  background:rgba(201,168,76,0.18) !important;
+  border-color:rgba(201,168,76,0.35) !important;
+  color:var(--gold-light) !important;
+}
+
+/* ── Splash stays dark always (no changes needed) ── */

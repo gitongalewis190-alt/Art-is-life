@@ -29,6 +29,9 @@
 <!-- Splash safety net: if JS never runs, never trap the user behind it -->
 <noscript><style>#splash{display:none!important}</style></noscript>
 
+<!-- Pre-paint dark background so there's no flash of white before CSS loads -->
+<style>html,body{background:#0a0908!important}</style>
+
 <!-- GOOGLE ANALYTICS -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
 <script src="js/services/analytics.js"></script>
@@ -530,8 +533,6 @@ Proceed to Order
   <h2>How It All Started — My Untold Story</h2>
 
   <div class="story-chapter"><h4>My Identity — CEO of Art Is Life</h4><p>This is who I am. Art Is Life Foundation is not just a brand — it is my identity, my voice, and my purpose. As its CEO and founder, every decision I make, every stroke I paint, carries the weight of who I am and who I am becoming.</p></div>
-
-  <div class="story-img-grid full"><img src="story_01_identity.jpg" alt="Lewis Gitonga" loading="lazy" onclick="openZoom(this.src,'Lewis Gitonga')" onerror="this.src='placeholder.jpg';this.style.minHeight='240px'"></div>
 
   <div class="story-chapter"><h4>The Beginning — Early Artworks &amp; Foundation</h4><p>From a young age, I was drawn to creativity in a way I could not fully explain. I didn't just want to draw; I wanted to express feeling, emotion, and meaning through every line.</p></div>
 
