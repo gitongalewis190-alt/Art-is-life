@@ -164,7 +164,7 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif;}
 
 .hamburger-btn:hover{border-color:var(--gold);background:var(--gold-subtle);}
 
-.hamburger-btn span{display:block;width:18px;height:2px;background:var(--charcoal);border-radius:2px;transition:all 0.3s;}
+.hamburger-btn span{display:block;width:18px;height:2px;background:var(--charcoal);border-radius:2px;transition:all 0.65s cubic-bezier(0.4,0,0.2,1);}
 
 .hamburger-btn.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
 

@@ -2236,6 +2236,22 @@ function init() {
 
   updateStoryLikeCount();
 
+  /* Firestore artworks: firebase.js (module) loads after this classic script.
+     If artworks haven't arrived within 6s, check for domain auth issues.    */
+  setTimeout(function() {
+    if (!window._firestoreArtworks || window._firestoreArtworks.length === 0) {
+      const domain = location.hostname;
+      if (domain !== 'localhost' && domain !== '127.0.0.1') {
+        console.warn(
+          '⚠️ No Firestore artworks after 6s.\n' +
+          'Fix: Firebase Console → Authentication → Settings → Authorized Domains\n' +
+          '→ Add "' + domain + '"\n' +
+          'Local artworks are showing as fallback.'
+        );
+      }
+    }
+  }, 6000);
+
   if (storyLiked) {
 
     document.getElementById('storyLikeBtn').classList.add('liked');
