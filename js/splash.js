@@ -3,7 +3,7 @@
    Phase 1: logo mark draws in        (CSS)
    Phase 2: brand typography reveal   (CSS)
    Phase 3: owner remark fades in     (JS, content-configurable)
-   Phase 4: auto-exit into the live E-Gallery
+   Phase 4: user clicks "Enter gallery" — no auto-dismiss
    ═══════════════════════════════════════════════════════════ */
 (function () {
   var splash = document.getElementById('splash');
@@ -14,9 +14,6 @@
   var remarkEl = document.getElementById('splashRemark');
   var skipBtn  = document.getElementById('splashSkip');
 
-  /* Owner remark is CONTENT, not code — editable here today and
-     from the Control Console in a later phase. No invented copy:
-     this is a genuine welcome line; replace with the owner's words. */
   var CFG = (window.SITE_CONFIG = window.SITE_CONFIG || {});
   var remark = CFG.ownerRemark || {
     text: 'Every canvas here began as a feeling before it became a colour. Thank you for walking through this gallery with open eyes.',
@@ -32,21 +29,21 @@
         (remark.by ? '<span class="by">' + String(remark.by).replace(/</g, '&lt;') + '</span>' : '');
       remarkEl.classList.add('show');
     }
+    // Show the Enter button after the remark appears
+    if (skipBtn) skipBtn.classList.add('visible');
   }, reduce ? 100 : 2300);
 
-  // Phase 4 — seamless exit into the gallery.
+  // Phase 4 — user-initiated only; no timer.
   var dismissed = false;
   function dismiss() {
     if (dismissed) return;
     dismissed = true;
     clearTimeout(t3);
-    clearTimeout(t4);
     splash.classList.add('is-leaving');
     document.body.classList.remove('splash-active');
     setTimeout(function () { splash.classList.add('is-gone'); }, 950);
     if (typeof window.track === 'function') window.track('splash_dismissed');
   }
 
-  var t4 = setTimeout(dismiss, reduce ? 600 : 4200);
   if (skipBtn) skipBtn.addEventListener('click', dismiss);
 })();

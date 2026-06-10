@@ -39,7 +39,8 @@ const DEFAULTS = {
     ownerRemark:    "Every canvas here began as a feeling before it became a colour. Thank you for walking through this gallery with open eyes.",
     ownerRemarkBy:  "Lewis Gitonga — Founder"
   },
-  daraja: { endpoint: "", businessName: "Art is Life Foundation" }
+  daraja:     { endpoint: "", businessName: "Art is Life Foundation" },
+  cloudinary: { cloudName: "", uploadPreset: "" }
 };
 
 const SiteConfig = {
@@ -87,7 +88,8 @@ const SiteConfig = {
     // Splash owner remark
     window.SITE_CONFIG = window.SITE_CONFIG || {};
     window.SITE_CONFIG.ownerRemark = { text: c.ownerRemark, by: c.ownerRemarkBy };
-    window.SITE_CONFIG.daraja = cfg.daraja || {};
+    window.SITE_CONFIG.daraja      = cfg.daraja     || {};
+    window.SITE_CONFIG.cloudinary  = cfg.cloudinary || {};
 
     window.dispatchEvent(new CustomEvent("siteconfig_applied", { detail: cfg }));
   },
