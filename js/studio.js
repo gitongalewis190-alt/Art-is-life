@@ -37,7 +37,7 @@ function renderVideos() {
     const tags = (v.tags || []).map((t) => `<span class="studio-tag">${esc(t)}</span>`).join("");
     return `<div class="studio-card" onclick="openVideo('${esc(id)}')">
       <div class="studio-thumb">
-        <img loading="lazy" src="${esc(v.thumb || ytThumb(id))}" alt="${esc(v.title)}" onerror="this.src='assets/brand/placeholder.jpg'">
+        <img loading="lazy" src="${esc(v.thumb || ytThumb(id))}" alt="${esc(v.title)}" onerror="this.src='assets/brand/cover.jpg'">
         <div class="studio-play"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.45)"/><path d="M10 8l6 4-6 4z" fill="#fff"/></svg></div>
       </div>
       <div class="studio-meta">
@@ -59,7 +59,7 @@ function renderArchive() {
   }
   grid.innerHTML = ARCHIVE.map((a) => `
     <div class="studio-archive-card">
-      <img loading="lazy" src="${esc(a.image)}" alt="${esc(a.title)}" onclick="openZoom('${esc(a.image)}','${esc(a.title)}')" onerror="this.src='assets/brand/placeholder.jpg'">
+      <img loading="lazy" src="${esc(a.image)}" alt="${esc(a.title)}" onclick="openZoom('${esc(a.image)}','${esc(a.title)}')" onerror="this.src='assets/brand/cover.jpg'">
       <div class="studio-archive-cap"><h5>${esc(a.title)}</h5><span>${esc(a.year || "")}${a.medium ? " · " + esc(a.medium) : ""}</span></div>
     </div>`).join("");
 }
@@ -159,7 +159,7 @@ function listHtml(items, kind) {
   if (!items.length) return '<p class="cc-hint">None yet.</p>';
   return '<div class="studio-archive-grid">' + items.map((it) =>
     `<div class="studio-archive-card">
-      <img loading="lazy" src="${esc(kind === "video" ? (it.thumb || ytThumb(ytId(it.youtube))) : it.image)}" onerror="this.src='assets/brand/placeholder.jpg'">
+      <img loading="lazy" src="${esc(kind === "video" ? (it.thumb || ytThumb(ytId(it.youtube))) : it.image)}" onerror="this.src='assets/brand/cover.jpg'">
       <div class="studio-archive-cap"><h5>${esc(it.title)}</h5>
       <button class="cc-btn cc-reset" style="margin-top:8px;padding:6px 12px;font-size:.78rem" onclick="studioDelete('${kind}','${esc(it.id)}')">Delete</button></div>
     </div>`).join("") + '</div>';
