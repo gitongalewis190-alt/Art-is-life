@@ -160,7 +160,7 @@ button{cursor:pointer;font-family:'DM Sans',sans-serif;}
 
 .hamburger-wrap{position:fixed;top:14px;left:16px;z-index:1800;}
 
-.hamburger-btn{background:rgba(255,254,249,0.95);border:1px solid rgba(201,168,76,0.25);border-radius:8px;width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;transition:all 0.25s;backdrop-filter:blur(12px);}
+.hamburger-btn{background:rgba(255,254,249,0.82);border:1px solid rgba(255,255,255,0.55);border-top-color:rgba(255,255,255,0.75);border-radius:10px;width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;transition:all 0.25s cubic-bezier(0.25,0.46,0.45,0.94);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 4px 16px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.7);}
 
 .hamburger-btn:hover{border-color:var(--gold);background:var(--gold-subtle);}
 
@@ -382,7 +382,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 /* ART CARD */
 
-.art-card{background:white;border:1px solid rgba(0,0,0,0.06);border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow);transition:transform var(--transition), box-shadow var(--transition);animation:fadeUp 0.55s ease both;position:relative;}
+.art-card{background:rgba(255,254,249,0.92);border:1px solid rgba(255,255,255,0.55);border-top-color:rgba(255,255,255,0.75);border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.07),0 1px 4px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.65);transition:transform var(--transition),box-shadow var(--transition);animation:fadeUp 0.55s cubic-bezier(0.25,0.46,0.45,0.94) both;position:relative;-webkit-backdrop-filter:blur(12px) saturate(1.2);backdrop-filter:blur(12px) saturate(1.2);}
 
 .art-card:hover{transform:translateY(-9px);box-shadow:var(--card-hover);}
 
@@ -420,9 +420,9 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .art-info{padding:18px 18px 12px;}
 
-.art-title{font-family:'Cormorant Garamond',serif;font-size:1.12rem;font-weight:600;color:#FF0000;margin-bottom:4px;line-height:1.2;}
+.art-title{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:var(--charcoal);margin-bottom:4px;line-height:1.2;}
 
-.art-price{color:#ADD8E6;font-weight:700;font-size:0.88rem;margin-bottom:8px;letter-spacing:0.04em;}
+.art-price{color:var(--gold-dark);font-weight:700;font-size:0.88rem;margin-bottom:8px;letter-spacing:0.04em;}
 
 .art-desc{font-size:0.8rem;color:var(--muted);line-height:1.55;margin-bottom:4px;}
 
@@ -432,7 +432,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .art-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 14px 14px;}
 
-.art-btn{padding:9px 8px;border:none;border-radius:var(--radius);font-size:0.73rem;font-weight:600;letter-spacing:0.04em;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.28s;position:relative;overflow:hidden;}
+.art-btn{padding:11px 8px;min-height:44px;border:none;border-radius:var(--radius);font-size:0.73rem;font-weight:600;letter-spacing:0.04em;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.25s cubic-bezier(0.25,0.46,0.45,0.94);position:relative;overflow:hidden;}
 
 .art-btn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.35),transparent);animation:shimmer 3s infinite;}
 
@@ -500,7 +500,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .cart-overlay.open{display:block;animation:overlayIn 0.3s ease;}
 
-.cart-drawer{position:fixed;top:0;right:0;width:380px;max-width:95vw;height:100%;background:white;z-index:1600;display:flex;flex-direction:column;box-shadow:-12px 0 50px rgba(0,0,0,0.14);transform:translateX(100%);transition:transform var(--transition);will-change:transform;}
+.cart-drawer{position:fixed;top:0;right:0;width:380px;max-width:95vw;height:100%;background:rgba(255,254,249,0.96);border-left:1px solid rgba(255,255,255,0.4);z-index:1600;display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,0.18),inset 1px 0 0 rgba(255,255,255,0.55);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);transform:translateX(100%);transition:transform var(--transition);will-change:transform;}
 
 .cart-drawer.open{transform:translateX(0);}
 
@@ -578,7 +578,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .modal-overlay.active{display:flex;animation:overlayIn 0.3s ease;}
 
-.modal-box{background:white;border-radius:6px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:floatIn 0.4s ease;}
+.modal-box{background:rgba(255,254,249,0.96);border:1px solid rgba(255,255,255,0.5);border-top-color:rgba(255,255,255,0.72);border-radius:12px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:floatIn 0.35s cubic-bezier(0.2,0.8,0.2,1);box-shadow:0 40px 100px rgba(0,0,0,0.22),0 8px 24px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.65);-webkit-backdrop-filter:blur(28px) saturate(1.6);backdrop-filter:blur(28px) saturate(1.6);}
 
 .modal-close{position:absolute;top:14px;right:14px;z-index:10;width:30px;height:30px;border-radius:50%;border:1px solid #e8e5e0;background:white;font-size:0.9rem;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
 
@@ -742,7 +742,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 /* ADMIN DASHBOARD */
 
-.adm-overlay{display:none;position:fixed;inset:0;z-index:3000;background:linear-gradient(135deg, #87CEEB 0%, #FFFFFF 33%, #FFD700 66%, #FF6B6B 100%);overflow:hidden;}
+.adm-overlay{display:none;position:fixed;inset:0;z-index:3000;background:var(--adm-bg);overflow:hidden;}
 
 .adm-overlay.active{display:flex;flex-direction:column;animation:fadeIn 0.3s ease;}
 
@@ -1012,5 +1012,20 @@ footer{text-align:center;padding:20px;font-size:0.73rem;color:rgba(255,255,255,0
 
   .about-cta-row{flex-direction:column;align-items:flex-start;}
 
+}
+
+/* ── iPhone XR / mobile precision touch targets ── */
+@media (max-width:430px){
+  .art-btn{ min-height:44px !important; }
+  .ham-menu-item{ min-height:48px !important; }
+  .filter-chip{ padding:9px 18px !important; min-height:40px; }
+  .cart-btn{ padding:10px 18px !important; min-height:44px; }
+  .btn-primary,.btn-ghost,.btn-outline{ padding:15px 26px !important; min-height:50px; }
+  .engage-btn{ min-height:44px !important; }
+  .donate-chip{ min-height:48px !important; }
+  .splash-skip{ padding:14px 42px !important; font-size:.88rem !important; min-height:52px; }
+  .gallery-grid{ grid-template-columns:1fr !important; gap:20px !important; }
+  .hero-title{ font-size:clamp(2.4rem,10vw,3.5rem) !important; }
+  .about-section{ padding:60px 6% !important; }
 }
 

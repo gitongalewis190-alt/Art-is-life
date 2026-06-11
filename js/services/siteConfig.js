@@ -40,7 +40,8 @@ const DEFAULTS = {
     ownerRemarkBy:  "Lewis Gitonga — Founder"
   },
   daraja:     { endpoint: "", businessName: "Art is Life Foundation" },
-  cloudinary: { cloudName: "", uploadPreset: "" }
+  cloudinary: { cloudName: "", uploadPreset: "" },
+  gaId:       "G-MPX5MMNRB2"
 };
 
 const SiteConfig = {
@@ -90,6 +91,12 @@ const SiteConfig = {
     window.SITE_CONFIG.ownerRemark = { text: c.ownerRemark, by: c.ownerRemarkBy };
     window.SITE_CONFIG.daraja      = cfg.daraja     || {};
     window.SITE_CONFIG.cloudinary  = cfg.cloudinary || {};
+    window.SITE_CONFIG.gaId        = cfg.gaId       || "G-MPX5MMNRB2";
+
+    // If GA Measurement ID changed, re-configure gtag silently
+    if (cfg.gaId && cfg.gaId !== "G-MPX5MMNRB2" && typeof window.gtag === "function") {
+      window.gtag("config", cfg.gaId);
+    }
 
     window.dispatchEvent(new CustomEvent("siteconfig_applied", { detail: cfg }));
   },

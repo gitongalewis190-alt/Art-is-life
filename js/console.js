@@ -272,6 +272,67 @@
           '<div class="cc-keystatus" id="cc_keystatus"></div>' +
         '</section>' +
 
+        // GOOGLE ANALYTICS
+        '<section class="cc-card"><h4>📊 Google Analytics</h4>' +
+          '<p class="cc-hint">Your GA4 Measurement ID. Fires real events on every visitor interaction.</p>' +
+          field("Measurement ID", "cc_ga_id", (window.SITE_CONFIG && window.SITE_CONFIG.gaId) || "G-MPX5MMNRB2", "text", "G-XXXXXXXXXX") +
+          (function(){
+            var evts = (window.dataLayer || []).filter(function(e){ return typeof e[0]==="string" && e[0]==="event"; });
+            var ok = typeof window.gtag === "function";
+            return '<div class="cc-keystatus ' + (ok?"ok":"warn") + '" style="margin-top:10px">' +
+              (ok ? "✓ gtag active — " + evts.length + " event(s) fired this session." : "⚠ gtag not responding — may be blocked by an ad-blocker. Real visitors still tracked.") +
+              '</div>' +
+              '<div style="margin-top:10px;max-height:80px;overflow-y:auto;font-family:monospace;font-size:.69rem;background:rgba(0,0,0,0.04);border-radius:6px;padding:7px 9px;color:var(--muted);line-height:1.65">' +
+              (evts.slice(-5).map(function(e){return String(e[1]||"event")+(e[2]?" · "+JSON.stringify(e[2]).slice(0,38):"");}).join("<br>")||"No events yet this session.") +
+              '</div>';
+          })() +
+          '<div style="margin-top:10px"><a href="https://analytics.google.com" target="_blank" rel="noopener" style="font-size:.74rem;color:var(--gold-dark);text-decoration:underline">Open Google Analytics →</a></div>' +
+        '</section>' +
+
+        // FIREBASE STATUS
+        '<section class="cc-card"><h4>🔥 Firebase</h4>' +
+          (function(){
+            var db = window._db;
+            var auth = window._auth;
+            var role = window._currentRole || "none";
+            var email = (auth && auth.currentUser && auth.currentUser.email) || "Not signed in";
+            var uid = (auth && auth.currentUser && auth.currentUser.uid) || "—";
+            var pid = (db && db.app && db.app.options && db.app.options.projectId) || "artislife-44968";
+            return '<div style="display:grid;gap:7px">' +
+              '<div class="cc-keystatus ' + (db?"ok":"warn") + '">' + (db?"✓ Firestore connected · project: "+pid:"⚠ Firestore offline") + '</div>' +
+              '<div class="cc-keystatus ' + (auth?"ok":"warn") + '">' + (auth?"✓ Firebase Auth ready":"⚠ Auth not ready") + '</div>' +
+            '</div>' +
+            '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+              '<div><label class="cc-label">Email</label><div style="font-size:.78rem;word-break:break-all">' + esc(email) + '</div></div>' +
+              '<div><label class="cc-label">Role</label><div style="font-size:.8rem;font-weight:700;color:var(--gold-dark);text-transform:uppercase;letter-spacing:.05em">' + esc(role) + '</div></div>' +
+            '</div>' +
+            '<label class="cc-label" style="margin-top:10px">UID</label>' +
+            '<code style="display:block;font-size:.68rem;font-family:monospace;background:rgba(0,0,0,0.05);padding:6px 9px;border-radius:5px;word-break:break-all;user-select:all">' + esc(uid) + '</code>' +
+            '<div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">' +
+              '<a href="https://console.firebase.google.com/project/'+pid+'/firestore" target="_blank" rel="noopener" style="font-size:.73rem;color:var(--gold-dark);text-decoration:underline">Firestore →</a>' +
+              '<a href="https://console.firebase.google.com/project/'+pid+'/authentication/users" target="_blank" rel="noopener" style="font-size:.73rem;color:var(--gold-dark);text-decoration:underline">Auth →</a>' +
+              '<a href="https://console.firebase.google.com/project/'+pid+'/overview" target="_blank" rel="noopener" style="font-size:.73rem;color:var(--gold-dark);text-decoration:underline">Project →</a>' +
+            '</div>';
+          })() +
+        '</section>' +
+
+        // PWA & APP
+        '<section class="cc-card"><h4>📱 PWA &amp; App</h4>' +
+          (function(){
+            var standalone = window.matchMedia("(display-mode:standalone)").matches || window.navigator.standalone === true;
+            var swOk = "serviceWorker" in navigator;
+            return '<div style="display:grid;gap:7px">' +
+              '<div class="cc-keystatus ' + (swOk?"ok":"warn") + '">' + (swOk?"✓ Service Worker active · cache: ail-v2":"⚠ Service Worker not supported") + '</div>' +
+              '<div class="cc-keystatus ' + (standalone?"ok":"warn") + '">' + (standalone?"✓ Running as installed app":"ℹ Browser mode · install via Share → Add to Home Screen") + '</div>' +
+            '</div>' +
+            '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+              '<div><label class="cc-label">Cache</label><div style="font-size:.85rem;font-weight:700">ail-v2</div></div>' +
+              '<div><label class="cc-label">Mode</label><div style="font-size:.85rem;font-weight:700">' + (standalone?"Standalone":"Browser") + '</div></div>' +
+            '</div>' +
+            '<p class="cc-hint" style="margin-top:10px">iOS: Share → Add to Home Screen. Android: install prompt in browser address bar. App works offline.</p>';
+          })() +
+        '</section>' +
+
       '</div>' +
 
       '<div class="cc-actions">' +
@@ -310,7 +371,8 @@
         cloudName: g("cc_cld_name").trim(),
         uploadPreset: g("cc_cld_preset").trim()
       },
-      daraja: { businessName: g("cc_dbiz"), endpoint: g("cc_dep").trim() }
+      daraja:    { businessName: g("cc_dbiz"), endpoint: g("cc_dep").trim() },
+      gaId:      g("cc_ga_id").trim() || "G-MPX5MMNRB2"
     };
   }
 
