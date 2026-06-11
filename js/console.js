@@ -6,11 +6,13 @@
   var esc = function (s) { return window.escapeHtml ? window.escapeHtml(s) : String(s == null ? "" : s); };
 
   var LAYOUTS = [
-    { id: "1", name: "Editorial",   desc: "Classic gallery" },
-    { id: "2", name: "Dense Grid",  desc: "Contact sheet" },
-    { id: "3", name: "Spotlight",   desc: "Spacious" },
-    { id: "4", name: "Soft Glass",  desc: "Frosted app" },
-    { id: "5", name: "Gallery Dark", desc: "Museum wall" }
+    { id: "1", name: "Obsidian",   desc: "Void + liquid glass (default)" },
+    { id: "2", name: "Linen",      desc: "Warm editorial, terracotta" },
+    { id: "3", name: "Museum",     desc: "Pure white, art as star" },
+    { id: "4", name: "Matrix",     desc: "Dense navy, electric-blue" },
+    { id: "5", name: "Aurora",     desc: "Nebula violet + rose glass" },
+    { id: "6", name: "Cinematic",  desc: "Film-strip, full-bleed" },
+    { id: "7", name: "Spectrum",   desc: "Light + rainbow accents" }
   ];
 
   /* ─── Neural-network particle canvas ─── */
