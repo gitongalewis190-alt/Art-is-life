@@ -39,6 +39,20 @@
 
   --orange:#ea580c;
 
+  /* Extended chromatic palette — used by new layout presets */
+  --electric:#818cf8;
+  --electric-dim:rgba(129,140,248,0.15);
+  --ice:#93c5fd;
+  --ice-dim:rgba(147,197,253,0.15);
+  --rose:#fb7185;
+  --rose-dim:rgba(251,113,133,0.15);
+  --emerald:#34d399;
+  --emerald-dim:rgba(52,211,153,0.15);
+  --void:#070605;
+  --nebula:#0d0b16;
+  --terracotta:#c4856a;
+  --terracotta-dim:rgba(196,133,106,0.15);
+
   --card-shadow:0 2px 20px rgba(0,0,0,0.07);
 
   --card-hover:0 24px 64px rgba(0,0,0,0.16);
@@ -79,7 +93,7 @@
 
 html{scroll-behavior:smooth;font-size:16px;}
 
-body{font-family:'DM Sans',sans-serif;background:var(--warm-white);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+body{font-family:'Inter',sans-serif;background:var(--warm-white);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 
 h1,h2,h3,h4,.display{font-family:'Cormorant Garamond',serif;}
 
@@ -87,7 +101,7 @@ a{text-decoration:none;color:inherit;}
 
 img{display:block;}
 
-button{cursor:pointer;font-family:'DM Sans',sans-serif;}
+button{cursor:pointer;font-family:'Inter',sans-serif;}
 
 ::-webkit-scrollbar{width:3px;}
 
@@ -350,7 +364,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .search-label{display:block;font-size:0.62rem;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;text-align:center;}
 
-.search-field{width:100%;padding:14px 50px 14px 20px;border:1px solid rgba(201,168,76,0.28);border-radius:var(--radius);background:white;font-size:0.93rem;font-family:'DM Sans',sans-serif;color:var(--ink);transition:all 0.3s;outline:none;box-shadow:0 2px 12px rgba(0,0,0,0.04);}
+.search-field{width:100%;padding:14px 50px 14px 20px;border:1px solid rgba(201,168,76,0.28);border-radius:var(--radius);background:white;font-size:0.93rem;font-family:'Inter',sans-serif;color:var(--ink);transition:all 0.3s;outline:none;box-shadow:0 2px 12px rgba(0,0,0,0.04);}
 
 .search-field:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.1);}
 
@@ -486,7 +500,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .comment-input-row{display:flex;gap:8px;}
 
-.comment-input{flex:1;padding:10px 14px;border:1px solid rgba(201,168,76,0.28);border-radius:var(--radius);font-size:0.88rem;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:border-color 0.3s;}
+.comment-input{flex:1;padding:10px 14px;border:1px solid rgba(201,168,76,0.28);border-radius:var(--radius);font-size:0.88rem;font-family:'Inter',sans-serif;color:var(--ink);outline:none;transition:border-color 0.3s;}
 
 .comment-input:focus{border-color:var(--gold);}
 
@@ -632,7 +646,7 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 
 .form-label{display:block;font-size:0.71rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
 
-.form-input,.form-textarea,.form-select{width:100%;padding:11px 14px;border:1px solid #e0dbd4;border-radius:var(--radius);font-size:0.9rem;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;background:white;transition:border-color 0.3s,box-shadow 0.3s;}
+.form-input,.form-textarea,.form-select{width:100%;padding:11px 14px;border:1px solid #e0dbd4;border-radius:var(--radius);font-size:0.9rem;font-family:'Inter',sans-serif;color:var(--ink);outline:none;background:white;transition:border-color 0.3s,box-shadow 0.3s;}
 
 .form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.1);}
 
@@ -870,7 +884,7 @@ table.adm-table tr:hover td{background:var(--adm-surface2);}
 
 .adm-form-section h4{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--adm-text);margin-bottom:18px;}
 
-.adm-input{width:100%;padding:10px 14px;background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:4px;color:var(--adm-text);font-size:0.88rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.25s;}
+.adm-input{width:100%;padding:10px 14px;background:var(--adm-surface2);border:1px solid var(--adm-border);border-radius:4px;color:var(--adm-text);font-size:0.88rem;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.25s;}
 
 .adm-input:focus{border-color:var(--adm-gold);}
 

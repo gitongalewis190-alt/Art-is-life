@@ -27,7 +27,7 @@ const DEFAULTS = {
     glassAlpha: 0.72,
     optics:     true
   },
-  layout: "5",
+  layout: "1",
   content: {
     foundationName: "Art Is Life Foundation",
     footerText:     "© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.",

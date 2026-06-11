@@ -1,7 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   layouts.css — Structural layout presets  (Phase 5 visual overhaul)
-   Switched live from the Control Console via  <html data-layout="1..5">.
-   Default: Layout 5 — Gallery Void (dark atmospheric, iOS 26 liquid glass).
+   layouts.css — 7 Structural & Visual Presets  (Phase 6 — Total Rebuild)
+   Switched live from Control Console via  <html data-layout="1..7">.
+   Default: Layout 1 — OBSIDIAN (dark void, liquid glass).
+   ═══════════════════════════════════════════════════════════════════════
+
+   1. OBSIDIAN   — deep void, iOS 26 liquid glass, chromatic orbs (DEFAULT)
+   2. LINEN      — warm editorial, terracotta accent, serif-led typography
+   3. MUSEUM     — pure white gallery walls, generous space, art is the star
+   4. MATRIX     — deep navy collector grid, electric-blue tech aesthetic
+   5. AURORA     — nebula dark, violet+ice+rose chromatic glass
+   6. CINEMATIC  — near-zero-gap film strip, full-bleed image cards
+   7. SPECTRUM   — light cool-gray, rainbow accent bars, energetic
+
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* Optics toggle */
@@ -10,451 +20,345 @@ html[data-optics="off"] body::before{ display:none !important; }
 /* Glass alpha driven by Control Console */
 .glass-panel{ background:rgba(255,254,249,var(--glass-alpha,0.72)) !important; }
 
-/* ─────────────── LAYOUT 1 — Editorial (Light) ───────────────
-   Clean cream/gold original palette. No overrides needed.      */
-
-/* ─────────────── LAYOUT 2 — Dense Grid ─────────────────────
-   Collector contact-sheet: tight, more cards per row.          */
-html[data-layout="2"] .gallery-grid{
-  grid-template-columns:repeat(auto-fill,minmax(160px,1fr)) !important;
-  gap:8px !important;
-}
-html[data-layout="2"] .artwork-card{ border-radius:2px; }
-
-/* ─────────────── LAYOUT 3 — Spacious Spotlight ─────────────
-   Exhibition hall: large cards, generous breathing room.       */
-html[data-layout="3"] .gallery-grid{
-  grid-template-columns:repeat(auto-fill,minmax(360px,1fr)) !important;
-  gap:48px !important;
-}
-html[data-layout="3"] .artwork-card{ border-radius:14px; }
-html[data-layout="3"] section{ padding-top:80px !important; padding-bottom:80px !important; }
-html[data-layout="3"] .section-title,
-html[data-layout="3"] .gallery-title{ font-size:clamp(2rem,6vw,3.4rem) !important; }
-
-/* ─────────────── LAYOUT 4 — Soft Glass (Light) ─────────────
-   Rounded frosted cards over the ambient field.                */
-html[data-layout="4"] .artwork-card{
-  border-radius:20px;
-  -webkit-backdrop-filter:blur(14px) saturate(1.25);
-  backdrop-filter:blur(14px) saturate(1.25);
-  background:rgba(255,254,249,calc(var(--glass-alpha,0.72) * 0.9));
-  border:1px solid rgba(255,255,255,0.5);
-  box-shadow:0 18px 48px rgba(0,0,0,0.12);
-}
-html[data-layout="4"] .gallery-grid{ gap:30px !important; }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   LAYOUT 5 — GALLERY VOID  (DEFAULT)
-   Art floating in deep space. iOS 26 liquid glass over a near-black void.
-   Atmospheric chromatic orbs create a sense of infinite depth.
-   Every panel is true glass: specular highlights, inner edge, deep shadow.
-   ═══════════════════════════════════════════════════════════════════════ */
-html[data-layout="5"]{
-  --cream:#0a0908;
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 1 — OBSIDIAN  (DEFAULT)
+   ██  Art floating in pure obsidian void. iOS 26 liquid glass.
+   ██  Gold + electric violet chromatic field. Maximum depth.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="1"]{
+  --cream:#070605;
   --warm-white:#100f0d;
   --ink:#ede9df;
   --muted:#9a9288;
   --muted-light:#6e6860;
   --charcoal:#f3efe4;
-  --card-shadow:0 8px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5);
-  --card-hover:0 48px 120px rgba(0,0,0,0.85), 0 12px 40px rgba(0,0,0,0.6);
-  --glass-alpha:0.06;
+  --card-shadow:0 8px 40px rgba(0,0,0,0.75), 0 2px 8px rgba(0,0,0,0.5);
+  --card-hover:0 60px 140px rgba(0,0,0,0.9), 0 16px 48px rgba(0,0,0,0.65);
+  --glass-alpha:0.05;
+  --radius:16px;
 }
 
-/* ── Void base ── */
-html[data-layout="5"] body{
-  background:#0a0908 !important;
+html[data-layout="1"] body{
+  background:var(--void) !important;
   color:#ede9df;
 }
 
-/* ── Supercharged atmospheric optics on dark ── */
-html[data-layout="5"] body::before{
+html[data-layout="1"] body::before{
   background:
-    radial-gradient(55vmax 55vmax at 15% 15%, rgba(201,168,76,0.20), transparent 65%),
-    radial-gradient(50vmax 50vmax at 88% 10%, rgba(120,60,220,0.14), transparent 65%),
-    radial-gradient(60vmax 60vmax at 8%  85%, rgba(37,99,235,0.16), transparent 65%),
-    radial-gradient(45vmax 45vmax at 90% 82%, rgba(26,163,74,0.12), transparent 65%),
-    radial-gradient(35vmax 35vmax at 50% 50%, rgba(201,168,76,0.07), transparent 70%) !important;
+    radial-gradient(60vmax 60vmax at 12% 14%, rgba(201,168,76,0.22), transparent 65%),
+    radial-gradient(55vmax 55vmax at 90% 8%,  rgba(129,140,248,0.17), transparent 65%),
+    radial-gradient(65vmax 65vmax at 6%  88%, rgba(37,99,235,0.18), transparent 65%),
+    radial-gradient(50vmax 50vmax at 92% 84%, rgba(52,211,153,0.12), transparent 65%),
+    radial-gradient(40vmax 40vmax at 50% 50%, rgba(201,168,76,0.08), transparent 70%) !important;
   opacity:1 !important;
-  animation:auroraDrift 20s ease-in-out infinite alternate !important;
+  animation:auroraDrift 22s ease-in-out infinite alternate !important;
 }
 
-/* ── Header / nav ── */
-html[data-layout="5"] header{
-  background:rgba(10,9,8,0.55) !important;
+html[data-layout="1"] header{
+  background:rgba(7,6,5,0.55) !important;
   border-bottom:1px solid rgba(255,255,255,0.06) !important;
-  -webkit-backdrop-filter:blur(28px) saturate(1.8) !important;
-  backdrop-filter:blur(28px) saturate(1.8) !important;
-  box-shadow:0 1px 0 rgba(255,255,255,0.06) !important;
+  -webkit-backdrop-filter:blur(32px) saturate(2) !important;
+  backdrop-filter:blur(32px) saturate(2) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,0.06),0 0 60px rgba(0,0,0,0.4) !important;
 }
-html[data-layout="5"] .header-brand-name,
-html[data-layout="5"] .header-tagline,
-html[data-layout="5"] .nav-link{ color:#ede9df !important; }
-html[data-layout="5"] .header-brand-dot{
+html[data-layout="1"] .header-brand,
+html[data-layout="1"] .header-brand span,
+html[data-layout="1"] .header-nav a{ color:#ede9df !important; }
+html[data-layout="1"] .header-brand{ font-family:'Cormorant Garamond',serif !important; letter-spacing:0.08em !important; font-weight:500 !important; }
+html[data-layout="1"] .header-brand-dot{
   background:var(--gold) !important;
-  box-shadow:0 0 0 6px rgba(201,168,76,0.15), 0 0 20px rgba(201,168,76,0.3) !important;
+  box-shadow:0 0 0 6px rgba(201,168,76,0.15), 0 0 24px rgba(201,168,76,0.4) !important;
 }
-html[data-layout="5"] .hamburger-btn{
+html[data-layout="1"] .hamburger-btn{
   background:rgba(255,255,255,0.07) !important;
   border-color:rgba(255,255,255,0.14) !important;
 }
-html[data-layout="5"] .hamburger-btn span{ background:#ede9df !important; }
+html[data-layout="1"] .hamburger-btn span{ background:#ede9df !important; }
 
-/* ── Sections ── */
-html[data-layout="5"] section,
-html[data-layout="5"] .gallery-section,
-html[data-layout="5"] .about-section,
-html[data-layout="5"] .hero{
-  background:transparent !important;
+html[data-layout="1"] section,
+html[data-layout="1"] .gallery-section,
+html[data-layout="1"] .about-section,
+html[data-layout="1"] .hero{ background:transparent !important; }
+html[data-layout="1"] .section-eyebrow{ color:var(--gold-dim) !important; letter-spacing:0.18em !important; }
+html[data-layout="1"] .gallery-title,
+html[data-layout="1"] .about-title,
+html[data-layout="1"] .section-title{
+  color:#f3efe4 !important;
+  font-family:'Cormorant Garamond',serif !important;
+  font-style:italic !important;
 }
-html[data-layout="5"] .section-eyebrow{ color:var(--gold-dim) !important; }
-html[data-layout="5"] .gallery-title,
-html[data-layout="5"] .about-title,
-html[data-layout="5"] .section-title{ color:#f3efe4 !important; }
-html[data-layout="5"] .about-body p,
-html[data-layout="5"] .about-quote{ color:#b8b1a0 !important; }
-
-/* ── Hero ── */
-html[data-layout="5"] .hero-eyebrow{ color:var(--gold) !important; opacity:0.85; }
-html[data-layout="5"] .hero-title{ color:#f8f4ee !important; }
-html[data-layout="5"] .hero-sub{ color:#9a9288 !important; }
-html[data-layout="5"] .hero-count-label{ color:#9a9288 !important; }
-html[data-layout="5"] .hero-count-num{ color:var(--gold-light) !important; }
-
-/* ── Marquee ── */
-html[data-layout="5"] .marquee-band{ background:rgba(255,255,255,0.03) !important; border-color:rgba(255,255,255,0.06) !important; }
-html[data-layout="5"] .marquee-item{ color:#ede9df !important; }
-
-/* ── Search band ── */
-html[data-layout="5"] .search-band{ background:rgba(255,255,255,0.03) !important; border-color:rgba(255,255,255,0.06) !important; }
-html[data-layout="5"] .search-label{ color:#9a9288 !important; }
-html[data-layout="5"] .search-field{
+html[data-layout="1"] .about-body p,
+html[data-layout="1"] .about-quote{ color:#b8b1a0 !important; }
+html[data-layout="1"] .hero-eyebrow{ color:var(--gold) !important; }
+html[data-layout="1"] .hero-title{ color:#f8f4ee !important; font-style:italic !important; }
+html[data-layout="1"] .hero-sub{ color:#9a9288 !important; }
+html[data-layout="1"] .hero-count-label{ color:#9a9288 !important; }
+html[data-layout="1"] .hero-count-num{ color:var(--gold-light) !important; }
+html[data-layout="1"] .marquee-band{ background:rgba(255,255,255,0.03) !important; border-color:rgba(255,255,255,0.05) !important; }
+html[data-layout="1"] .marquee-item{ color:#ede9df !important; }
+html[data-layout="1"] .search-band{ background:rgba(255,255,255,0.02) !important; border-color:rgba(255,255,255,0.05) !important; }
+html[data-layout="1"] .search-label{ color:#9a9288 !important; }
+html[data-layout="1"] .search-field{
   background:rgba(255,255,255,0.06) !important;
   border-color:rgba(255,255,255,0.1) !important;
   color:#ede9df !important;
 }
-html[data-layout="5"] .search-field::placeholder{ color:#6e6860 !important; }
-html[data-layout="5"] .filter-chip{
-  background:rgba(255,255,255,0.06) !important;
+html[data-layout="1"] .search-field::placeholder{ color:#6e6860 !important; }
+html[data-layout="1"] .filter-chip{
+  background:rgba(255,255,255,0.05) !important;
   border-color:rgba(255,255,255,0.1) !important;
   color:#9a9288 !important;
+  border-radius:20px !important;
 }
-html[data-layout="5"] .filter-chip.active{
+html[data-layout="1"] .filter-chip.active{
   background:var(--gold-subtle) !important;
   border-color:var(--gold) !important;
   color:var(--gold-light) !important;
 }
 
-/* ══ THE ARTWORK CARDS — iOS 26 Liquid Glass ══
-   True glass: near-zero fill, maximum blur, specular top edge,
-   inner edge glow, deep floating shadow.                        */
-html[data-layout="5"] .gallery-grid{
+html[data-layout="1"] .gallery-grid{
   grid-template-columns:repeat(auto-fill,minmax(300px,1fr)) !important;
   gap:44px !important;
   padding:0 8px !important;
 }
-@media (max-width:640px){
-  html[data-layout="5"] .gallery-grid{
+@media(max-width:640px){
+  html[data-layout="1"] .gallery-grid{
     grid-template-columns:1fr !important;
     gap:28px !important;
   }
 }
 
-html[data-layout="5"] .artwork-card{
+html[data-layout="1"] .art-card{
   background:rgba(255,255,255,0.04) !important;
   -webkit-backdrop-filter:blur(44px) saturate(2.2) brightness(1.05) !important;
   backdrop-filter:blur(44px) saturate(2.2) brightness(1.05) !important;
-  border:1px solid rgba(255,255,255,0.1) !important;
-  border-top-color:rgba(255,255,255,0.22) !important;  /* specular highlight */
+  border:1px solid rgba(255,255,255,0.10) !important;
+  border-top-color:rgba(255,255,255,0.22) !important;
   border-radius:18px !important;
   box-shadow:
     0 50px 120px rgba(0,0,0,0.75),
     0 16px 48px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.18),     /* glass top edge */
-    inset 0 -1px 0 rgba(0,0,0,0.25) !important; /* glass bottom edge */
-  transition:transform 0.55s cubic-bezier(0.2,0.8,0.2,1),
-             box-shadow 0.55s cubic-bezier(0.2,0.8,0.2,1) !important;
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.25) !important;
+  transition:transform 0.55s cubic-bezier(0.2,0.8,0.2,1),box-shadow 0.55s cubic-bezier(0.2,0.8,0.2,1) !important;
   overflow:hidden;
   position:relative;
 }
-html[data-layout="5"] .artwork-card::before{
+html[data-layout="1"] .art-card::before{
   content:"";
   position:absolute; inset:0; pointer-events:none; z-index:1;
   background:linear-gradient(160deg,rgba(255,255,255,0.07) 0%,transparent 50%);
   border-radius:inherit;
 }
-html[data-layout="5"] .artwork-card:hover{
-  transform:translateY(-8px) scale(1.015) !important;
+html[data-layout="1"] .art-card:hover{
+  transform:translateY(-10px) scale(1.018) !important;
   box-shadow:
-    0 70px 160px rgba(0,0,0,0.85),
-    0 24px 64px rgba(0,0,0,0.6),
-    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 80px 180px rgba(0,0,0,0.88),
+    0 28px 72px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255,255,255,0.26),
     inset 0 -1px 0 rgba(0,0,0,0.3),
-    0 0 0 1px rgba(201,168,76,0.15) !important;
+    0 0 0 1px rgba(201,168,76,0.2) !important;
 }
-html[data-layout="5"] .artwork-card img{
-  border-radius:12px 12px 0 0 !important;
-}
-html[data-layout="5"] .art-info{ background:transparent !important; }
-html[data-layout="5"] .art-title{ color:#f0ece3 !important; }
-html[data-layout="5"] .art-price{ color:var(--gold-light) !important; }
-html[data-layout="5"] .art-status.available{ color:rgba(26,163,74,0.9) !important; }
-html[data-layout="5"] .art-status.sold{ color:rgba(179,38,30,0.8) !important; }
-html[data-layout="5"] .art-btn{
+html[data-layout="1"] .art-card img{ border-radius:12px 12px 0 0 !important; }
+html[data-layout="1"] .art-info{ background:transparent !important; }
+html[data-layout="1"] .art-title{ color:#f0ece3 !important; font-family:'Cormorant Garamond',serif !important; font-style:italic !important; font-size:1.15rem !important; }
+html[data-layout="1"] .art-price{ color:var(--gold-light) !important; }
+html[data-layout="1"] .art-status.available{ color:rgba(52,211,153,0.9) !important; }
+html[data-layout="1"] .art-status.sold{ color:rgba(251,113,133,0.8) !important; }
+html[data-layout="1"] .art-btn{
   background:rgba(255,255,255,0.06) !important;
   border-color:rgba(255,255,255,0.12) !important;
   color:#d4c9b0 !important;
 }
-html[data-layout="5"] .art-btn:hover{
+html[data-layout="1"] .art-btn:hover{
   background:rgba(255,255,255,0.12) !important;
   border-color:rgba(201,168,76,0.4) !important;
   color:var(--gold-light) !important;
 }
-
-/* ── Modals on dark background ── */
-html[data-layout="5"] .modal-box{
-  background:rgba(18,16,13,0.85) !important;
+html[data-layout="1"] .art-btn-call{
+  background:rgba(255,255,255,0.07) !important;
+  border:1px solid rgba(255,255,255,0.15) !important;
+  color:#ede9df !important;
+}
+html[data-layout="1"] .art-btn-call:hover{
+  background:rgba(251,113,133,0.22) !important;
+  border-color:rgba(251,113,133,0.5) !important;
+  color:var(--rose) !important;
+}
+html[data-layout="1"] .art-btn-order{
+  background:rgba(52,211,153,0.18) !important;
+  border:1px solid rgba(52,211,153,0.38) !important;
+  color:var(--emerald) !important;
+}
+html[data-layout="1"] .art-btn-order:hover{
+  background:rgba(52,211,153,0.32) !important;
+  border-color:rgba(52,211,153,0.65) !important;
+}
+html[data-layout="1"] .art-btn-cart{
+  background:rgba(201,168,76,0.20) !important;
+  border:1px solid rgba(201,168,76,0.38) !important;
+  color:var(--gold-light, #e0c97a) !important;
+}
+html[data-layout="1"] .art-btn-cart:hover{ background:rgba(201,168,76,0.35) !important; }
+html[data-layout="1"] .engage-btn{
+  border-color:rgba(255,255,255,0.14) !important;
+  color:#9a9288 !important;
+}
+html[data-layout="1"] .engage-btn:hover{
+  border-color:rgba(201,168,76,0.5) !important;
+  color:var(--gold-light) !important;
+  background:rgba(201,168,76,0.08) !important;
+}
+html[data-layout="1"] .modal-box{
+  background:rgba(14,12,10,0.88) !important;
   border:1px solid rgba(255,255,255,0.1) !important;
   border-top-color:rgba(255,255,255,0.2) !important;
   -webkit-backdrop-filter:blur(44px) saturate(1.8) !important;
   backdrop-filter:blur(44px) saturate(1.8) !important;
-  box-shadow:0 60px 160px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+  box-shadow:0 70px 180px rgba(0,0,0,0.92), inset 0 1px 0 rgba(255,255,255,0.12) !important;
 }
-html[data-layout="5"] .modal-box h3,
-html[data-layout="5"] .modal-box h4,
-html[data-layout="5"] .modal-box label,
-html[data-layout="5"] .modal-box .section-eyebrow{ color:#ede9df !important; }
-html[data-layout="5"] .modal-close{ color:#9a9288 !important; }
-html[data-layout="5"] .order-body,
-html[data-layout="5"] .commission-body,
-html[data-layout="5"] .donate-body{ background:transparent !important; }
-html[data-layout="5"] input,
-html[data-layout="5"] textarea,
-html[data-layout="5"] select{
+html[data-layout="1"] .modal-box h3,
+html[data-layout="1"] .modal-box h4,
+html[data-layout="1"] .modal-box label,
+html[data-layout="1"] .modal-box .section-eyebrow{ color:#ede9df !important; }
+html[data-layout="1"] .modal-close{ color:#9a9288 !important; }
+html[data-layout="1"] .order-body,
+html[data-layout="1"] .commission-body,
+html[data-layout="1"] .donate-body{ background:transparent !important; }
+html[data-layout="1"] input,
+html[data-layout="1"] textarea,
+html[data-layout="1"] select{
   background:rgba(255,255,255,0.06) !important;
   border-color:rgba(255,255,255,0.1) !important;
   color:#ede9df !important;
 }
-
-/* ── Cart drawer ── */
-html[data-layout="5"] .cart-drawer{
-  background:rgba(14,13,11,0.92) !important;
-  border-left-color:rgba(255,255,255,0.08) !important;
-  -webkit-backdrop-filter:blur(36px) !important;
-  backdrop-filter:blur(36px) !important;
+html[data-layout="1"] .cart-drawer{
+  background:rgba(10,9,7,0.94) !important;
+  border-left-color:rgba(255,255,255,0.07) !important;
+  -webkit-backdrop-filter:blur(40px) !important;
+  backdrop-filter:blur(40px) !important;
 }
-html[data-layout="5"] .cart-title,
-html[data-layout="5"] .cart-item-title{ color:#ede9df !important; }
-html[data-layout="5"] .cart-item-price,
-html[data-layout="5"] .cart-total-price{ color:var(--gold-light) !important; }
-html[data-layout="5"] .cart-item{ border-bottom-color:rgba(255,255,255,0.06) !important; }
-
-/* ── About section image frame ── */
-html[data-layout="5"] .about-img-frame{
-  -webkit-backdrop-filter:blur(20px) !important;
-  backdrop-filter:blur(20px) !important;
+html[data-layout="1"] .cart-title,
+html[data-layout="1"] .cart-item-title{ color:#ede9df !important; }
+html[data-layout="1"] .cart-item-price,
+html[data-layout="1"] .cart-total-price{ color:var(--gold-light) !important; }
+html[data-layout="1"] .cart-item{ border-bottom-color:rgba(255,255,255,0.06) !important; }
+html[data-layout="1"] .qty-btn{
+  background:rgba(255,255,255,0.08) !important;
+  border-color:rgba(255,255,255,0.14) !important;
+  color:#ede9df !important;
 }
-html[data-layout="5"] .about-badge{
-  background:rgba(201,168,76,0.15) !important;
-  border:1px solid rgba(201,168,76,0.3) !important;
+html[data-layout="1"] .cart-close-btn{
+  border-color:rgba(255,255,255,0.12) !important;
+  color:#9a9288 !important;
 }
-html[data-layout="5"] .about-badge-num{ color:var(--gold-light) !important; }
-
-/* ── FAB buttons ── */
-html[data-layout="5"] .fab-btn{
-  -webkit-backdrop-filter:blur(20px) saturate(1.5) !important;
-  backdrop-filter:blur(20px) saturate(1.5) !important;
+html[data-layout="1"] .cart-close-btn:hover{
+  border-color:rgba(251,113,133,0.5) !important;
+  color:var(--rose) !important;
+}
+html[data-layout="1"] .fab-btn{
+  -webkit-backdrop-filter:blur(24px) saturate(1.8) !important;
+  backdrop-filter:blur(24px) saturate(1.8) !important;
   background:rgba(255,255,255,0.08) !important;
   border:1px solid rgba(255,255,255,0.16) !important;
   border-top-color:rgba(255,255,255,0.28) !important;
   color:#f0ece3 !important;
-  box-shadow:0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  box-shadow:0 20px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.16) !important;
 }
-html[data-layout="5"] .fab-donate{
+html[data-layout="1"] .fab-donate{
   background:rgba(201,168,76,0.18) !important;
   border-color:rgba(201,168,76,0.35) !important;
   color:var(--gold-light) !important;
 }
-
-/* ── Toast ── */
-html[data-layout="5"] #toast{
-  background:rgba(20,18,15,0.9) !important;
+html[data-layout="1"] #toast{
+  background:rgba(16,14,12,0.92) !important;
   border:1px solid rgba(255,255,255,0.1) !important;
   color:#ede9df !important;
-  -webkit-backdrop-filter:blur(20px) !important;
-  backdrop-filter:blur(20px) !important;
+  -webkit-backdrop-filter:blur(24px) !important;
+  backdrop-filter:blur(24px) !important;
 }
-
-/* ── Footer ── */
-html[data-layout="5"] footer{
+html[data-layout="1"] footer{
   background:rgba(255,255,255,0.02) !important;
-  border-top:1px solid rgba(255,255,255,0.06) !important;
+  border-top:1px solid rgba(255,255,255,0.05) !important;
   color:#6e6860 !important;
 }
-
-/* ── Admin dashboard (keep readable on dark) ── */
-html[data-layout="5"] .adm-overlay{
-  background:rgba(12,11,9,0.98) !important;
-  -webkit-backdrop-filter:blur(32px) !important;
-  backdrop-filter:blur(32px) !important;
+html[data-layout="1"] .about-img-frame{ -webkit-backdrop-filter:blur(20px) !important; backdrop-filter:blur(20px) !important; }
+html[data-layout="1"] .about-badge{
+  background:rgba(201,168,76,0.14) !important;
+  border:1px solid rgba(201,168,76,0.3) !important;
 }
-html[data-layout="5"] .adm-sidebar{
-  background:rgba(255,255,255,0.03) !important;
-  border-right-color:rgba(255,255,255,0.06) !important;
-}
-html[data-layout="5"] .adm-nav-item{ color:#9a9288 !important; }
-html[data-layout="5"] .adm-nav-item.active,
-html[data-layout="5"] .adm-nav-item:hover{ color:#ede9df !important; background:rgba(255,255,255,0.06) !important; }
-html[data-layout="5"] .adm-page-title{ color:#ede9df !important; }
-html[data-layout="5"] .adm-stat-card,
-html[data-layout="5"] .cc-card{
+html[data-layout="1"] .about-badge-num{ color:var(--gold-light) !important; }
+html[data-layout="1"] .channel-opt{
   background:rgba(255,255,255,0.04) !important;
-  border-color:rgba(255,255,255,0.08) !important;
-}
-html[data-layout="5"] .cc-label,
-html[data-layout="5"] .cc-card h4{ color:#9a9288 !important; }
-html[data-layout="5"] .cc-input{
-  background:rgba(255,255,255,0.06) !important;
-  border-color:rgba(255,255,255,0.1) !important;
-  color:#ede9df !important;
-}
-html[data-layout="5"] .adm-input{
-  background:rgba(255,255,255,0.06) !important;
-  border-color:rgba(255,255,255,0.1) !important;
-  color:#ede9df !important;
-}
-html[data-layout="5"] .adm-table th{
-  background:rgba(255,255,255,0.04) !important;
-  color:#9a9288 !important;
-  border-bottom-color:rgba(255,255,255,0.06) !important;
-}
-html[data-layout="5"] .adm-table td{
-  border-bottom-color:rgba(255,255,255,0.04) !important;
-  color:#c8c0b0 !important;
-}
-
-/* ── Studio section on dark ── */
-html[data-layout="5"] .studio-card{
-  background:rgba(255,255,255,0.04) !important;
-  border-color:rgba(255,255,255,0.08) !important;
-}
-html[data-layout="5"] .studio-meta h4{ color:#ede9df !important; }
-html[data-layout="5"] .studio-tab{
-  background:rgba(255,255,255,0.05) !important;
-  border-color:rgba(255,255,255,0.08) !important;
-  color:#9a9288 !important;
-}
-html[data-layout="5"] .studio-tab.sel{
-  background:rgba(201,168,76,0.18) !important;
-  border-color:rgba(201,168,76,0.35) !important;
-  color:var(--gold-light) !important;
-}
-
-/* ── Artwork card action buttons — dark mode visibility ── */
-html[data-layout="5"] .art-btn-call{
-  background:rgba(255,255,255,0.08) !important;
-  border:1px solid rgba(255,255,255,0.16) !important;
-  color:#ede9df !important;
-}
-html[data-layout="5"] .art-btn-call:hover{
-  background:rgba(224,82,82,0.25) !important;
-  border-color:rgba(224,82,82,0.5) !important;
-  color:#ff8a80 !important;
-}
-html[data-layout="5"] .art-btn-order{
-  background:rgba(26,163,74,0.25) !important;
-  border:1px solid rgba(26,163,74,0.45) !important;
-  color:#6ee7a0 !important;
-}
-html[data-layout="5"] .art-btn-order:hover{
-  background:rgba(26,163,74,0.4) !important;
-  border-color:rgba(26,163,74,0.7) !important;
-}
-html[data-layout="5"] .art-btn-cart{
-  background:rgba(201,168,76,0.22) !important;
-  border:1px solid rgba(201,168,76,0.4) !important;
-  color:var(--gold-light, #e0c97a) !important;
-}
-html[data-layout="5"] .art-btn-cart:hover{
-  background:rgba(201,168,76,0.38) !important;
-}
-
-/* ── Quantity controls in cart ── */
-html[data-layout="5"] .qty-btn{
-  background:rgba(255,255,255,0.08) !important;
-  border-color:rgba(255,255,255,0.14) !important;
-  color:#ede9df !important;
-}
-html[data-layout="5"] .cart-close-btn{
-  border-color:rgba(255,255,255,0.12) !important;
-  color:#9a9288 !important;
-}
-html[data-layout="5"] .cart-close-btn:hover{
-  border-color:rgba(224,82,82,0.5) !important;
-  color:#ff8a80 !important;
-}
-
-/* ── Engage / like buttons on artwork cards ── */
-html[data-layout="5"] .engage-btn{
-  border-color:rgba(255,255,255,0.14) !important;
-  color:#9a9288 !important;
-}
-html[data-layout="5"] .engage-btn:hover{
-  border-color:rgba(201,168,76,0.5) !important;
-  color:var(--gold-light, #e0c97a) !important;
-  background:rgba(201,168,76,0.08) !important;
-}
-
-/* ── Channel options (order/commission contact method) ── */
-html[data-layout="5"] .channel-opt{
-  background:rgba(255,255,255,0.05) !important;
   border-color:rgba(255,255,255,0.1) !important;
   color:#9a9288 !important;
 }
-html[data-layout="5"] .channel-opt:hover,
-html[data-layout="5"] .channel-opt.sel{
+html[data-layout="1"] .channel-opt:hover,
+html[data-layout="1"] .channel-opt.sel{
   background:rgba(201,168,76,0.12) !important;
   border-color:rgba(201,168,76,0.4) !important;
   color:#ede9df !important;
 }
-html[data-layout="5"] .channel-opt.sel-wa.sel{
-  background:rgba(37,211,102,0.1) !important;
-  border-color:rgba(37,211,102,0.4) !important;
+html[data-layout="1"] .btn-send{
+  background:rgba(52,211,153,0.28) !important;
+  color:var(--emerald) !important;
+  border:1px solid rgba(52,211,153,0.48) !important;
 }
-html[data-layout="5"] .channel-opt.sel-email.sel{
-  background:rgba(37,99,235,0.1) !important;
-  border-color:rgba(37,99,235,0.4) !important;
+html[data-layout="1"] .btn-send:hover{ background:rgba(52,211,153,0.45) !important; }
+html[data-layout="1"] .btn-wa{ background:rgba(37,211,102,0.22) !important; color:#6ee7a0 !important; }
+html[data-layout="1"] .btn-email{ background:rgba(147,197,253,0.18) !important; color:var(--ice) !important; }
+html[data-layout="1"] .btn-sms{ background:rgba(251,113,133,0.18) !important; color:var(--rose) !important; }
+html[data-layout="1"] .studio-card{
+  background:rgba(255,255,255,0.04) !important;
+  border-color:rgba(255,255,255,0.08) !important;
 }
-html[data-layout="5"] .channel-opt.sel-sms.sel{
-  background:rgba(234,88,12,0.1) !important;
-  border-color:rgba(234,88,12,0.4) !important;
+html[data-layout="1"] .studio-meta h4{ color:#ede9df !important; }
+html[data-layout="1"] .studio-tab{
+  background:rgba(255,255,255,0.05) !important;
+  border-color:rgba(255,255,255,0.08) !important;
+  color:#9a9288 !important;
 }
-
-/* ── Send/submit buttons in modals ── */
-html[data-layout="5"] .btn-send{
-  background:rgba(26,163,74,0.3) !important;
-  color:#6ee7a0 !important;
-  border:1px solid rgba(26,163,74,0.5) !important;
+html[data-layout="1"] .studio-tab.sel{
+  background:rgba(201,168,76,0.18) !important;
+  border-color:rgba(201,168,76,0.35) !important;
+  color:var(--gold-light) !important;
 }
-html[data-layout="5"] .btn-send:hover{
-  background:rgba(26,163,74,0.5) !important;
+html[data-layout="1"] .adm-overlay{
+  background:rgba(8,7,6,0.98) !important;
+  -webkit-backdrop-filter:blur(32px) !important;
+  backdrop-filter:blur(32px) !important;
 }
-html[data-layout="5"] .btn-wa{
-  background:rgba(37,211,102,0.25) !important;
-  color:#6ee7a0 !important;
+html[data-layout="1"] .adm-sidebar{
+  background:rgba(255,255,255,0.025) !important;
+  border-right-color:rgba(255,255,255,0.05) !important;
 }
-html[data-layout="5"] .btn-email{
-  background:rgba(37,99,235,0.25) !important;
-  color:#93c5fd !important;
+html[data-layout="1"] .adm-nav-item{ color:#9a9288 !important; }
+html[data-layout="1"] .adm-nav-item.active,
+html[data-layout="1"] .adm-nav-item:hover{ color:#ede9df !important; background:rgba(255,255,255,0.06) !important; }
+html[data-layout="1"] .adm-page-title{ color:#ede9df !important; }
+html[data-layout="1"] .adm-stat-card,
+html[data-layout="1"] .cc-card{
+  background:rgba(255,255,255,0.04) !important;
+  border-color:rgba(255,255,255,0.08) !important;
 }
-html[data-layout="5"] .btn-sms{
-  background:rgba(234,88,12,0.25) !important;
-  color:#fdba74 !important;
+html[data-layout="1"] .cc-label,
+html[data-layout="1"] .cc-card h4{ color:#9a9288 !important; }
+html[data-layout="1"] .cc-input,
+html[data-layout="1"] .adm-input{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#ede9df !important;
 }
-
-/* ── Splash "Enter gallery" button — revealed after remark ── */
-html[data-layout="5"] #splashSkip{
+html[data-layout="1"] .adm-table th{
+  background:rgba(255,255,255,0.04) !important;
+  color:#9a9288 !important;
+  border-bottom-color:rgba(255,255,255,0.06) !important;
+}
+html[data-layout="1"] .adm-table td{
+  border-bottom-color:rgba(255,255,255,0.04) !important;
+  color:#c8c0b0 !important;
+}
+html[data-layout="1"] #splashSkip{
   background:rgba(255,255,255,0.06) !important;
   border:1px solid rgba(255,255,255,0.18) !important;
   color:#ede9df !important;
@@ -462,4 +366,1215 @@ html[data-layout="5"] #splashSkip{
   backdrop-filter:blur(20px) !important;
 }
 
-/* ── Splash stays dark always (no changes needed) ── */
+
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 2 — LINEN
+   ██  Warm editorial light. Terracotta accent. Serif-led.
+   ██  Like a premium art magazine printed on handmade paper.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="2"]{
+  --cream:#faf6ee;
+  --warm-white:#fdf9f2;
+  --ink:#1e1a14;
+  --charcoal:#1e1a14;
+  --muted:#786c5a;
+  --muted-light:#a89a84;
+  --card-shadow:0 2px 24px rgba(30,26,20,0.09), 0 1px 4px rgba(30,26,20,0.05);
+  --card-hover:0 20px 56px rgba(30,26,20,0.18), 0 6px 18px rgba(30,26,20,0.1);
+  --glass-alpha:0.9;
+  --radius:3px;
+}
+
+html[data-layout="2"] body{
+  background:var(--cream) !important;
+  color:var(--ink) !important;
+}
+
+html[data-layout="2"] body::before{
+  background:
+    radial-gradient(80vmax 60vmax at 0% 0%, rgba(196,133,106,0.08), transparent 60%),
+    radial-gradient(70vmax 70vmax at 100% 100%, rgba(201,168,76,0.07), transparent 60%) !important;
+  opacity:1 !important;
+  animation:none !important;
+}
+
+html[data-layout="2"] header{
+  background:rgba(250,246,238,0.88) !important;
+  border-bottom:2px solid rgba(30,26,20,0.08) !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+  box-shadow:none !important;
+}
+html[data-layout="2"] .header-brand{
+  font-family:'Cormorant Garamond',serif !important;
+  font-size:1.35rem !important;
+  font-weight:600 !important;
+  letter-spacing:0.12em !important;
+  color:#1e1a14 !important;
+  text-transform:uppercase !important;
+}
+html[data-layout="2"] .header-brand span{ color:var(--terracotta) !important; font-style:italic !important; }
+html[data-layout="2"] .header-nav a{ color:#1e1a14 !important; font-family:'Inter',sans-serif !important; font-size:0.78rem !important; letter-spacing:0.1em !important; text-transform:uppercase !important; }
+html[data-layout="2"] .header-brand-dot{ background:var(--terracotta) !important; box-shadow:none !important; }
+
+html[data-layout="2"] .section-eyebrow{
+  color:var(--terracotta) !important;
+  font-family:'Inter',sans-serif !important;
+  letter-spacing:0.22em !important;
+  font-size:0.68rem !important;
+}
+html[data-layout="2"] .gallery-title,
+html[data-layout="2"] .about-title,
+html[data-layout="2"] .section-title{
+  color:#1e1a14 !important;
+  font-family:'Cormorant Garamond',serif !important;
+  font-weight:400 !important;
+  font-size:clamp(2.2rem,6vw,4rem) !important;
+  line-height:1.05 !important;
+}
+html[data-layout="2"] .hero-title{
+  font-family:'Cormorant Garamond',serif !important;
+  font-size:clamp(3rem,10vw,6rem) !important;
+  font-weight:300 !important;
+  color:#1e1a14 !important;
+  font-style:italic !important;
+  line-height:0.95 !important;
+}
+html[data-layout="2"] .hero-eyebrow{ color:var(--terracotta) !important; }
+html[data-layout="2"] .hero-sub{ color:var(--muted) !important; }
+html[data-layout="2"] .hero-count-num{ color:var(--terracotta) !important; }
+
+html[data-layout="2"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr)) !important;
+  gap:28px !important;
+}
+html[data-layout="2"] .art-card{
+  background:#fffdf7 !important;
+  border:1px solid rgba(30,26,20,0.1) !important;
+  border-radius:2px !important;
+  box-shadow:var(--card-shadow) !important;
+  transition:transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.4s !important;
+}
+html[data-layout="2"] .art-card:hover{
+  transform:translateY(-6px) !important;
+  box-shadow:var(--card-hover) !important;
+}
+html[data-layout="2"] .art-title{ color:#1e1a14 !important; font-family:'Cormorant Garamond',serif !important; font-style:italic !important; font-size:1.1rem !important; }
+html[data-layout="2"] .art-price{ color:var(--terracotta) !important; font-family:'Cormorant Garamond',serif !important; font-size:1.15rem !important; }
+html[data-layout="2"] .art-status.available{ color:#2e7d44 !important; }
+html[data-layout="2"] .art-status.sold{ color:var(--terracotta) !important; }
+html[data-layout="2"] .art-btn{
+  background:transparent !important;
+  border:1.5px solid rgba(30,26,20,0.18) !important;
+  color:#1e1a14 !important;
+  border-radius:2px !important;
+}
+html[data-layout="2"] .art-btn:hover{
+  background:rgba(196,133,106,0.1) !important;
+  border-color:var(--terracotta) !important;
+  color:var(--terracotta) !important;
+}
+html[data-layout="2"] .art-btn-order{
+  background:var(--terracotta) !important;
+  border-color:var(--terracotta) !important;
+  color:#fff !important;
+}
+html[data-layout="2"] .art-btn-order:hover{ background:#b5725a !important; }
+html[data-layout="2"] .art-btn-cart{
+  background:rgba(201,168,76,0.12) !important;
+  border-color:var(--gold) !important;
+  color:var(--gold-dark) !important;
+}
+html[data-layout="2"] .filter-chip{
+  background:transparent !important;
+  border-color:rgba(30,26,20,0.18) !important;
+  color:#786c5a !important;
+  border-radius:2px !important;
+}
+html[data-layout="2"] .filter-chip.active{
+  background:var(--terracotta) !important;
+  border-color:var(--terracotta) !important;
+  color:#fff !important;
+}
+html[data-layout="2"] footer{
+  background:#f0ece0 !important;
+  border-top:1px solid rgba(30,26,20,0.1) !important;
+  color:var(--muted) !important;
+}
+html[data-layout="2"] .fab-btn{
+  background:#fff !important;
+  border:1.5px solid rgba(30,26,20,0.18) !important;
+  color:#1e1a14 !important;
+  box-shadow:0 8px 32px rgba(30,26,20,0.15) !important;
+}
+html[data-layout="2"] .fab-donate{
+  background:var(--terracotta) !important;
+  border-color:var(--terracotta) !important;
+  color:#fff !important;
+}
+html[data-layout="2"] .modal-box{
+  background:#faf6ee !important;
+  border:1px solid rgba(30,26,20,0.1) !important;
+  box-shadow:0 40px 100px rgba(30,26,20,0.2) !important;
+}
+html[data-layout="2"] .cart-drawer{
+  background:#fdf9f2 !important;
+  border-left:2px solid rgba(30,26,20,0.1) !important;
+}
+html[data-layout="2"] .search-field{
+  background:#fff !important;
+  border-color:rgba(30,26,20,0.15) !important;
+  color:#1e1a14 !important;
+}
+html[data-layout="2"] .marquee-band{
+  background:rgba(196,133,106,0.08) !important;
+  border-color:rgba(196,133,106,0.2) !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 3 — MUSEUM
+   ██  Pure white gallery walls. Generous space. Art is the only star.
+   ██  Ultra-minimal: no backgrounds, no effects — just art and type.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="3"]{
+  --cream:#ffffff;
+  --warm-white:#ffffff;
+  --ink:#111111;
+  --charcoal:#111111;
+  --muted:#888888;
+  --muted-light:#bbb;
+  --card-shadow:none;
+  --card-hover:0 16px 48px rgba(0,0,0,0.12);
+  --glass-alpha:1.0;
+  --radius:0px;
+}
+
+html[data-layout="3"] body{
+  background:#ffffff !important;
+  color:#111 !important;
+}
+
+html[data-layout="3"] body::before{ display:none !important; }
+
+html[data-layout="3"] header{
+  background:#ffffff !important;
+  border-bottom:1px solid #e8e8e8 !important;
+  box-shadow:none !important;
+}
+html[data-layout="3"] .header-brand{
+  font-family:'Cormorant Garamond',serif !important;
+  font-weight:400 !important;
+  font-size:1.1rem !important;
+  letter-spacing:0.25em !important;
+  text-transform:uppercase !important;
+  color:#111 !important;
+}
+html[data-layout="3"] .header-brand span{ color:#888 !important; font-size:0.72rem !important; letter-spacing:0.15em !important; }
+html[data-layout="3"] .header-nav a{ color:#111 !important; font-size:0.75rem !important; letter-spacing:0.14em !important; text-transform:uppercase !important; }
+html[data-layout="3"] .header-brand-dot{ background:#111 !important; box-shadow:none !important; }
+html[data-layout="3"] .hamburger-btn span{ background:#111 !important; }
+
+html[data-layout="3"] .section-eyebrow{
+  color:#888 !important;
+  letter-spacing:0.3em !important;
+  font-size:0.65rem !important;
+  font-family:'Inter',sans-serif !important;
+}
+html[data-layout="3"] .gallery-title,
+html[data-layout="3"] .section-title,
+html[data-layout="3"] .about-title{
+  color:#111 !important;
+  font-family:'Cormorant Garamond',serif !important;
+  font-weight:300 !important;
+  font-size:clamp(2.4rem,6vw,4.5rem) !important;
+}
+html[data-layout="3"] .hero-title{
+  font-family:'Cormorant Garamond',serif !important;
+  font-size:clamp(2.8rem,8vw,6.5rem) !important;
+  font-weight:300 !important;
+  color:#111 !important;
+  line-height:1.0 !important;
+}
+html[data-layout="3"] .hero-eyebrow{ color:#888 !important; }
+html[data-layout="3"] .hero-sub{ color:#888 !important; font-size:0.85rem !important; letter-spacing:0.08em !important; }
+html[data-layout="3"] .hero-count-num{ color:#111 !important; }
+
+html[data-layout="3"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(380px,1fr)) !important;
+  gap:64px !important;
+  padding:0 !important;
+}
+@media(max-width:768px){
+  html[data-layout="3"] .gallery-grid{
+    grid-template-columns:1fr !important;
+    gap:40px !important;
+  }
+}
+html[data-layout="3"] section{ padding-top:80px !important; padding-bottom:80px !important; }
+
+html[data-layout="3"] .art-card{
+  background:transparent !important;
+  border:none !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  transition:box-shadow 0.4s ease !important;
+}
+html[data-layout="3"] .art-card:hover{ box-shadow:var(--card-hover) !important; }
+html[data-layout="3"] .art-card img{
+  border-radius:0 !important;
+  aspect-ratio:4/5 !important;
+  object-fit:cover !important;
+  width:100% !important;
+}
+html[data-layout="3"] .art-info{
+  background:transparent !important;
+  padding:20px 0 0 0 !important;
+}
+html[data-layout="3"] .art-title{
+  color:#111 !important;
+  font-family:'Cormorant Garamond',serif !important;
+  font-size:1.3rem !important;
+  font-weight:400 !important;
+  letter-spacing:0.01em !important;
+}
+html[data-layout="3"] .art-price{ color:#111 !important; font-family:'Inter',sans-serif !important; font-size:0.9rem !important; letter-spacing:0.08em !important; }
+html[data-layout="3"] .art-status.available{ color:#1a5c2e !important; }
+html[data-layout="3"] .art-status.sold{ color:#888 !important; text-decoration:line-through !important; }
+html[data-layout="3"] .art-btn{
+  background:transparent !important;
+  border:1px solid #ccc !important;
+  color:#111 !important;
+  border-radius:0 !important;
+  font-size:0.72rem !important;
+  letter-spacing:0.1em !important;
+  text-transform:uppercase !important;
+}
+html[data-layout="3"] .art-btn:hover{
+  background:#111 !important;
+  color:#fff !important;
+  border-color:#111 !important;
+}
+html[data-layout="3"] .art-btn-order{
+  background:#111 !important;
+  border-color:#111 !important;
+  color:#fff !important;
+}
+html[data-layout="3"] .art-btn-order:hover{ background:#333 !important; }
+html[data-layout="3"] .filter-chip{
+  background:transparent !important;
+  border:1px solid #ccc !important;
+  color:#888 !important;
+  border-radius:0 !important;
+  text-transform:uppercase !important;
+  font-size:0.7rem !important;
+  letter-spacing:0.1em !important;
+}
+html[data-layout="3"] .filter-chip.active{
+  background:#111 !important;
+  border-color:#111 !important;
+  color:#fff !important;
+}
+html[data-layout="3"] .marquee-band{
+  background:#f5f5f5 !important;
+  border-color:#e8e8e8 !important;
+}
+html[data-layout="3"] .marquee-item{ color:#888 !important; }
+html[data-layout="3"] footer{
+  background:#f5f5f5 !important;
+  border-top:1px solid #e8e8e8 !important;
+  color:#888 !important;
+}
+html[data-layout="3"] .modal-box{
+  background:#fff !important;
+  border:1px solid #e8e8e8 !important;
+  border-radius:0 !important;
+  box-shadow:0 20px 80px rgba(0,0,0,0.15) !important;
+}
+html[data-layout="3"] .cart-drawer{
+  background:#fff !important;
+  border-left:1px solid #e8e8e8 !important;
+}
+html[data-layout="3"] .fab-btn{
+  background:#fff !important;
+  border:1px solid #ccc !important;
+  color:#111 !important;
+  border-radius:0 !important;
+  box-shadow:0 4px 20px rgba(0,0,0,0.1) !important;
+}
+html[data-layout="3"] .fab-donate{
+  background:#111 !important;
+  border-color:#111 !important;
+  color:#fff !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 4 — MATRIX
+   ██  Deep navy void. Dense collector grid. Electric-blue tech.
+   ██  Data-driven, cold, architectural. Like a Bloomberg terminal
+   ██  for art collectors.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="4"]{
+  --cream:#070c12;
+  --warm-white:#0a1018;
+  --ink:#c8d8e8;
+  --charcoal:#e4eef8;
+  --muted:#5a7a94;
+  --muted-light:#3e5870;
+  --card-shadow:0 4px 24px rgba(0,20,40,0.8);
+  --card-hover:0 20px 60px rgba(0,20,40,0.95);
+  --glass-alpha:0.04;
+  --radius:4px;
+}
+
+html[data-layout="4"] body{
+  background:#070c12 !important;
+  color:#c8d8e8 !important;
+}
+
+html[data-layout="4"] body::before{
+  background:
+    radial-gradient(60vmax 60vmax at 0% 0%,   rgba(37,99,235,0.18), transparent 70%),
+    radial-gradient(55vmax 55vmax at 100% 100%, rgba(52,211,153,0.12), transparent 70%),
+    radial-gradient(45vmax 45vmax at 50% 50%,  rgba(147,197,253,0.06), transparent 70%) !important;
+  opacity:1 !important;
+  animation:auroraDrift 28s linear infinite alternate !important;
+}
+
+html[data-layout="4"] header{
+  background:rgba(7,12,18,0.85) !important;
+  border-bottom:1px solid rgba(147,197,253,0.12) !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+}
+html[data-layout="4"] .header-brand{
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:700 !important;
+  font-size:1rem !important;
+  letter-spacing:0.15em !important;
+  text-transform:uppercase !important;
+  color:var(--ice) !important;
+}
+html[data-layout="4"] .header-brand span{ color:#5a7a94 !important; font-size:0.7rem !important; font-family:'Space Grotesk',sans-serif !important; letter-spacing:0.1em !important; }
+html[data-layout="4"] .header-nav a{ color:#c8d8e8 !important; font-family:'Space Grotesk',sans-serif !important; font-size:0.72rem !important; letter-spacing:0.1em !important; }
+html[data-layout="4"] .header-brand-dot{ background:var(--ice) !important; box-shadow:0 0 12px rgba(147,197,253,0.5) !important; }
+html[data-layout="4"] .hamburger-btn span{ background:var(--ice) !important; }
+
+html[data-layout="4"] .section-eyebrow{
+  color:var(--ice) !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  letter-spacing:0.2em !important;
+  font-size:0.65rem !important;
+}
+html[data-layout="4"] .gallery-title,
+html[data-layout="4"] .section-title{
+  color:#e4eef8 !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:600 !important;
+  font-size:clamp(1.8rem,5vw,3rem) !important;
+  letter-spacing:-0.02em !important;
+}
+html[data-layout="4"] .hero-title{
+  font-family:'Space Grotesk',sans-serif !important;
+  font-size:clamp(2rem,7vw,5rem) !important;
+  font-weight:700 !important;
+  color:#e4eef8 !important;
+  line-height:1.0 !important;
+  letter-spacing:-0.03em !important;
+}
+html[data-layout="4"] .hero-eyebrow{ color:var(--ice) !important; font-family:'Space Grotesk',sans-serif !important; }
+html[data-layout="4"] .hero-sub{ color:#5a7a94 !important; }
+html[data-layout="4"] .hero-count-num{ color:var(--ice) !important; font-family:'Space Grotesk',sans-serif !important; }
+
+html[data-layout="4"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(185px,1fr)) !important;
+  gap:4px !important;
+}
+html[data-layout="4"] .art-card{
+  background:rgba(147,197,253,0.04) !important;
+  border:1px solid rgba(147,197,253,0.10) !important;
+  border-radius:4px !important;
+  box-shadow:var(--card-shadow) !important;
+  transition:transform 0.3s, box-shadow 0.3s, border-color 0.3s !important;
+}
+html[data-layout="4"] .art-card:hover{
+  transform:scale(1.02) !important;
+  border-color:rgba(147,197,253,0.4) !important;
+  box-shadow:var(--card-hover), 0 0 0 1px rgba(147,197,253,0.2) !important;
+}
+html[data-layout="4"] .art-info{ background:transparent !important; }
+html[data-layout="4"] .art-title{ color:#c8d8e8 !important; font-family:'Space Grotesk',sans-serif !important; font-size:0.78rem !important; font-weight:500 !important; }
+html[data-layout="4"] .art-price{ color:var(--ice) !important; font-family:'Space Grotesk',sans-serif !important; font-size:0.82rem !important; }
+html[data-layout="4"] .art-status.available{ color:var(--emerald) !important; }
+html[data-layout="4"] .art-status.sold{ color:var(--rose) !important; }
+html[data-layout="4"] .art-btn{
+  background:rgba(147,197,253,0.08) !important;
+  border:1px solid rgba(147,197,253,0.2) !important;
+  color:#c8d8e8 !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  font-size:0.7rem !important;
+  letter-spacing:0.08em !important;
+}
+html[data-layout="4"] .art-btn:hover{
+  background:rgba(147,197,253,0.18) !important;
+  border-color:var(--ice) !important;
+  color:var(--ice) !important;
+}
+html[data-layout="4"] .art-btn-order{
+  background:rgba(52,211,153,0.2) !important;
+  border-color:rgba(52,211,153,0.4) !important;
+  color:var(--emerald) !important;
+}
+html[data-layout="4"] .art-btn-cart{
+  background:rgba(147,197,253,0.18) !important;
+  border-color:rgba(147,197,253,0.4) !important;
+  color:var(--ice) !important;
+}
+html[data-layout="4"] .filter-chip{
+  background:rgba(147,197,253,0.06) !important;
+  border-color:rgba(147,197,253,0.15) !important;
+  color:#5a7a94 !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  border-radius:3px !important;
+}
+html[data-layout="4"] .filter-chip.active{
+  background:rgba(147,197,253,0.2) !important;
+  border-color:var(--ice) !important;
+  color:var(--ice) !important;
+}
+html[data-layout="4"] .search-field{
+  background:rgba(147,197,253,0.05) !important;
+  border-color:rgba(147,197,253,0.15) !important;
+  color:#c8d8e8 !important;
+  font-family:'Space Grotesk',sans-serif !important;
+}
+html[data-layout="4"] .search-field::placeholder{ color:#3e5870 !important; }
+html[data-layout="4"] .marquee-band{ background:rgba(147,197,253,0.03) !important; border-color:rgba(147,197,253,0.08) !important; }
+html[data-layout="4"] .marquee-item{ color:#5a7a94 !important; font-family:'Space Grotesk',sans-serif !important; }
+html[data-layout="4"] footer{
+  background:rgba(147,197,253,0.03) !important;
+  border-top:1px solid rgba(147,197,253,0.08) !important;
+  color:#3e5870 !important;
+  font-family:'Space Grotesk',sans-serif !important;
+}
+html[data-layout="4"] .fab-btn{
+  background:rgba(147,197,253,0.1) !important;
+  border:1px solid rgba(147,197,253,0.25) !important;
+  color:#c8d8e8 !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+}
+html[data-layout="4"] .fab-donate{
+  background:rgba(52,211,153,0.2) !important;
+  border-color:rgba(52,211,153,0.4) !important;
+  color:var(--emerald) !important;
+}
+html[data-layout="4"] .modal-box{
+  background:rgba(10,16,24,0.95) !important;
+  border:1px solid rgba(147,197,253,0.12) !important;
+  -webkit-backdrop-filter:blur(32px) !important;
+  backdrop-filter:blur(32px) !important;
+}
+html[data-layout="4"] .modal-box h3,
+html[data-layout="4"] .modal-box h4,
+html[data-layout="4"] .modal-box label{ color:#c8d8e8 !important; }
+html[data-layout="4"] input,
+html[data-layout="4"] textarea,
+html[data-layout="4"] select{
+  background:rgba(147,197,253,0.06) !important;
+  border-color:rgba(147,197,253,0.15) !important;
+  color:#c8d8e8 !important;
+}
+html[data-layout="4"] .cart-drawer{
+  background:rgba(7,12,18,0.97) !important;
+  border-left:1px solid rgba(147,197,253,0.1) !important;
+}
+html[data-layout="4"] .cart-title,
+html[data-layout="4"] .cart-item-title{ color:#c8d8e8 !important; }
+html[data-layout="4"] .cart-item-price,
+html[data-layout="4"] .cart-total-price{ color:var(--ice) !important; }
+html[data-layout="4"] #toast{
+  background:rgba(7,12,18,0.95) !important;
+  border:1px solid rgba(147,197,253,0.15) !important;
+  color:#c8d8e8 !important;
+}
+html[data-layout="4"] .adm-overlay{ background:rgba(4,8,14,0.98) !important; }
+html[data-layout="4"] .adm-nav-item{ color:#5a7a94 !important; }
+html[data-layout="4"] .adm-nav-item.active,
+html[data-layout="4"] .adm-nav-item:hover{ color:var(--ice) !important; background:rgba(147,197,253,0.08) !important; }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 5 — AURORA
+   ██  Nebula dark. Violet + ice + rose chromatic glass.
+   ██  Like viewing art through a telescope pointed at a nebula.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="5"]{
+  --cream:#0d0b16;
+  --warm-white:#100e1a;
+  --ink:#e8e0f8;
+  --charcoal:#f0eaff;
+  --muted:#7060a0;
+  --muted-light:#503a80;
+  --card-shadow:0 8px 40px rgba(10,0,30,0.75);
+  --card-hover:0 50px 120px rgba(10,0,30,0.9);
+  --glass-alpha:0.05;
+  --radius:20px;
+}
+
+html[data-layout="5"] body{
+  background:var(--nebula) !important;
+  color:#e8e0f8 !important;
+}
+
+html[data-layout="5"] body::before{
+  background:
+    radial-gradient(70vmax 70vmax at 10% 10%,  rgba(129,140,248,0.28), transparent 65%),
+    radial-gradient(60vmax 60vmax at 90% 5%,   rgba(251,113,133,0.18), transparent 65%),
+    radial-gradient(65vmax 65vmax at 5%  90%,  rgba(147,197,253,0.22), transparent 65%),
+    radial-gradient(55vmax 55vmax at 95% 90%,  rgba(52,211,153,0.14), transparent 65%),
+    radial-gradient(80vmax 80vmax at 50% 50%,  rgba(129,140,248,0.10), transparent 70%) !important;
+  opacity:1 !important;
+  animation:auroraDrift 18s ease-in-out infinite alternate !important;
+}
+
+html[data-layout="5"] header{
+  background:rgba(13,11,22,0.6) !important;
+  border-bottom:1px solid rgba(129,140,248,0.12) !important;
+  -webkit-backdrop-filter:blur(32px) saturate(1.8) !important;
+  backdrop-filter:blur(32px) saturate(1.8) !important;
+}
+html[data-layout="5"] .header-brand{
+  font-family:'Cormorant Garamond',serif !important;
+  color:#f0eaff !important;
+  letter-spacing:0.1em !important;
+  font-style:italic !important;
+}
+html[data-layout="5"] .header-brand span{ color:var(--electric) !important; }
+html[data-layout="5"] .header-nav a{ color:#e8e0f8 !important; }
+html[data-layout="5"] .header-brand-dot{ background:var(--electric) !important; box-shadow:0 0 16px rgba(129,140,248,0.6) !important; }
+html[data-layout="5"] .hamburger-btn span{ background:#e8e0f8 !important; }
+
+html[data-layout="5"] .section-eyebrow{ color:var(--electric) !important; letter-spacing:0.18em !important; }
+html[data-layout="5"] .gallery-title,
+html[data-layout="5"] .section-title{
+  color:#f0eaff !important;
+  font-family:'Cormorant Garamond',serif !important;
+  font-style:italic !important;
+}
+html[data-layout="5"] .hero-title{
+  font-family:'Cormorant Garamond',serif !important;
+  color:#f0eaff !important;
+  font-style:italic !important;
+  font-size:clamp(2.5rem,8vw,5.5rem) !important;
+}
+html[data-layout="5"] .hero-eyebrow{ color:var(--electric) !important; }
+html[data-layout="5"] .hero-sub{ color:#7060a0 !important; }
+html[data-layout="5"] .hero-count-num{ color:var(--electric) !important; }
+
+html[data-layout="5"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr)) !important;
+  gap:32px !important;
+}
+
+html[data-layout="5"] .art-card{
+  background:rgba(129,140,248,0.06) !important;
+  -webkit-backdrop-filter:blur(40px) saturate(2) brightness(1.06) !important;
+  backdrop-filter:blur(40px) saturate(2) brightness(1.06) !important;
+  border:1px solid rgba(129,140,248,0.15) !important;
+  border-top-color:rgba(255,255,255,0.22) !important;
+  border-radius:20px !important;
+  box-shadow:
+    0 40px 100px rgba(10,0,30,0.75),
+    0 12px 40px rgba(10,0,30,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(129,140,248,0.1) !important;
+  transition:transform 0.55s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.55s !important;
+}
+html[data-layout="5"] .art-card:hover{
+  transform:translateY(-8px) scale(1.015) !important;
+  border-color:rgba(129,140,248,0.35) !important;
+  box-shadow:
+    0 60px 140px rgba(10,0,30,0.88),
+    0 20px 60px rgba(10,0,30,0.65),
+    0 0 0 1px rgba(129,140,248,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.22) !important;
+}
+html[data-layout="5"] .art-info{ background:transparent !important; }
+html[data-layout="5"] .art-title{ color:#f0eaff !important; font-family:'Cormorant Garamond',serif !important; font-style:italic !important; }
+html[data-layout="5"] .art-price{ color:var(--electric) !important; }
+html[data-layout="5"] .art-status.available{ color:var(--emerald) !important; }
+html[data-layout="5"] .art-status.sold{ color:var(--rose) !important; }
+html[data-layout="5"] .art-btn{
+  background:rgba(129,140,248,0.1) !important;
+  border-color:rgba(129,140,248,0.2) !important;
+  color:#c8c0f0 !important;
+}
+html[data-layout="5"] .art-btn:hover{
+  background:rgba(129,140,248,0.22) !important;
+  border-color:var(--electric) !important;
+  color:var(--electric) !important;
+}
+html[data-layout="5"] .art-btn-order{
+  background:rgba(52,211,153,0.18) !important;
+  border-color:rgba(52,211,153,0.38) !important;
+  color:var(--emerald) !important;
+}
+html[data-layout="5"] .art-btn-cart{
+  background:rgba(129,140,248,0.2) !important;
+  border-color:rgba(129,140,248,0.4) !important;
+  color:var(--electric) !important;
+}
+html[data-layout="5"] .art-btn-call{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.15) !important;
+  color:#e8e0f8 !important;
+}
+html[data-layout="5"] .filter-chip{
+  background:rgba(129,140,248,0.08) !important;
+  border-color:rgba(129,140,248,0.18) !important;
+  color:#7060a0 !important;
+  border-radius:20px !important;
+}
+html[data-layout="5"] .filter-chip.active{
+  background:rgba(129,140,248,0.22) !important;
+  border-color:var(--electric) !important;
+  color:var(--electric) !important;
+}
+html[data-layout="5"] .search-field{
+  background:rgba(129,140,248,0.07) !important;
+  border-color:rgba(129,140,248,0.15) !important;
+  color:#e8e0f8 !important;
+}
+html[data-layout="5"] .search-field::placeholder{ color:#503a80 !important; }
+html[data-layout="5"] .marquee-band{ background:rgba(129,140,248,0.04) !important; border-color:rgba(129,140,248,0.08) !important; }
+html[data-layout="5"] .marquee-item{ color:#e8e0f8 !important; }
+html[data-layout="5"] footer{
+  background:rgba(129,140,248,0.03) !important;
+  border-top:1px solid rgba(129,140,248,0.08) !important;
+  color:#503a80 !important;
+}
+html[data-layout="5"] .fab-btn{
+  background:rgba(129,140,248,0.1) !important;
+  border:1px solid rgba(129,140,248,0.22) !important;
+  color:#e8e0f8 !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+}
+html[data-layout="5"] .fab-donate{
+  background:rgba(251,113,133,0.2) !important;
+  border-color:rgba(251,113,133,0.4) !important;
+  color:var(--rose) !important;
+}
+html[data-layout="5"] .modal-box{
+  background:rgba(13,11,22,0.92) !important;
+  border:1px solid rgba(129,140,248,0.15) !important;
+  border-top-color:rgba(255,255,255,0.2) !important;
+  -webkit-backdrop-filter:blur(44px) saturate(1.8) !important;
+  backdrop-filter:blur(44px) saturate(1.8) !important;
+}
+html[data-layout="5"] .modal-box h3,
+html[data-layout="5"] .modal-box h4,
+html[data-layout="5"] .modal-box label{ color:#e8e0f8 !important; }
+html[data-layout="5"] input,
+html[data-layout="5"] textarea,
+html[data-layout="5"] select{
+  background:rgba(129,140,248,0.07) !important;
+  border-color:rgba(129,140,248,0.15) !important;
+  color:#e8e0f8 !important;
+}
+html[data-layout="5"] .cart-drawer{
+  background:rgba(13,11,22,0.96) !important;
+  border-left:1px solid rgba(129,140,248,0.1) !important;
+}
+html[data-layout="5"] .cart-title,
+html[data-layout="5"] .cart-item-title{ color:#e8e0f8 !important; }
+html[data-layout="5"] .cart-item-price,
+html[data-layout="5"] .cart-total-price{ color:var(--electric) !important; }
+html[data-layout="5"] #toast{
+  background:rgba(13,11,22,0.94) !important;
+  border:1px solid rgba(129,140,248,0.15) !important;
+  color:#e8e0f8 !important;
+}
+html[data-layout="5"] .adm-overlay{ background:rgba(8,6,16,0.98) !important; }
+html[data-layout="5"] .adm-nav-item{ color:#7060a0 !important; }
+html[data-layout="5"] .adm-nav-item.active,
+html[data-layout="5"] .adm-nav-item:hover{ color:var(--electric) !important; background:rgba(129,140,248,0.1) !important; }
+html[data-layout="5"] .adm-stat-card,
+html[data-layout="5"] .cc-card{
+  background:rgba(129,140,248,0.05) !important;
+  border-color:rgba(129,140,248,0.12) !important;
+}
+html[data-layout="5"] #splashSkip{
+  background:rgba(129,140,248,0.1) !important;
+  border:1px solid rgba(129,140,248,0.25) !important;
+  color:#e8e0f8 !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 6 — CINEMATIC
+   ██  Near-zero gap film strip. Full-bleed image cards. Near-black.
+   ██  Hover reveals all info. Art fills every pixel. No clutter.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="6"]{
+  --cream:#080808;
+  --warm-white:#0c0c0c;
+  --ink:#f0f0f0;
+  --charcoal:#f8f8f8;
+  --muted:#666;
+  --muted-light:#444;
+  --glass-alpha:0.06;
+  --radius:0px;
+}
+
+html[data-layout="6"] body{
+  background:#080808 !important;
+  color:#f0f0f0 !important;
+}
+
+html[data-layout="6"] body::before{
+  background:none !important;
+  display:none !important;
+}
+
+html[data-layout="6"] header{
+  background:rgba(8,8,8,0.9) !important;
+  border-bottom:1px solid rgba(255,255,255,0.06) !important;
+  -webkit-backdrop-filter:blur(16px) !important;
+  backdrop-filter:blur(16px) !important;
+}
+html[data-layout="6"] .header-brand{
+  font-family:'Cormorant Garamond',serif !important;
+  color:#f8f8f8 !important;
+  letter-spacing:0.2em !important;
+  text-transform:uppercase !important;
+  font-size:1rem !important;
+  font-weight:300 !important;
+}
+html[data-layout="6"] .header-brand-dot{ background:#f0f0f0 !important; box-shadow:none !important; }
+html[data-layout="6"] .header-nav a,
+html[data-layout="6"] .header-brand span{ color:#666 !important; font-size:0.72rem !important; letter-spacing:0.14em !important; }
+html[data-layout="6"] .hamburger-btn span{ background:#f0f0f0 !important; }
+
+html[data-layout="6"] .section-eyebrow{ color:#666 !important; letter-spacing:0.3em !important; }
+html[data-layout="6"] .gallery-title,
+html[data-layout="6"] .section-title{
+  color:#f8f8f8 !important;
+  font-family:'Cormorant Garamond',serif !important;
+  font-weight:300 !important;
+  font-style:italic !important;
+}
+html[data-layout="6"] .hero-title{
+  font-family:'Cormorant Garamond',serif !important;
+  color:#f8f8f8 !important;
+  font-style:italic !important;
+  font-weight:300 !important;
+  font-size:clamp(3rem,9vw,7rem) !important;
+  line-height:0.95 !important;
+}
+html[data-layout="6"] .hero-eyebrow{ color:#666 !important; }
+html[data-layout="6"] .hero-sub{ color:#444 !important; }
+html[data-layout="6"] .hero-count-num{ color:#f0f0f0 !important; }
+
+html[data-layout="6"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr)) !important;
+  gap:3px !important;
+  padding:0 !important;
+}
+@media(max-width:640px){
+  html[data-layout="6"] .gallery-grid{
+    grid-template-columns:repeat(2,1fr) !important;
+    gap:2px !important;
+  }
+}
+
+html[data-layout="6"] .art-card{
+  background:transparent !important;
+  border:none !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  position:relative !important;
+  overflow:hidden !important;
+  aspect-ratio:3/4 !important;
+}
+html[data-layout="6"] .art-img-wrap{
+  position:absolute !important;
+  inset:0 !important;
+  height:100% !important;
+  overflow:hidden !important;
+}
+html[data-layout="6"] .art-img-wrap img,
+html[data-layout="6"] .art-card img{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  border-radius:0 !important;
+  transition:transform 0.6s cubic-bezier(0.2,0.8,0.2,1) !important;
+}
+html[data-layout="6"] .art-card:hover .art-img-wrap img,
+html[data-layout="6"] .art-card:hover img{
+  transform:scale(1.05) !important;
+}
+html[data-layout="6"] .art-info{
+  position:absolute !important;
+  inset:auto 0 0 0 !important;
+  background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%) !important;
+  padding:32px 16px 16px !important;
+  transform:translateY(100%) !important;
+  transition:transform 0.4s cubic-bezier(0.2,0.8,0.2,1) !important;
+  z-index:2 !important;
+}
+html[data-layout="6"] .art-card:hover .art-info{
+  transform:translateY(0) !important;
+}
+html[data-layout="6"] .art-actions{
+  position:absolute !important;
+  top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;
+  opacity:0 !important;
+  transition:opacity 0.3s !important;
+  display:flex !important;
+  align-items:flex-end !important;
+  padding:16px !important;
+  z-index:3 !important;
+}
+html[data-layout="6"] .art-card:hover .art-actions{ opacity:1 !important; }
+html[data-layout="6"] .art-title{ color:#fff !important; font-family:'Cormorant Garamond',serif !important; font-style:italic !important; font-size:1.1rem !important; }
+html[data-layout="6"] .art-price{ color:rgba(255,255,255,0.7) !important; font-size:0.85rem !important; }
+html[data-layout="6"] .art-status.available{ color:rgba(255,255,255,0.5) !important; }
+html[data-layout="6"] .art-btn{
+  background:rgba(255,255,255,0.12) !important;
+  border:1px solid rgba(255,255,255,0.2) !important;
+  color:#fff !important;
+  -webkit-backdrop-filter:blur(10px) !important;
+  backdrop-filter:blur(10px) !important;
+  border-radius:2px !important;
+  font-size:0.7rem !important;
+}
+html[data-layout="6"] .art-btn:hover{ background:rgba(255,255,255,0.22) !important; }
+html[data-layout="6"] .art-btn-order{
+  background:rgba(201,168,76,0.25) !important;
+  border-color:rgba(201,168,76,0.5) !important;
+  color:var(--gold-light) !important;
+}
+html[data-layout="6"] .filter-chip{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.12) !important;
+  color:#666 !important;
+  border-radius:2px !important;
+}
+html[data-layout="6"] .filter-chip.active{
+  background:rgba(255,255,255,0.14) !important;
+  border-color:rgba(255,255,255,0.3) !important;
+  color:#f0f0f0 !important;
+}
+html[data-layout="6"] .search-field{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#f0f0f0 !important;
+}
+html[data-layout="6"] .search-field::placeholder{ color:#444 !important; }
+html[data-layout="6"] .marquee-band{ background:rgba(255,255,255,0.02) !important; border-color:rgba(255,255,255,0.05) !important; }
+html[data-layout="6"] .marquee-item{ color:#666 !important; }
+html[data-layout="6"] footer{
+  background:#0c0c0c !important;
+  border-top:1px solid rgba(255,255,255,0.05) !important;
+  color:#444 !important;
+}
+html[data-layout="6"] .fab-btn{
+  background:rgba(255,255,255,0.08) !important;
+  border:1px solid rgba(255,255,255,0.15) !important;
+  color:#f0f0f0 !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+}
+html[data-layout="6"] .fab-donate{
+  background:rgba(201,168,76,0.22) !important;
+  border-color:rgba(201,168,76,0.4) !important;
+  color:var(--gold-light) !important;
+}
+html[data-layout="6"] .modal-box{
+  background:rgba(12,12,12,0.95) !important;
+  border:1px solid rgba(255,255,255,0.08) !important;
+  -webkit-backdrop-filter:blur(32px) !important;
+  backdrop-filter:blur(32px) !important;
+}
+html[data-layout="6"] .modal-box h3,
+html[data-layout="6"] .modal-box h4,
+html[data-layout="6"] .modal-box label{ color:#f0f0f0 !important; }
+html[data-layout="6"] input,
+html[data-layout="6"] textarea,
+html[data-layout="6"] select{
+  background:rgba(255,255,255,0.06) !important;
+  border-color:rgba(255,255,255,0.1) !important;
+  color:#f0f0f0 !important;
+}
+html[data-layout="6"] .cart-drawer{
+  background:rgba(8,8,8,0.97) !important;
+  border-left:1px solid rgba(255,255,255,0.06) !important;
+}
+html[data-layout="6"] .cart-title,
+html[data-layout="6"] .cart-item-title{ color:#f0f0f0 !important; }
+html[data-layout="6"] .cart-item-price,
+html[data-layout="6"] .cart-total-price{ color:var(--gold-light) !important; }
+html[data-layout="6"] #toast{
+  background:rgba(8,8,8,0.95) !important;
+  border:1px solid rgba(255,255,255,0.08) !important;
+  color:#f0f0f0 !important;
+}
+html[data-layout="6"] .adm-overlay{ background:rgba(4,4,4,0.99) !important; }
+html[data-layout="6"] .adm-nav-item{ color:#666 !important; }
+html[data-layout="6"] .adm-nav-item.active,
+html[data-layout="6"] .adm-nav-item:hover{ color:#f0f0f0 !important; background:rgba(255,255,255,0.06) !important; }
+html[data-layout="6"] #splashSkip{
+  background:rgba(255,255,255,0.08) !important;
+  border:1px solid rgba(255,255,255,0.2) !important;
+  color:#f0f0f0 !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 7 — SPECTRUM
+   ██  Light cool-gray base. Rainbow top-border accent bars per card.
+   ██  Energetic. Design-portfolio meets gallery. Bold type.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="7"]{
+  --cream:#f0f2f5;
+  --warm-white:#f4f6f9;
+  --ink:#1a1c20;
+  --charcoal:#1a1c20;
+  --muted:#6b7280;
+  --muted-light:#9ca3af;
+  --card-shadow:0 4px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --card-hover:0 20px 56px rgba(0,0,0,0.16), 0 6px 16px rgba(0,0,0,0.08);
+  --glass-alpha:1.0;
+  --radius:12px;
+}
+
+html[data-layout="7"] body{
+  background:#f0f2f5 !important;
+  color:#1a1c20 !important;
+}
+
+html[data-layout="7"] body::before{
+  background:
+    radial-gradient(80vmax 60vmax at 100% 0%,   rgba(129,140,248,0.1), transparent 70%),
+    radial-gradient(70vmax 70vmax at 0%   100%,  rgba(52,211,153,0.08), transparent 70%) !important;
+  opacity:1 !important;
+  animation:none !important;
+}
+
+html[data-layout="7"] header{
+  background:rgba(255,255,255,0.9) !important;
+  border-bottom:1px solid rgba(0,0,0,0.08) !important;
+  -webkit-backdrop-filter:blur(20px) !important;
+  backdrop-filter:blur(20px) !important;
+  box-shadow:0 1px 20px rgba(0,0,0,0.05) !important;
+}
+html[data-layout="7"] .header-brand{
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:700 !important;
+  font-size:1.1rem !important;
+  letter-spacing:-0.02em !important;
+  color:#1a1c20 !important;
+}
+html[data-layout="7"] .header-brand span{ color:#6b7280 !important; font-size:0.72rem !important; }
+html[data-layout="7"] .header-nav a{ color:#1a1c20 !important; font-family:'Space Grotesk',sans-serif !important; font-size:0.82rem !important; font-weight:500 !important; }
+html[data-layout="7"] .header-brand-dot{
+  background:linear-gradient(135deg,var(--electric),var(--rose)) !important;
+  box-shadow:none !important;
+}
+html[data-layout="7"] .hamburger-btn span{ background:#1a1c20 !important; }
+
+html[data-layout="7"] .section-eyebrow{
+  color:var(--electric) !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  letter-spacing:0.15em !important;
+  font-weight:600 !important;
+  font-size:0.68rem !important;
+}
+html[data-layout="7"] .gallery-title,
+html[data-layout="7"] .section-title{
+  color:#1a1c20 !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:700 !important;
+  font-size:clamp(2rem,5vw,3.5rem) !important;
+  letter-spacing:-0.03em !important;
+}
+html[data-layout="7"] .hero-title{
+  font-family:'Space Grotesk',sans-serif !important;
+  font-size:clamp(2.5rem,8vw,5.5rem) !important;
+  font-weight:800 !important;
+  color:#1a1c20 !important;
+  line-height:1.0 !important;
+  letter-spacing:-0.04em !important;
+}
+html[data-layout="7"] .hero-eyebrow{ color:var(--electric) !important; font-family:'Space Grotesk',sans-serif !important; font-weight:600 !important; }
+html[data-layout="7"] .hero-sub{ color:#6b7280 !important; }
+html[data-layout="7"] .hero-count-num{ color:var(--electric) !important; font-family:'Space Grotesk',sans-serif !important; font-weight:700 !important; }
+
+html[data-layout="7"] .gallery-grid{
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr)) !important;
+  gap:20px !important;
+}
+
+/* Spectrum cards: rotating rainbow border-top accents */
+html[data-layout="7"] .art-card{
+  background:#ffffff !important;
+  border:1px solid rgba(0,0,0,0.08) !important;
+  border-top:4px solid transparent !important;
+  border-radius:12px !important;
+  box-shadow:var(--card-shadow) !important;
+  transition:transform 0.35s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.35s !important;
+}
+html[data-layout="7"] .art-card:hover{
+  transform:translateY(-6px) !important;
+  box-shadow:var(--card-hover) !important;
+}
+/* Cycle through 5 accent colors using nth-child */
+html[data-layout="7"] .art-card:nth-child(5n+1){ border-top-color:var(--electric) !important; }
+html[data-layout="7"] .art-card:nth-child(5n+2){ border-top-color:var(--rose) !important; }
+html[data-layout="7"] .art-card:nth-child(5n+3){ border-top-color:var(--emerald) !important; }
+html[data-layout="7"] .art-card:nth-child(5n+4){ border-top-color:var(--ice) !important; }
+html[data-layout="7"] .art-card:nth-child(5n+5){ border-top-color:var(--gold) !important; }
+
+html[data-layout="7"] .art-info{ background:transparent !important; }
+html[data-layout="7"] .art-title{
+  color:#1a1c20 !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:600 !important;
+  font-size:0.95rem !important;
+}
+html[data-layout="7"] .art-price{
+  color:var(--electric) !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:700 !important;
+}
+html[data-layout="7"] .art-status.available{ color:var(--emerald) !important; }
+html[data-layout="7"] .art-status.sold{ color:var(--rose) !important; }
+html[data-layout="7"] .art-btn{
+  background:#f4f6f9 !important;
+  border:1px solid rgba(0,0,0,0.12) !important;
+  color:#1a1c20 !important;
+  border-radius:8px !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:500 !important;
+}
+html[data-layout="7"] .art-btn:hover{
+  background:#e8eaef !important;
+  border-color:var(--electric) !important;
+  color:var(--electric) !important;
+}
+html[data-layout="7"] .art-btn-order{
+  background:var(--electric) !important;
+  border-color:var(--electric) !important;
+  color:#fff !important;
+}
+html[data-layout="7"] .art-btn-order:hover{ background:#6d7af0 !important; }
+html[data-layout="7"] .art-btn-cart{
+  background:rgba(52,211,153,0.12) !important;
+  border-color:rgba(52,211,153,0.3) !important;
+  color:var(--emerald) !important;
+}
+html[data-layout="7"] .filter-chip{
+  background:#fff !important;
+  border:1px solid rgba(0,0,0,0.12) !important;
+  color:#6b7280 !important;
+  border-radius:20px !important;
+  font-family:'Space Grotesk',sans-serif !important;
+  font-weight:500 !important;
+}
+html[data-layout="7"] .filter-chip.active{
+  background:var(--electric) !important;
+  border-color:var(--electric) !important;
+  color:#fff !important;
+}
+html[data-layout="7"] .search-field{
+  background:#fff !important;
+  border-color:rgba(0,0,0,0.12) !important;
+  color:#1a1c20 !important;
+  border-radius:10px !important;
+}
+html[data-layout="7"] .marquee-band{
+  background:rgba(129,140,248,0.06) !important;
+  border-color:rgba(129,140,248,0.15) !important;
+}
+html[data-layout="7"] .marquee-item{ color:#1a1c20 !important; }
+html[data-layout="7"] footer{
+  background:#fff !important;
+  border-top:1px solid rgba(0,0,0,0.08) !important;
+  color:#6b7280 !important;
+}
+html[data-layout="7"] .fab-btn{
+  background:#fff !important;
+  border:1px solid rgba(0,0,0,0.12) !important;
+  color:#1a1c20 !important;
+  box-shadow:0 8px 28px rgba(0,0,0,0.12) !important;
+  border-radius:14px !important;
+}
+html[data-layout="7"] .fab-donate{
+  background:var(--electric) !important;
+  border-color:var(--electric) !important;
+  color:#fff !important;
+}
+html[data-layout="7"] .modal-box{
+  background:#fff !important;
+  border:1px solid rgba(0,0,0,0.1) !important;
+  border-radius:16px !important;
+  box-shadow:0 40px 100px rgba(0,0,0,0.15) !important;
+}
+html[data-layout="7"] .cart-drawer{
+  background:#fff !important;
+  border-left:1px solid rgba(0,0,0,0.08) !important;
+}
+html[data-layout="7"] .cart-title{ color:#1a1c20 !important; font-family:'Space Grotesk',sans-serif !important; font-weight:700 !important; }
+html[data-layout="7"] .cart-item-price,
+html[data-layout="7"] .cart-total-price{ color:var(--electric) !important; }
+html[data-layout="7"] #toast{
+  background:#fff !important;
+  border:1px solid rgba(0,0,0,0.1) !important;
+  color:#1a1c20 !important;
+  box-shadow:0 8px 32px rgba(0,0,0,0.12) !important;
+}
+html[data-layout="7"] .adm-overlay{ background:rgba(240,242,245,0.98) !important; }
+html[data-layout="7"] .adm-nav-item{ color:#6b7280 !important; }
+html[data-layout="7"] .adm-nav-item.active,
+html[data-layout="7"] .adm-nav-item:hover{
+  color:var(--electric) !important;
+  background:rgba(129,140,248,0.1) !important;
+}
+html[data-layout="7"] .adm-stat-card,
+html[data-layout="7"] .cc-card{
+  background:#fff !important;
+  border-color:rgba(0,0,0,0.08) !important;
+}
+html[data-layout="7"] .adm-page-title{ color:#1a1c20 !important; font-family:'Space Grotesk',sans-serif !important; font-weight:700 !important; }
+html[data-layout="7"] .cc-input,
+html[data-layout="7"] .adm-input{
+  background:#f4f6f9 !important;
+  border-color:rgba(0,0,0,0.12) !important;
+  color:#1a1c20 !important;
+}
+html[data-layout="7"] #splashSkip{
+  background:#fff !important;
+  border:1px solid rgba(0,0,0,0.15) !important;
+  color:#1a1c20 !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   Shared animation (used by atmospheric body::before orbs)
+   ══════════════════════════════════════════════════════════════════════ */
+@keyframes auroraDrift{
+  0%   { transform:scale(1)    rotate(0deg); }
+  33%  { transform:scale(1.08) rotate(1.5deg); }
+  66%  { transform:scale(0.96) rotate(-1.2deg); }
+  100% { transform:scale(1.04) rotate(0.8deg); }
+}
+
+/* Backward compat: Layout 5 class kept as alias so any old Firestore
+   doc that still has layout:"5" loads the AURORA preset rather than
+   a blank. The old "Gallery Void" feel is now Layout 1 — OBSIDIAN. */

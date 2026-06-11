@@ -223,10 +223,10 @@ function closeZoom() {
    Accepts: full URL, assets/artworks/x.jpg, bare filename x.jpg
    Always returns a usable src string.                            */
 function resolveImage(image) {
-  if (!image) return 'assets/brand/placeholder.jpg';
-  if (typeof image !== 'string') return 'assets/brand/placeholder.jpg';
+  if (!image) return 'assets/brand/cover.jpg';
+  if (typeof image !== 'string') return 'assets/brand/cover.jpg';
   const trimmed = image.trim();
-  if (!trimmed) return 'assets/brand/placeholder.jpg';
+  if (!trimmed) return 'assets/brand/cover.jpg';
   if (trimmed.startsWith('http')) return trimmed;
   if (trimmed.startsWith('assets/')) return trimmed;
   // Legacy bare filename from Firestore — assume it's an artwork
@@ -296,7 +296,7 @@ function renderGallery(filter) {
 
       <div class="art-img-wrap" onclick="openZoom('${imgSrc}','${a.title.replace(/'/g,"\\'")}')">
 
-        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='assets/brand/placeholder.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
+        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='assets/brand/cover.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
 
         <div class="art-img-overlay">
 
@@ -1457,7 +1457,7 @@ async function renderArtworksTable() {
 
         <div style="display:flex;align-items:center;gap:10px;">
 
-          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/placeholder.jpg'">
+          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
 
           <div>
 
@@ -1595,7 +1595,7 @@ async function loadRecoveryPanel() {
 
   el.innerHTML = deleted.map(a => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--adm-border);">
 
-    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/placeholder.jpg'">
+    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
 
     <div style="flex:1;"><div style="font-size:0.82rem;color:var(--adm-text);font-weight:600;">${a.title}</div><div style="font-size:0.7rem;color:var(--adm-muted);">${a.price}</div></div>
 
@@ -1698,7 +1698,7 @@ async function submitAddArtwork() {
 
   if (!title || !price) { showToast('⚠️ Title and price are required'); return; }
 
-  const image    = uploadedImageUrl || (localImage ? localImage : 'images/placeholder.jpg');
+  const image    = uploadedImageUrl || (localImage ? localImage : 'assets/brand/cover.jpg');
 
   const priceNum = parseInt(price) || 0;
 
@@ -1994,7 +1994,7 @@ async function renderLikesTab() {
 
       <div style="position:absolute;top:6px;left:6px;background:var(--adm-gold);color:var(--adm-bg);font-size:0.62rem;font-weight:800;padding:2px 7px;border-radius:50px;">#${i+1}</div>
 
-      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='assets/brand/placeholder.jpg'">
+      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
 
       <div style="padding:8px;">
 
@@ -2036,7 +2036,7 @@ function viewArtworkDetails(artworkId) {
 
         <h3 style="color:var(--charcoal);margin-bottom:12px;font-size:1.3rem;">${artwork.title}</h3>
 
-        <img src="${resolveImage(artwork.image)}" alt="${artwork.title}" style="width:100%;height:300px;object-fit:cover;border-radius:6px;margin-bottom:16px;" onerror="this.src='assets/brand/placeholder.jpg'">
+        <img src="${resolveImage(artwork.image)}" alt="${artwork.title}" style="width:100%;height:300px;object-fit:cover;border-radius:6px;margin-bottom:16px;" onerror="this.src='assets/brand/cover.jpg'">
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
 
