@@ -392,3 +392,70 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 .video-frame iframe{ width:100%; height:100%; border:0; }
 .video-close{ position:absolute; top:max(18px,env(safe-area-inset-top)); right:20px; width:44px; height:44px; border-radius:50%;
   background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+/* ═══════════════════════════════════════════════════════════
+   ARTEN — AI Companion Orb
+   Bright, soft violet orb with cyan pill eyes and glow.
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1. Outer ring wrapper — soft bright border frame */
+.arten-ring{
+  box-shadow: 0 0 0 3px rgba(129,140,248,0.4), 0 0 40px rgba(129,140,248,0.25);
+}
+
+/* 2. Orb body — lighter violet radial gradient */
+#arten-orb{
+  background: radial-gradient(circle at 35% 30%, #9080ff, #5040cc 45%, #1e1066);
+  border: 2px solid rgba(129,140,248,0.45);
+  box-shadow: 0 0 0 4px rgba(129,140,248,0.12), 0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(129,140,248,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* 5. Highlight shimmer spot — top-left white sheen via ::before */
+.arten-face{
+  position: relative;
+}
+.arten-face::before{
+  content:'';
+  position:absolute;
+  top:-2px; left:0px;
+  width:8px; height:8px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,0.5), transparent 70%);
+}
+
+/* 3. Eyes — cyan pill shapes with strong glow (not dot circles) */
+.arten-eye{
+  position:absolute;
+  width:11px; height:5px;
+  border-radius:3px;
+  background:#00e5ff;
+  box-shadow: 0 0 8px #00e5ff, 0 0 20px rgba(0,229,255,0.6), 0 0 4px #fff;
+  top:4px;
+  animation: artenBlink 4s ease-in-out infinite;
+}
+.arten-eye.left{ left:2px; }
+.arten-eye.right{ right:2px; }
+
+/* 4. Mouth — subtle cyan line, not an arc */
+.arten-mouth{
+  position:absolute; bottom:1px; left:50%; transform:translateX(-50%);
+  width:10px; height:2px;
+  background:rgba(0,229,255,0.4);
+  border-radius:2px;
+  border:none;
+}
+
+/* Blink keyframe for eye animation */
+@keyframes artenBlink{
+  0%,90%,100%{ transform:scaleY(1); opacity:1; }
+  93%{ transform:scaleY(0.1); opacity:0.6; }
+}
+
+/* ARTEN label text */
+.arten-label{
+  letter-spacing: 0.2em;
+  color: rgba(200,195,255,0.85);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}

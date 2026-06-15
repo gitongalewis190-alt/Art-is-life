@@ -465,6 +465,11 @@
 
   };
 
+  window.firebaseResetPassword = async function(email) {
+    const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    return sendPasswordResetEmail(window._auth, email);
+  };
+
   window.firebaseAdminLogout = async function() {
 
     await signOut(auth);

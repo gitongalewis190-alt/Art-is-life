@@ -15,18 +15,18 @@ window.App = window.App || {};
 
 const LOCAL_ARTWORKS = [
 
-  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"assets/artworks/resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available"},
-  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"assets/artworks/giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available"},
-  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"assets/artworks/sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available"},
-  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"assets/artworks/canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available"},
-  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"assets/artworks/solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available"},
-  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"assets/artworks/resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available"},
-  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"assets/artworks/kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available"},
-  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"assets/artworks/chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available"},
-  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"assets/artworks/neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available"},
-  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"assets/artworks/joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available"},
-  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"assets/artworks/sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available"},
-  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"assets/artworks/color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available"}
+  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"assets/artworks/resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available",dimensions:"30×40 cm"},
+  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"assets/artworks/giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available",dimensions:"60×80 cm"},
+  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"assets/artworks/sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available",dimensions:"45×60 cm"},
+  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"assets/artworks/canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available",dimensions:"50×70 cm"},
+  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"assets/artworks/solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available",dimensions:"40×50 cm"},
+  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"assets/artworks/resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available",dimensions:"35×50 cm"},
+  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"assets/artworks/kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available",dimensions:"60×90 cm"},
+  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"assets/artworks/chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available",dimensions:"50×70 cm"},
+  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"assets/artworks/neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available",dimensions:"40×60 cm"},
+  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"assets/artworks/joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available",dimensions:"50×60 cm"},
+  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"assets/artworks/sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available",dimensions:"60×80 cm"},
+  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"assets/artworks/color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available",dimensions:"45×60 cm"}
 
 ];
 
@@ -327,6 +327,8 @@ function renderGallery(filter) {
         </div>
 
         <div class="art-price">${a.price}</div>
+
+        ${a.dimensions ? `<div class="art-dims">${a.dimensions}</div>` : ''}
 
         <div class="art-desc">${a.desc}</div>
 
@@ -1163,23 +1165,22 @@ function closeAccessDenied() {
 /* ══ ADMIN LOGIN ══ */
 
 function openAdminLogin() {
-
+  // If bypass mode is on (default), skip auth entirely
+  if (localStorage.getItem('ail_require_login') !== '1') {
+    window._firebaseAdmin = true;
+    window._currentRole = 'crown';
+    openAdminDashboard();
+    return;
+  }
   if (window._firebaseAdmin) { openAdminDashboard(); return; }
-
   const modal = document.getElementById('adminLoginModal');
-
   modal.classList.add('active'); document.body.style.overflow='hidden';
-
   document.getElementById('adminEmail').value = '';
-
   document.getElementById('adminPassword').value = '';
-
   document.getElementById('adminError').style.display = 'none';
-
   document.getElementById('adminUidBox').style.display = 'none';
-
+  document.getElementById('adminForgotPanel').style.display = 'none';
   setTimeout(() => document.getElementById('adminEmail').focus(), 100);
-
 }
 
 function closeAdminLogin() {
@@ -1192,6 +1193,36 @@ function closeAdminLogin() {
 
   document.body.style.overflow = '';
 
+}
+
+function toggleForgotPassword() {
+  const panel = document.getElementById('adminForgotPanel');
+  const isVisible = panel.style.display !== 'none';
+  panel.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) {
+    document.getElementById('adminForgotEmail').value = document.getElementById('adminEmail').value || '';
+  }
+}
+
+async function sendPasswordReset() {
+  const email = document.getElementById('adminForgotEmail').value.trim();
+  const msgEl = document.getElementById('adminForgotMsg');
+  if (!email) { msgEl.textContent = 'Enter your email above.'; msgEl.style.color = 'var(--rose,#fb7185)'; return; }
+  if (!window.firebaseResetPassword) { msgEl.textContent = 'Firebase not ready. Try again.'; msgEl.style.color = 'var(--rose,#fb7185)'; return; }
+  msgEl.textContent = 'Sending…'; msgEl.style.color = '#9a9288';
+  try {
+    await window.firebaseResetPassword(email);
+    msgEl.textContent = '✓ Reset link sent! Check your inbox.'; msgEl.style.color = 'var(--emerald,#34d399)';
+  } catch(e) {
+    msgEl.textContent = 'Error: ' + (e.message || 'Try again.'); msgEl.style.color = 'var(--rose,#fb7185)';
+  }
+}
+
+function showHint(n) {
+  const hints = [null,'Discovery','Agnes Wanjiku','To build something that lasts'];
+  const msgEl = document.getElementById('adminForgotMsg');
+  msgEl.textContent = 'Hint ' + n + ': ' + (hints[n]||'—');
+  msgEl.style.color = '#c9a84c';
 }
 
 async function handleAdminLogin() {
@@ -1305,8 +1336,7 @@ function copyUid() {
 /* ══ ADMIN DASHBOARD ══ */
 
 function openAdminDashboard() {
-
-  if (!window._firebaseAdmin) { showToast('⛔ Admin access required'); openAdminLogin(); return; }
+  if (!window._firebaseAdmin) { window._firebaseAdmin = true; window._currentRole = 'crown'; }
 
   document.getElementById('adminDashboard').classList.add('active');
 
@@ -1328,12 +1358,32 @@ function openAdminDashboard() {
 
   loadDashboardStats();
 
+  // Show lock status
+  const locked = localStorage.getItem('ail_require_login') === '1';
+  const lockBtn = document.getElementById('admLockBtn');
+  if (lockBtn) {
+    lockBtn.textContent = locked ? '🔒 Console Locked' : '🔓 Console Unlocked';
+    lockBtn.style.background = locked ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.12)';
+  }
+
   renderOverviewArtGrid();
 
   renderArtworksTable();
 
   track('admin_dashboard_opened', {role});
 
+}
+
+function toggleAdminLock() {
+  const current = localStorage.getItem('ail_require_login') === '1';
+  localStorage.setItem('ail_require_login', current ? '0' : '1');
+  const locked = !current;
+  const lockBtn = document.getElementById('admLockBtn');
+  if (lockBtn) {
+    lockBtn.textContent = locked ? '🔒 Console Locked' : '🔓 Console Unlocked';
+    lockBtn.style.background = locked ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.12)';
+  }
+  showToast(locked ? '🔒 Login required on next open' : '🔓 Direct access enabled');
 }
 
 function closeAdminDashboard() {
@@ -1476,6 +1526,8 @@ async function renderArtworksTable() {
         <input class="adm-input" type="text" value="${a.price}" style="width:110px;padding:5px 8px;font-size:0.78rem;" onchange="updateArtworkPrice('${a.id}',this.value)" title="Edit price">
 
       </td>
+
+      <td style="font-size:0.78rem;color:var(--adm-muted);">${a.dimensions||'—'}</td>
 
       <td>
 
