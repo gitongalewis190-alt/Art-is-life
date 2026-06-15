@@ -635,6 +635,15 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   .arten-panel{ width:calc(100vw - 24px); }
 }
 
+/* ─── Arten panel language button ─── */
+.arten-lang-btn{
+  background:none; border:none; cursor:pointer;
+  font-size:1rem; opacity:0.6; padding:2px 4px;
+  border-radius:6px; line-height:1; flex-shrink:0;
+  transition:opacity 0.15s, background 0.15s;
+}
+.arten-lang-btn:hover{ opacity:1; background:rgba(255,255,255,0.08); }
+
 /* ─── Console: Arten voice/option selectors ─── */
 .cc-voice-grid{
   display:grid; grid-template-columns:1fr 1fr;

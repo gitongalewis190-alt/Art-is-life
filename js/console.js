@@ -386,6 +386,29 @@
               }).join('') +
             '</div>' +
 
+            '<label class="cc-label" style="margin-top:10px">Recognition Language</label>' +
+            '<select class="cc-input" id="cc-arten-lang" style="margin-top:4px">' +
+            (function(){
+              var current = '';
+              try { current = localStorage.getItem('ail_arten_lang') || 'en-US'; } catch(e){}
+              var langs = [
+                ['en-US','English'],['sw-KE','Kiswahili'],['fr-FR','Français'],['es-ES','Español'],
+                ['ar-SA','العربية'],['pt-PT','Português'],['de-DE','Deutsch'],['zh-CN','中文'],
+                ['hi-IN','हिन्दी'],['ja-JP','日本語'],['ko-KR','한국어'],['it-IT','Italiano'],
+                ['ru-RU','Русский'],['nl-NL','Nederlands'],['pl-PL','Polski'],['tr-TR','Türkçe'],
+                ['vi-VN','Tiếng Việt'],['id-ID','Bahasa Indonesia'],['th-TH','ภาษาไทย'],
+                ['da-DK','Dansk'],['sv-SE','Svenska'],['fi-FI','Suomi'],['no-NO','Norsk'],
+                ['he-IL','עברית'],['el-GR','Ελληνικά'],['uk-UA','Українська'],['cs-CZ','Čeština'],
+                ['hu-HU','Magyar'],['am-ET','አማርኛ'],['yo-NG','Yorùbá'],['zu-ZA','isiZulu'],
+                ['af-ZA','Afrikaans'],['ta-IN','தமிழ்'],['bn-BD','বাংলা'],['ur-PK','اردو'],['fa-IR','فارسی']
+              ];
+              return langs.map(function(l){
+                return '<option value="'+l[0]+'"'+(current===l[0]?' selected':'')+'>'+l[1]+' ('+l[0]+')</option>';
+              }).join('');
+            })() +
+            '</select>' +
+            '<p class="cc-hint">Arten auto-detects language from typed text. Set this to match your voice input language.</p>' +
+
             '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
               '<button class="cc-btn" id="cc-arten-save" style="flex:2;background:linear-gradient(135deg,#5040cc,#818cf8)">Apply &amp; Save Arten Settings</button>' +
               '<button class="cc-btn" id="cc-arten-test" style="flex:1;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.3);color:#00e5ff">Test Voice</button>' +
@@ -464,7 +487,7 @@
     box.className = "cc-keystatus " + (live.trim() ? "ok" : "warn");
     box.textContent = live.trim()
       ? "✓ Endpoint set — donations will trigger a live STK push."
-      : "⚠ No endpoint yet — Donate button shows a friendly "coming soon". Deploy the Cloud Function, then paste its URL here.";
+      : "⚠ No endpoint yet — Donate button shows a friendly 'coming soon'. Deploy the Cloud Function, then paste its URL here.";
   }
 
   function wire() {
@@ -512,7 +535,8 @@
         position:    rval('arten_pos')         || 'left',
         personality: rval('arten_personality') || 'warm',
         elKey:       g2('cc-arten-el-key').trim(),
-        elVoice:     g2('cc-arten-el-voice').trim()
+        elVoice:     g2('cc-arten-el-voice').trim(),
+        lang:        g2('cc-arten-lang')       || 'en-US'
       };
       try {
         localStorage.setItem('ail_arten_voice',       settings.voice);
@@ -522,6 +546,7 @@
         localStorage.setItem('ail_arten_personality', settings.personality);
         if (settings.elKey)   localStorage.setItem('ail_arten_el_key',   settings.elKey);
         if (settings.elVoice) localStorage.setItem('ail_arten_el_voice', settings.elVoice);
+        if (settings.lang)    localStorage.setItem('ail_arten_lang',     settings.lang);
       } catch(e){}
       if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings(settings);
       var st = document.getElementById('cc-arten-status');
