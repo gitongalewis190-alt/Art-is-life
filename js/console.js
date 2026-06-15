@@ -211,7 +211,7 @@
       '<canvas class="cc-neural-canvas" id="cc_neural"></canvas>' +
 
       '<div class="adm-page-header"><div class="adm-page-title">Control Console</div>' +
-      '<div class="adm-page-sub">Live theme, layout & content — published to every visitor instantly</div></div>' +
+      '<div class="adm-page-sub">Every change previews on this page in real time <span class="cc-live-badge">● LIVE</span></div></div>' +
 
       '<div class="cc-grid">' +
 
@@ -409,11 +409,12 @@
             '</select>' +
             '<p class="cc-hint">Arten auto-detects language from typed text. Set this to match your voice input language.</p>' +
 
-            '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
-              '<button class="cc-btn" id="cc-arten-save" style="flex:2;background:linear-gradient(135deg,#5040cc,#818cf8)">Apply &amp; Save Arten Settings</button>' +
+            '<p class="cc-hint" style="margin-top:6px;color:rgba(52,211,153,0.9)">⚡ Orb colour, eye colour, position, personality &amp; language preview live — save locks in voice &amp; ElevenLabs credentials.</p>' +
+            '<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">' +
+              '<button class="cc-btn" id="cc-arten-save" style="flex:2;background:linear-gradient(135deg,#5040cc,#818cf8)">💾 Save All Arten Settings</button>' +
               '<button class="cc-btn" id="cc-arten-test" style="flex:1;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.3);color:#00e5ff">Test Voice</button>' +
             '</div>' +
-            '<div id="cc-arten-status" style="font-size:.73rem;margin-top:8px;min-height:18px;color:var(--muted)"></div>' +
+            '<div id="cc-arten-status" style="font-size:.73rem;margin-top:8px;min-height:18px;color:var(--muted);transition:color .3s,opacity .3s"></div>' +
           '</section>';
         })() +
 
@@ -437,7 +438,7 @@
       '</div>' +
 
       '<div class="cc-actions">' +
-        '<button class="cc-btn cc-publish" id="cc_publish">Publish to all visitors</button>' +
+        '<button class="cc-btn cc-publish" id="cc_publish">🚀 Publish to all visitors</button>' +
         '<button class="cc-btn cc-reset" id="cc_reset">Revert preview</button>' +
         '<span class="cc-status" id="cc_status"></span>' +
       '</div>' +
@@ -510,10 +511,14 @@
     // Arten panel wiring
     document.querySelectorAll('input[name="arten_voice"]').forEach(function(r){
       r.addEventListener("change", function(){
-        document.querySelectorAll('.cc-voice-opt').forEach(function(l){ l.classList.remove('sel'); });
+        /* Only deselect siblings inside the voice grid — not position/personality opts */
+        var vg = document.querySelector('.cc-voice-grid');
+        (vg || document).querySelectorAll('.cc-voice-opt').forEach(function(l){ l.classList.remove('sel'); });
         r.parentElement.classList.add('sel');
         var elWrap = document.getElementById('cc-arten-el-wrap');
         if (elWrap) elWrap.style.display = r.value === 'elevenlabs' ? '' : 'none';
+        /* Live-apply voice so the next Arten utterance uses the new profile */
+        if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings({ voice: r.value });
       });
     });
     document.querySelectorAll('input[name="arten_pos"], input[name="arten_personality"]').forEach(function(r){
@@ -550,13 +555,49 @@
       } catch(e){}
       if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings(settings);
       var st = document.getElementById('cc-arten-status');
-      if (st){ st.textContent = '✓ Arten settings applied.'; st.style.color='#34d399'; }
+      if (st){
+        st.textContent = '✓ Saved to this device.'; st.style.color='#34d399'; st.style.opacity='1';
+        setTimeout(function(){ if(st){ st.style.opacity='0'; setTimeout(function(){ if(st) st.textContent=''; st && (st.style.opacity='1'); },300); } },3000);
+      }
       if (window.showToast) window.showToast('Arten updated ✨');
     });
     var artenTest = document.getElementById('cc-arten-test');
     if (artenTest) artenTest.addEventListener('click', function(){
       if (typeof window.ArtenSendText === 'function') window.ArtenSendText('introduce yourself');
       else if (window.showToast) window.showToast('Arten not loaded yet — refresh and try again.');
+    });
+
+    /* ── Real-time live preview: ALL content / config text inputs debounced 300ms ── */
+    var _dp = (function(fn,ms){ var t; return function(){ clearTimeout(t); t=setTimeout(fn,ms); }; })(preview, 300);
+    ['cc_name','cc_footer','cc_footerSub','cc_wa','cc_email','cc_ig','cc_addr',
+     'cc_remark','cc_remarkBy','cc-logo-url','cc_dbiz','cc_dep','cc_ga_id',
+     'cc_cld_name','cc_cld_preset'].forEach(function(id){
+      var n = document.getElementById(id); if (n) n.addEventListener('input', _dp);
+    });
+
+    /* ── Arten: live-apply appearance instantly — no save button required ── */
+    var _orbPick = document.getElementById('cc-arten-orb');
+    if (_orbPick) _orbPick.addEventListener('input', function(){
+      if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings({ orbColor: _orbPick.value });
+    });
+    var _eyePick = document.getElementById('cc-arten-eye');
+    if (_eyePick) _eyePick.addEventListener('input', function(){
+      if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings({ eyeColor: _eyePick.value });
+    });
+    document.querySelectorAll('input[name="arten_pos"]').forEach(function(r){
+      r.addEventListener('change', function(){
+        if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings({ position: r.value });
+      });
+    });
+    document.querySelectorAll('input[name="arten_personality"]').forEach(function(r){
+      r.addEventListener('change', function(){
+        if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings({ personality: r.value });
+      });
+    });
+    var _langSel = document.getElementById('cc-arten-lang');
+    if (_langSel) _langSel.addEventListener('change', function(){
+      if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings({ lang: _langSel.value });
+      try { localStorage.setItem('ail_arten_lang', _langSel.value); } catch(e){}
     });
 
     document.getElementById("cc_reset").addEventListener("click", function () {
