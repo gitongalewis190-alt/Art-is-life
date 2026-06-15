@@ -142,8 +142,22 @@ body::before{
 
 .splash-stage{ position:relative; text-align:center; z-index:2; padding:24px; }
 
-/* Phase 1 — the mark draws itself in */
-.splash-mark{ opacity:0; transform:scale(.7); animation:markIn 1s cubic-bezier(.2,.8,.2,1) .15s forwards; }
+/* Pebble bounce → logo morph */
+.splash-pebble-wrap{
+  display:flex; align-items:center; justify-content:center;
+  width:100px; height:100px; margin-bottom:24px;
+}
+.splash-pebble{
+  width:22px; height:22px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #e8d48b, #c9a84c 55%, #9a7a2e);
+  box-shadow:0 8px 32px rgba(201,168,76,0.55), 0 2px 8px rgba(201,168,76,0.3);
+  transform:scale(0.04);
+  transform-origin:center bottom;
+}
+
+/* Phase 1 — the mark (JS-driven now; ring/dot still animate via CSS once visible) */
+.splash-mark{ transform:scale(1); }
 .splash-ring{
   stroke-dasharray:290; stroke-dashoffset:290;
   animation:ringDraw 1.3s ease-out .35s forwards;
@@ -153,18 +167,17 @@ body::before{
 @keyframes ringDraw{ to{ stroke-dashoffset:0; } }
 @keyframes dotPulse{ 0%{opacity:0;transform-origin:center;} 60%{opacity:1;} 100%{opacity:1;} }
 
-/* Phase 2 — brand typography reveal */
+/* Phase 2 — brand typography (JS-driven opacity/transform) */
 .splash-brand{
   margin-top:26px; display:flex; flex-direction:column; gap:4px;
-  opacity:0; transform:translateY(14px); animation:brandIn .9s ease 1.5s forwards;
 }
 .splash-line1{
   font-size:clamp(1.8rem,7vw,2.8rem); font-weight:300; letter-spacing:.32em;
   color:#faf8f3; padding-left:.32em;
 }
 .splash-line2{
-  font-size:clamp(.7rem,2.6vw,.95rem); font-weight:600; letter-spacing:.5em;
-  color:var(--gold-light); padding-left:.5em;
+  font-size:clamp(.7rem,2.6vw,.95rem); font-weight:400; letter-spacing:.15em;
+  color:var(--gold-light); padding-left:.15em;
 }
 @keyframes brandIn{ to{ opacity:1; transform:translateY(0); } }
 
@@ -392,3 +405,232 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 .video-frame iframe{ width:100%; height:100%; border:0; }
 .video-close{ position:absolute; top:max(18px,env(safe-area-inset-top)); right:20px; width:44px; height:44px; border-radius:50%;
   background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+/* ═══════════════════════════════════════════════════════════
+   ARTEN — AI Companion Orb
+   Bright, soft violet orb with cyan pill eyes and glow.
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1. Outer ring wrapper — soft bright border frame */
+.arten-ring{
+  box-shadow: 0 0 0 3px rgba(129,140,248,0.4), 0 0 40px rgba(129,140,248,0.25);
+}
+
+/* 2. Orb body — lighter violet radial gradient */
+#arten-orb{
+  background: radial-gradient(circle at 35% 30%, #9080ff, #5040cc 45%, #1e1066);
+  border: 2px solid rgba(129,140,248,0.45);
+  box-shadow: 0 0 0 4px rgba(129,140,248,0.12), 0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(129,140,248,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* 5. Highlight shimmer spot — top-left white sheen via ::before */
+.arten-face{
+  position: relative;
+}
+.arten-face::before{
+  content:'';
+  position:absolute;
+  top:-2px; left:0px;
+  width:8px; height:8px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,0.5), transparent 70%);
+}
+
+/* 3. Eyes — cyan pill shapes with strong glow (not dot circles) */
+.arten-eye{
+  position:absolute;
+  width:11px; height:5px;
+  border-radius:3px;
+  background:#00e5ff;
+  box-shadow: 0 0 8px #00e5ff, 0 0 20px rgba(0,229,255,0.6), 0 0 4px #fff;
+  top:4px;
+  animation: artenBlink 4s ease-in-out infinite;
+}
+.arten-eye.left{ left:2px; }
+.arten-eye.right{ right:2px; }
+
+/* 4. Mouth — subtle cyan line, not an arc */
+.arten-mouth{
+  position:absolute; bottom:1px; left:50%; transform:translateX(-50%);
+  width:10px; height:2px;
+  background:rgba(0,229,255,0.4);
+  border-radius:2px;
+  border:none;
+}
+
+/* Blink keyframe for eye animation */
+@keyframes artenBlink{
+  0%,90%,100%{ transform:scaleY(1); opacity:1; }
+  93%{ transform:scaleY(0.1); opacity:0.6; }
+}
+
+/* ARTEN label text */
+.arten-label{
+  letter-spacing: 0.2em;
+  color: rgba(200,195,255,0.85);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ══════ ARTEN AI ASSISTANT — WIDGET & PANEL ══════ */
+#arten-widget{
+  position:fixed;
+  bottom:24px; left:24px;
+  z-index:9000;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:8px;
+  pointer-events:none;
+}
+#arten-orb{
+  width:52px; height:52px;
+  border-radius:50%;
+  cursor:pointer;
+  pointer-events:all;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform 0.3s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.3s;
+  position:relative;
+  animation:artenFloat 3s ease-in-out infinite;
+}
+#arten-orb:hover{
+  transform:scale(1.12);
+}
+@keyframes artenFloat{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-5px);}
+}
+.arten-glow{
+  position:absolute; inset:-6px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(129,140,248,0.15), transparent 70%);
+  animation:artenGlowPulse 2s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes artenGlowPulse{0%,100%{opacity:0.6;}50%{opacity:1;}}
+
+/* Waveform */
+.arten-wave-wrap{
+  display:flex; align-items:center; gap:2px;
+  height:20px; padding:0 4px;
+  pointer-events:none;
+  opacity:0; transition:opacity 0.2s;
+}
+.arten-wave-wrap.active{ opacity:1; }
+.arten-wave-bar{
+  width:3px; border-radius:2px;
+  background:linear-gradient(to top, rgba(129,140,248,0.8), rgba(201,168,76,0.9));
+  height:4px;
+  animation:artenWave 0.8s ease-in-out infinite;
+}
+.arten-wave-bar:nth-child(1){ animation-delay:0s; }
+.arten-wave-bar:nth-child(2){ animation-delay:0.1s; }
+.arten-wave-bar:nth-child(3){ animation-delay:0.2s; }
+.arten-wave-bar:nth-child(4){ animation-delay:0.1s; }
+.arten-wave-bar:nth-child(5){ animation-delay:0s; }
+@keyframes artenWave{
+  0%,100%{height:4px;}
+  50%{height:18px;}
+}
+.arten-wave-wrap.active .arten-wave-bar:nth-child(1){ animation-duration:0.6s; }
+.arten-wave-wrap.active .arten-wave-bar:nth-child(2){ animation-duration:0.8s; }
+.arten-wave-wrap.active .arten-wave-bar:nth-child(3){ animation-duration:0.5s; }
+.arten-wave-wrap.active .arten-wave-bar:nth-child(4){ animation-duration:0.9s; }
+.arten-wave-wrap.active .arten-wave-bar:nth-child(5){ animation-duration:0.7s; }
+
+/* Panel */
+.arten-panel{
+  width:300px; max-height:0; overflow:hidden;
+  opacity:0; pointer-events:none;
+  background:rgba(12,10,18,0.88);
+  -webkit-backdrop-filter:blur(32px) saturate(1.8);
+  backdrop-filter:blur(32px) saturate(1.8);
+  border:1px solid rgba(255,255,255,0.1);
+  border-top-color:rgba(255,255,255,0.2);
+  border-radius:16px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12);
+  transition:max-height 0.4s cubic-bezier(0.2,0.8,0.2,1), opacity 0.3s ease;
+  position:absolute;
+  bottom:64px; left:0;
+}
+.arten-panel.open{
+  max-height:420px;
+  opacity:1;
+  pointer-events:all;
+}
+.arten-panel-head{
+  display:flex; align-items:center; gap:8px;
+  padding:12px 14px 10px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.arten-name{ color:#f0eaff; font-weight:600; font-size:0.9rem; flex:1; letter-spacing:0.05em; }
+.arten-status{ font-size:0.68rem; color:#7060a0; }
+.arten-close{
+  background:none; border:none; color:#7060a0; cursor:pointer;
+  font-size:1.2rem; line-height:1; padding:0 4px;
+}
+.arten-transcript{
+  height:220px; overflow-y:auto; padding:12px 14px;
+  display:flex; flex-direction:column; gap:8px;
+  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent;
+}
+.arten-bubble{
+  max-width:88%; padding:8px 12px; border-radius:12px;
+  font-size:0.82rem; line-height:1.45; word-wrap:break-word;
+}
+.arten-bubble-ai{
+  background:rgba(129,140,248,0.15);
+  border:1px solid rgba(129,140,248,0.2);
+  color:#e8e0f8;
+  border-radius:12px 12px 12px 3px;
+  align-self:flex-start;
+}
+.arten-bubble-user{
+  background:rgba(201,168,76,0.12);
+  border:1px solid rgba(201,168,76,0.2);
+  color:#f0ece3;
+  border-radius:12px 12px 3px 12px;
+  align-self:flex-end;
+}
+.arten-input-row{
+  display:flex; align-items:center; gap:8px;
+  padding:10px 12px;
+  border-top:1px solid rgba(255,255,255,0.07);
+}
+.arten-mic-btn{
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  background:rgba(201,168,76,0.12);
+  border:1px solid rgba(201,168,76,0.25);
+  color:#c9a84c; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s;
+}
+.arten-mic-btn.active{
+  background:rgba(251,113,133,0.2);
+  border-color:rgba(251,113,133,0.4);
+  color:#fb7185;
+  animation:micPulse 0.8s ease-in-out infinite;
+}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,113,133,0.4);}50%{box-shadow:0 0 0 8px rgba(251,113,133,0);}}
+.arten-text-input{
+  flex:1; background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px; padding:8px 14px;
+  color:#e8e0f8; font-size:0.82rem; outline:none;
+  font-family:'Inter',sans-serif;
+}
+.arten-text-input::placeholder{ color:#503a80; }
+.arten-send-btn{
+  width:32px; height:32px; border-radius:50%; flex-shrink:0;
+  background:rgba(129,140,248,0.2);
+  border:1px solid rgba(129,140,248,0.3);
+  color:#818cf8; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* Mobile */
+@media(max-width:430px){
+  #arten-widget{ bottom:80px; left:12px; }
+  .arten-panel{ width:calc(100vw - 24px); }
+}
