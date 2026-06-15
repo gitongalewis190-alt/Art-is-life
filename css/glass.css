@@ -475,23 +475,31 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 
 /* ══════ ARTEN AI ASSISTANT — WIDGET & PANEL ══════ */
 #arten-widget{
-  position:fixed;
-  bottom:24px; left:24px;
-  z-index:9000;
-  display:flex;
+  position:fixed !important;
+  bottom:24px !important; left:24px !important;
+  z-index:99000 !important;
+  display:flex !important;
   flex-direction:column;
   align-items:flex-start;
   gap:8px;
   pointer-events:none;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+#arten-widget[data-pos="right"]{
+  left:auto !important;
+  right:24px !important;
 }
 #arten-orb{
-  width:52px; height:52px;
-  border-radius:50%;
-  cursor:pointer;
-  pointer-events:all;
-  display:flex; align-items:center; justify-content:center;
+  width:56px !important; height:56px !important;
+  border-radius:50% !important;
+  cursor:pointer !important;
+  pointer-events:all !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
   transition:transform 0.3s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.3s;
-  position:relative;
+  position:relative !important;
+  visibility:visible !important;
+  opacity:1 !important;
   animation:artenFloat 3s ease-in-out infinite;
 }
 #arten-orb:hover{

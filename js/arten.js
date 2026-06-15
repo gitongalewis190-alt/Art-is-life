@@ -6,16 +6,24 @@
 (function () {
   'use strict';
 
+  /* ─── Safe localStorage wrapper — never crashes the IIFE ─── */
+  function _ls(key, fallback) {
+    try { var v = localStorage.getItem(key); return v !== null ? v : fallback; } catch(e) { return fallback; }
+  }
+  function _lsSet(key, val) {
+    try { localStorage.setItem(key, val); } catch(e) {}
+  }
+
   /* ─── Defaults (overridden by Control Console / localStorage) ─── */
   var CFG = {
-    voice:       localStorage.getItem('ail_arten_voice')       || 'aria',
-    orbColor:    localStorage.getItem('ail_arten_orb')         || '#5040cc',
-    eyeColor:    localStorage.getItem('ail_arten_eye')         || '#00e5ff',
-    pos:         localStorage.getItem('ail_arten_pos')         || 'left',
-    personality: localStorage.getItem('ail_arten_personality') || 'warm',
-    elKey:       localStorage.getItem('ail_arten_el_key')      || '',
-    elVoiceId:   localStorage.getItem('ail_arten_el_voice')    || 'EXAVITQu4vr4xnSDxMaL',
-    lang:        localStorage.getItem('ail_arten_lang')        || 'en-US'
+    voice:       _ls('ail_arten_voice',       'aria'),
+    orbColor:    _ls('ail_arten_orb',         '#5040cc'),
+    eyeColor:    _ls('ail_arten_eye',         '#00e5ff'),
+    pos:         _ls('ail_arten_pos',         'left'),
+    personality: _ls('ail_arten_personality', 'warm'),
+    elKey:       _ls('ail_arten_el_key',      ''),
+    elVoiceId:   _ls('ail_arten_el_voice',    'EXAVITQu4vr4xnSDxMaL'),
+    lang:        _ls('ail_arten_lang',        'en-US')
   };
 
   /* ─── Language list (recognition codes) ─── */
@@ -288,18 +296,18 @@
   }
 
   window.ArtenApplySettings = function(settings) {
-    if (settings.voice)       { CFG.voice       = settings.voice;       localStorage.setItem('ail_arten_voice', settings.voice); }
-    if (settings.orbColor)    { CFG.orbColor     = settings.orbColor;    localStorage.setItem('ail_arten_orb',   settings.orbColor); }
-    if (settings.eyeColor)    { CFG.eyeColor     = settings.eyeColor;    localStorage.setItem('ail_arten_eye',   settings.eyeColor); }
+    if (settings.voice)       { CFG.voice       = settings.voice;       _lsSet('ail_arten_voice', settings.voice); }
+    if (settings.orbColor)    { CFG.orbColor     = settings.orbColor;    _lsSet('ail_arten_orb',   settings.orbColor); }
+    if (settings.eyeColor)    { CFG.eyeColor     = settings.eyeColor;    _lsSet('ail_arten_eye',   settings.eyeColor); }
     /* Accept both "pos" and "position" (console sends "position") */
     var p = settings.pos || settings.position;
-    if (p)                    { CFG.pos          = p;                    localStorage.setItem('ail_arten_pos',   p); }
-    if (settings.personality) { CFG.personality  = settings.personality; localStorage.setItem('ail_arten_personality', settings.personality); }
-    if (settings.elKey)       { CFG.elKey        = settings.elKey;       localStorage.setItem('ail_arten_el_key',  settings.elKey); }
+    if (p)                    { CFG.pos          = p;                    _lsSet('ail_arten_pos',   p); }
+    if (settings.personality) { CFG.personality  = settings.personality; _lsSet('ail_arten_personality', settings.personality); }
+    if (settings.elKey)       { CFG.elKey        = settings.elKey;       _lsSet('ail_arten_el_key',  settings.elKey); }
     /* Accept both "elVoiceId" and "elVoice" (console sends "elVoice") */
     var ev = settings.elVoiceId || settings.elVoice;
-    if (ev)                   { CFG.elVoiceId    = ev;                   localStorage.setItem('ail_arten_el_voice', ev); }
-    if (settings.lang)        { CFG.lang         = settings.lang;        localStorage.setItem('ail_arten_lang',    settings.lang);
+    if (ev)                   { CFG.elVoiceId    = ev;                   _lsSet('ail_arten_el_voice', ev); }
+    if (settings.lang)        { CFG.lang         = settings.lang;        _lsSet('ail_arten_lang',    settings.lang);
                                 if (recognition) recognition.lang = settings.lang;
                                 updateLangIndicator(); }
     applyAppearance();
@@ -337,7 +345,7 @@
     var detected = detectLang(text);
     if (detected && detected !== CFG.lang) {
       CFG.lang = detected;
-      localStorage.setItem('ail_arten_lang', detected);
+      _lsSet('ail_arten_lang', detected);
       if (recognition) recognition.lang = detected;
       updateLangIndicator();
     }
@@ -586,7 +594,7 @@
         var spokenLang = detectLang(t);
         if (spokenLang && spokenLang !== CFG.lang) {
           CFG.lang = spokenLang;
-          localStorage.setItem('ail_arten_lang', spokenLang);
+          _lsSet('ail_arten_lang', spokenLang);
           updateLangIndicator();
         }
         if (/admin mode/i.test(t) && window._firebaseAdmin) { isAdmin=true; speak('Admin mode on. I now have your dashboard context.'); return; }
@@ -617,7 +625,7 @@
     var idx = common.indexOf(CFG.lang);
     var next = common[(idx + 1) % common.length];
     CFG.lang = next;
-    localStorage.setItem('ail_arten_lang', next);
+    _lsSet('ail_arten_lang', next);
     /* Recognition stays at '' (universal) — we only change the response language */
     updateLangIndicator();
     var entry = LANG_LIST.find(function(l){ return l.code === next; });
@@ -749,8 +757,22 @@
     matchIntent(t);
   };
 
-  /* ═══ INIT ═══ */
-  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',buildUI);
-  else buildUI();
+  /* ═══ INIT — bulletproof mount with retry ═══ */
+  function safeInit() {
+    try {
+      buildUI();
+    } catch(e) {
+      /* If buildUI throws for any reason, retry once after 1.5s */
+      setTimeout(function(){
+        try { buildUI(); } catch(_){}
+      }, 1500);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', safeInit);
+  } else {
+    safeInit();
+  }
 
 })();
