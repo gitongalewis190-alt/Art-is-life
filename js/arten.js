@@ -502,15 +502,25 @@
     if (!synth) { setInputLocked(false); return; }
     synth.cancel();
 
+    var lc = langCode();
     var profile = VOICES[CFG.voice] || VOICES.aria;
     var utt = new SpeechSynthesisUtterance(text);
-    utt.lang   = profile.lang;
-    utt.rate   = profile.rate;
-    utt.pitch  = profile.pitch;
+    /* Use the detected language for synthesis; fall back to the English profile */
+    utt.lang   = lc !== 'en' ? (CFG.lang || 'en-US') : profile.lang;
+    utt.rate   = lc !== 'en' ? 0.90 : profile.rate;
+    utt.pitch  = lc !== 'en' ? 1.00 : profile.pitch;
     utt.volume = 0.95;
 
     function pickVoice() {
       var voices = synth.getVoices();
+      /* Non-English: find a native voice for the detected language first */
+      if (lc !== 'en') {
+        var native = voices.find(function(v){ return v.lang === CFG.lang; })
+                  || voices.find(function(v){ return v.lang.toLowerCase().startsWith(lc); });
+        if (native) { utt.voice = native; return; }
+        /* No native voice on this device — English voice will pronounce it best-effort */
+      }
+      /* English profiles (Aria / James / Zara) */
       var v = voices.find(function(v){ return profile.names.test(v.name); })
            || voices.find(function(v){ return v.lang === profile.lang && (profile.gender==='female' ? /female|woman/i.test(v.name) : !/female|woman/i.test(v.name)); })
            || voices.find(function(v){ return v.lang.startsWith('en'); });
@@ -559,7 +569,9 @@
     recognition = new SR();
     recognition.continuous     = false;
     recognition.interimResults = true;
-    recognition.lang           = CFG.lang || 'en-US';
+    /* Empty lang = browser uses system language / most permissive multilingual mode.
+       Language is auto-detected from each transcript result instead. */
+    recognition.lang           = '';
     recognition.onstart  = function(){ setStatus('Listening…'); setWave(true);  isListening=true;  setInputLocked(true);  document.getElementById('artenMicBtn').classList.add('active'); };
     recognition.onend    = function(){ setStatus('Ready');     setWave(false); isListening=false; setInputLocked(false); document.getElementById('artenMicBtn').classList.remove('active'); };
     recognition.onerror  = function(){ setStatus('Ready');     setWave(false); isListening=false; setInputLocked(false); };
@@ -570,6 +582,13 @@
       if (e.results[e.results.length-1].isFinal) {
         addBubble(t, 'user');
         document.getElementById('artenTextInput').value = '';
+        /* Auto-detect language from what was spoken, then respond in same language */
+        var spokenLang = detectLang(t);
+        if (spokenLang && spokenLang !== CFG.lang) {
+          CFG.lang = spokenLang;
+          localStorage.setItem('ail_arten_lang', spokenLang);
+          updateLangIndicator();
+        }
         if (/admin mode/i.test(t) && window._firebaseAdmin) { isAdmin=true; speak('Admin mode on. I now have your dashboard context.'); return; }
         matchIntent(t);
       }
@@ -599,10 +618,11 @@
     var next = common[(idx + 1) % common.length];
     CFG.lang = next;
     localStorage.setItem('ail_arten_lang', next);
-    if (recognition) recognition.lang = next;
+    /* Recognition stays at '' (universal) — we only change the response language */
     updateLangIndicator();
     var entry = LANG_LIST.find(function(l){ return l.code === next; });
-    speak('Language set to ' + (entry ? entry.native : next) + '.');
+    var name = entry ? entry.native : next;
+    speak('Language set to ' + name + '.');
   };
 
   /* ═══ UI HELPERS ═══ */
@@ -673,7 +693,7 @@
     }
     if (!recognition) { speak('Speech recognition isn\'t available in this browser. Please type below.'); return; }
     if (isListening) { recognition.stop(); return; }
-    recognition.lang = CFG.lang || 'en-US';
+    recognition.lang = ''; /* universal — detect from audio */
     try { recognition.start(); } catch(e){ setStatus('Ready'); }
   };
 
