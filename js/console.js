@@ -318,6 +318,13 @@
           })() +
         '</section>' +
 
+        // LOGO & BRANDING
+        '<section class="cc-card"><h4>🖼 Logo &amp; Branding</h4>' +
+          '<label class="cc-label">Splash Logo URL (leave blank for default SVG)</label>' +
+          '<input class="cc-input" id="cc-logo-url" placeholder="https://… or paste Cloudinary URL" value="' + esc((cfg.logoUrl) || '') + '">' +
+          '<p style="font-size:0.72rem;color:#6b7280;margin-top:6px;">Upload an image via Cloudinary above, copy its URL, paste here. The splash screen will show your chosen logo.</p>' +
+        '</section>' +
+
         // PWA & APP
         '<section class="cc-card"><h4>📱 PWA &amp; App</h4>' +
           (function(){
@@ -374,7 +381,8 @@
         uploadPreset: g("cc_cld_preset").trim()
       },
       daraja:    { businessName: g("cc_dbiz"), endpoint: g("cc_dep").trim() },
-      gaId:      g("cc_ga_id").trim() || "G-MPX5MMNRB2"
+      gaId:      g("cc_ga_id").trim() || "G-MPX5MMNRB2",
+      logoUrl:   (document.getElementById("cc-logo-url") ? document.getElementById("cc-logo-url").value.trim() : "")
     };
   }
 

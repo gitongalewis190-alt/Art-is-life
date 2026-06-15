@@ -56,8 +56,12 @@
 <div id="splash" class="splash" aria-hidden="true">
   <div class="splash-aurora"></div>
   <div class="splash-stage">
-    <div class="splash-mark" id="splashMark">
-      <svg viewBox="0 0 120 120" width="96" height="96" aria-hidden="true">
+    <div class="splash-pebble-wrap" id="splashPebbleWrap">
+      <div class="splash-pebble" id="splashPebble"></div>
+    </div>
+    <div class="splash-mark" id="splashMark" style="opacity:0">
+      <img id="splashLogoImg" src="" alt="" style="display:none;width:88px;height:88px;border-radius:50%;object-fit:cover;">
+      <svg id="splashLogoSvg" viewBox="0 0 120 120" width="88" height="88" aria-hidden="true">
         <circle class="splash-ring" cx="60" cy="60" r="46" fill="none" stroke="url(#sg)" stroke-width="2.5"/>
         <circle class="splash-dot" cx="60" cy="60" r="9" fill="url(#sg)"/>
         <defs>
@@ -68,9 +72,9 @@
         </defs>
       </svg>
     </div>
-    <div class="splash-brand" id="splashBrand">
-      <span class="splash-line1">ART IS LIFE</span>
-      <span class="splash-line2">FOUNDATION</span>
+    <div class="splash-brand" id="splashBrand" style="opacity:0">
+      <span class="splash-line1">ART IS LIFE FOUNDATION</span>
+      <span class="splash-line2">Building value, trust and an ecosystem.</span>
     </div>
     <div class="splash-remark" id="splashRemark"></div>
   </div>
@@ -1471,6 +1475,9 @@ Donate with M-Pesa
 
 <!-- M-PESA / DARAJA (module) -->
 <script type="module" src="js/services/daraja.js"></script>
+
+<!-- ARTEN AI ASSISTANT -->
+<script src="js/arten.js"></script>
 
 </body>
 </html>

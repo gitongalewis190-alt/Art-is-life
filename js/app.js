@@ -1696,10 +1696,11 @@ function handleImageUpload(input) {
       showToast('📷 Image uploaded! Publishing to gallery…');
 
       // Auto-publish: immediately create Firestore doc with current form values
-      const title  = (document.getElementById('newTitle')?.value || '').trim();
-      const price  = (document.getElementById('newPrice')?.value || '').trim();
-      const desc   = (document.getElementById('newDesc')?.value  || '').trim();
-      const status = document.getElementById('newStatus')?.value || 'available';
+      const title      = (document.getElementById('newTitle')?.value || '').trim();
+      const price      = (document.getElementById('newPrice')?.value || '').trim();
+      const desc       = (document.getElementById('newDesc')?.value  || '').trim();
+      const status     = document.getElementById('newStatus')?.value || 'available';
+      const dimensions = (document.getElementById('newDimensions')?.value || '').trim();
 
       if (title && price && window.adminAddArtwork) {
 
@@ -1711,7 +1712,8 @@ function handleImageUpload(input) {
           priceNum,
           image: url,
           desc: desc || 'A new original piece.',
-          status
+          status,
+          dimensions
         };
 
         window.adminAddArtwork(artData).then(ref => {
@@ -1748,19 +1750,21 @@ async function submitAddArtwork() {
 
   const status     = document.getElementById('newStatus').value || 'available';
 
+  const dimensions = (document.getElementById('newDimensions')?.value || '').trim();
+
   if (!title || !price) { showToast('⚠️ Title and price are required'); return; }
 
   const image    = uploadedImageUrl || (localImage ? localImage : 'assets/brand/cover.jpg');
 
   const priceNum = parseInt(price) || 0;
 
-  const newArt   = { id: 'local_' + Date.now(), title, price:`${price} KES`, priceNum, image, desc: desc || 'A new original piece.', status };
+  const newArt   = { id: 'local_' + Date.now(), title, price:`${price} KES`, priceNum, image, desc: desc || 'A new original piece.', status, dimensions };
 
   artworks.push(newArt);
 
   if (window.adminAddArtwork) {
 
-    const ref = await window.adminAddArtwork({ title, price:`${price} KES`, priceNum, image, desc: newArt.desc, status });
+    const ref = await window.adminAddArtwork({ title, price:`${price} KES`, priceNum, image, desc: newArt.desc, status, dimensions });
 
     if (ref) newArt.id = ref.id;
 
@@ -1780,7 +1784,7 @@ async function submitAddArtwork() {
 
 function clearAddForm() {
 
-  ['newTitle','newPrice','newDesc','newImage'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['newTitle','newPrice','newDesc','newImage','newDimensions'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
 
   document.getElementById('uploadedUrl').textContent = '';
 

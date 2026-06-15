@@ -41,7 +41,8 @@ const DEFAULTS = {
   },
   daraja:     { endpoint: "", businessName: "Art is Life Foundation" },
   cloudinary: { cloudName: "", uploadPreset: "" },
-  gaId:       "G-MPX5MMNRB2"
+  gaId:       "G-MPX5MMNRB2",
+  logoUrl:    ""
 };
 
 const SiteConfig = {
@@ -92,6 +93,8 @@ const SiteConfig = {
     window.SITE_CONFIG.daraja      = cfg.daraja     || {};
     window.SITE_CONFIG.cloudinary  = cfg.cloudinary || {};
     window.SITE_CONFIG.gaId        = cfg.gaId       || "G-MPX5MMNRB2";
+    window.SITE_CONFIG.logoUrl     = cfg.logoUrl    || '';
+    window.dispatchEvent(new CustomEvent('arten_logo_update', { detail: cfg.logoUrl }));
 
     // If GA Measurement ID changed, re-configure gtag silently
     if (cfg.gaId && cfg.gaId !== "G-MPX5MMNRB2" && typeof window.gtag === "function") {
