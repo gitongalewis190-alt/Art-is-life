@@ -325,6 +325,75 @@
           '<p style="font-size:0.72rem;color:#6b7280;margin-top:6px;">Upload an image via Cloudinary above, copy its URL, paste here. The splash screen will show your chosen logo.</p>' +
         '</section>' +
 
+        // ARTEN AI
+        (function(){
+          var a = {};
+          try { a.voice       = localStorage.getItem('ail_arten_voice')       || 'aria'; } catch(e){}
+          try { a.orbColor    = localStorage.getItem('ail_arten_orb')         || '#5040cc'; } catch(e){}
+          try { a.eyeColor    = localStorage.getItem('ail_arten_eye')         || '#00e5ff'; } catch(e){}
+          try { a.position    = localStorage.getItem('ail_arten_pos')         || 'left'; } catch(e){}
+          try { a.personality = localStorage.getItem('ail_arten_personality') || 'warm'; } catch(e){}
+          try { a.elKey       = localStorage.getItem('ail_arten_el_key')      || ''; } catch(e){}
+          try { a.elVoice     = localStorage.getItem('ail_arten_el_voice')    || ''; } catch(e){}
+          return '<section class="cc-card" id="cc-arten-card"><h4>🤖 Arten AI Assistant</h4>' +
+            '<p class="cc-hint">All settings are device-local. No ElevenLabs key is needed for the built-in voices.</p>' +
+
+            '<label class="cc-label">Voice</label>' +
+            '<div class="cc-voice-grid">' +
+              ['aria','james','zara','elevenlabs'].map(function(v){
+                var labels = {aria:'Aria — British Female',james:'James — American Male',zara:'Zara — Australian Female',elevenlabs:'ElevenLabs Premium'};
+                return '<label class="cc-voice-opt' + (a.voice===v?' sel':'') + '">' +
+                  '<input type="radio" name="arten_voice" value="'+v+'"' + (a.voice===v?' checked':'') + '>' +
+                  labels[v] + '</label>';
+              }).join('') +
+            '</div>' +
+
+            '<div id="cc-arten-el-wrap" style="margin-top:10px;' + (a.voice==='elevenlabs'?'':'display:none') + '">' +
+              '<label class="cc-label">ElevenLabs API Key <span style="font-size:.68rem;color:#9ca3af">(stored on this device only)</span></label>' +
+              '<input class="cc-input" id="cc-arten-el-key" type="password" placeholder="sk_…" value="' + esc(a.elKey) + '">' +
+              '<label class="cc-label" style="margin-top:6px">ElevenLabs Voice ID</label>' +
+              '<input class="cc-input" id="cc-arten-el-voice" type="text" placeholder="21m00Tcm4TlvDq8ikWAM" value="' + esc(a.elVoice) + '">' +
+              '<p class="cc-hint">Find Voice IDs at elevenlabs.io/voice-library. Key never leaves your device.</p>' +
+            '</div>' +
+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">' +
+              '<div>' +
+                '<div class="cc-color"><span>Orb colour</span>' +
+                  '<input type="color" id="cc-arten-orb" value="' + esc(a.orbColor) + '"></div>' +
+              '</div>' +
+              '<div>' +
+                '<div class="cc-color"><span>Eye colour</span>' +
+                  '<input type="color" id="cc-arten-eye" value="' + esc(a.eyeColor) + '"></div>' +
+              '</div>' +
+            '</div>' +
+
+            '<label class="cc-label" style="margin-top:10px">Position</label>' +
+            '<div style="display:flex;gap:8px">' +
+              ['left','right'].map(function(p){
+                return '<label class="cc-voice-opt' + (a.position===p?' sel':'') + '" style="flex:1;text-align:center">' +
+                  '<input type="radio" name="arten_pos" value="'+p+'"' + (a.position===p?' checked':'') + '>' +
+                  (p==='left'?'Bottom-left':'Bottom-right') + '</label>';
+              }).join('') +
+            '</div>' +
+
+            '<label class="cc-label" style="margin-top:10px">Personality</label>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+              ['warm','formal','poetic'].map(function(p){
+                var labels={warm:'Warm & Friendly',formal:'Formal & Precise',poetic:'Poetic & Creative'};
+                return '<label class="cc-voice-opt' + (a.personality===p?' sel':'') + '" style="flex:1;text-align:center">' +
+                  '<input type="radio" name="arten_personality" value="'+p+'"' + (a.personality===p?' checked':'') + '>' +
+                  labels[p] + '</label>';
+              }).join('') +
+            '</div>' +
+
+            '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
+              '<button class="cc-btn" id="cc-arten-save" style="flex:2;background:linear-gradient(135deg,#5040cc,#818cf8)">Apply &amp; Save Arten Settings</button>' +
+              '<button class="cc-btn" id="cc-arten-test" style="flex:1;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.3);color:#00e5ff">Test Voice</button>' +
+            '</div>' +
+            '<div id="cc-arten-status" style="font-size:.73rem;margin-top:8px;min-height:18px;color:var(--muted)"></div>' +
+          '</section>';
+        })() +
+
         // PWA & APP
         '<section class="cc-card"><h4>📱 PWA &amp; App</h4>' +
           (function(){
@@ -414,6 +483,56 @@
     });
     var dep = document.getElementById("cc_dep");
     if (dep) dep.addEventListener("input", updateKeyStatus);
+
+    // Arten panel wiring
+    document.querySelectorAll('input[name="arten_voice"]').forEach(function(r){
+      r.addEventListener("change", function(){
+        document.querySelectorAll('.cc-voice-opt').forEach(function(l){ l.classList.remove('sel'); });
+        r.parentElement.classList.add('sel');
+        var elWrap = document.getElementById('cc-arten-el-wrap');
+        if (elWrap) elWrap.style.display = r.value === 'elevenlabs' ? '' : 'none';
+      });
+    });
+    document.querySelectorAll('input[name="arten_pos"], input[name="arten_personality"]').forEach(function(r){
+      r.addEventListener("change", function(){
+        r.closest('.cc-voice-opt') && (
+          r.closest('[style]').querySelectorAll('.cc-voice-opt').forEach(function(l){ l.classList.remove('sel'); }),
+          r.parentElement.classList.add('sel')
+        );
+      });
+    });
+    var artenSave = document.getElementById('cc-arten-save');
+    if (artenSave) artenSave.addEventListener('click', function(){
+      var g2 = function(id){ var n=document.getElementById(id); return n?n.value:''; };
+      var rval = function(name){ var r=document.querySelector('input[name="'+name+'"]:checked'); return r?r.value:''; };
+      var settings = {
+        voice:       rval('arten_voice')       || 'aria',
+        orbColor:    g2('cc-arten-orb')        || '#5040cc',
+        eyeColor:    g2('cc-arten-eye')        || '#00e5ff',
+        position:    rval('arten_pos')         || 'left',
+        personality: rval('arten_personality') || 'warm',
+        elKey:       g2('cc-arten-el-key').trim(),
+        elVoice:     g2('cc-arten-el-voice').trim()
+      };
+      try {
+        localStorage.setItem('ail_arten_voice',       settings.voice);
+        localStorage.setItem('ail_arten_orb',         settings.orbColor);
+        localStorage.setItem('ail_arten_eye',         settings.eyeColor);
+        localStorage.setItem('ail_arten_pos',         settings.position);
+        localStorage.setItem('ail_arten_personality', settings.personality);
+        if (settings.elKey)   localStorage.setItem('ail_arten_el_key',   settings.elKey);
+        if (settings.elVoice) localStorage.setItem('ail_arten_el_voice', settings.elVoice);
+      } catch(e){}
+      if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings(settings);
+      var st = document.getElementById('cc-arten-status');
+      if (st){ st.textContent = '✓ Arten settings applied.'; st.style.color='#34d399'; }
+      if (window.showToast) window.showToast('Arten updated ✨');
+    });
+    var artenTest = document.getElementById('cc-arten-test');
+    if (artenTest) artenTest.addEventListener('click', function(){
+      if (typeof window.ArtenSendText === 'function') window.ArtenSendText('introduce yourself');
+      else if (window.showToast) window.showToast('Arten not loaded yet — refresh and try again.');
+    });
 
     document.getElementById("cc_reset").addEventListener("click", function () {
       window.dispatchEvent(new Event("siteconfig_revert"));
