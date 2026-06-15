@@ -192,6 +192,36 @@ function closeHamburger() {
 function toggleNav() { document.getElementById('headerNav').classList.toggle('open'); }
 
 function scrollToGallery() { document.getElementById('gallery-section').scrollIntoView({behavior:'smooth'}); }
+function scrollToSection(id) { const el = document.getElementById(id); if (el) el.scrollIntoView({behavior:'smooth'}); }
+
+/* ─── Services stats counter animation ─── */
+(function() {
+  function animateCounters() {
+    document.querySelectorAll('.svc-stat-num[data-target]').forEach(function(el) {
+      const target = parseInt(el.getAttribute('data-target'), 10);
+      const suffix = el.getAttribute('data-suffix') || (target > 9 ? '+' : '');
+      let current = 0;
+      const step = Math.ceil(target / 40);
+      const timer = setInterval(function() {
+        current = Math.min(current + step, target);
+        el.textContent = current + suffix;
+        if (current >= target) clearInterval(timer);
+      }, 35);
+    });
+  }
+  /* Trigger when services section scrolls into view */
+  function watchServices() {
+    const section = document.getElementById('services-section');
+    if (!section) return;
+    var done = false;
+    var obs = new IntersectionObserver(function(entries) {
+      if (entries[0].isIntersecting && !done) { done = true; animateCounters(); obs.disconnect(); }
+    }, { threshold: 0.15 });
+    obs.observe(section);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchServices);
+  else watchServices();
+})();
 
 /* ══ IMAGE ZOOM (all images) ══ */
 
@@ -1437,7 +1467,7 @@ async function loadDashboardStats() {
 
   document.getElementById('stat-likes').textContent     = stats.totalLikes || 0;
 
-  document.getElementById('stat-earned').textContent   = stats.earned > 0 ? `${stats.earned.toLocaleString()} KES` : '0 KES';
+  document.getElementById('stat-earned').textContent   = stats.revenue > 0 ? `${stats.revenue.toLocaleString()} KES` : '0 KES';
 
   document.getElementById('stat-revenue').textContent   = stats.revenue > 0 ? `${stats.revenue.toLocaleString()} KES` : '—';
 
@@ -2232,7 +2262,7 @@ document.addEventListener('keydown', e => {
 
     closeZoom();
 
-    closeImageModal && closeImageModal();
+    // closeImageModal removed — closeZoom() handles this
 
     closeStory();
 
@@ -2260,9 +2290,9 @@ document.addEventListener('keydown', e => {
 
 document.addEventListener('click', e => {
 
-  const nav = document.getElementById('headerNav'), tog = document.getElementById('navToggle');
+  const nav = document.getElementById('headerNav');
 
-  if (nav.classList.contains('open') && !nav.contains(e.target) && !tog.contains(e.target)) nav.classList.remove('open');
+  if (nav && nav.classList.contains('open') && !nav.contains(e.target)) nav.classList.remove('open');
 
   const ham = document.getElementById('hamburgerMenu'), btn = document.getElementById('hamburgerBtn');
 
