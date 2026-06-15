@@ -13,7 +13,7 @@
    ───────────────────────────────────────────────────────────────────────
    TO GO LIVE (no code changes needed here — just configuration):
      window.SITE_CONFIG.daraja = {
-       endpoint: 'https://<your-backend>/stkpush',  // your secure endpoint
+       endpoint: 'https://art-is-life-iota.vercel.app/api/mpesa',
        businessName: 'Art is Life Foundation'
      };
    Backend responsibilities (server-side, holds the secrets):
