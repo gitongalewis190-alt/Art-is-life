@@ -634,3 +634,25 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   #arten-widget{ bottom:80px; left:12px; }
   .arten-panel{ width:calc(100vw - 24px); }
 }
+
+/* ─── Console: Arten voice/option selectors ─── */
+.cc-voice-grid{
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:8px; margin-top:6px;
+}
+.cc-voice-opt{
+  display:flex; align-items:center; gap:7px;
+  padding:9px 12px; border-radius:10px; cursor:pointer;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  font-size:0.78rem; color:var(--muted,#9ca3af);
+  transition:background 0.15s, border-color 0.15s, color 0.15s;
+  user-select:none;
+}
+.cc-voice-opt input[type="radio"]{ display:none; }
+.cc-voice-opt:hover{ background:rgba(129,140,248,0.1); border-color:rgba(129,140,248,0.25); color:inherit; }
+.cc-voice-opt.sel{
+  background:rgba(129,140,248,0.15);
+  border-color:rgba(129,140,248,0.5);
+  color:#818cf8; font-weight:600;
+}
