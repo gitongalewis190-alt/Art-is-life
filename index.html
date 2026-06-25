@@ -934,7 +934,7 @@ Admin Access
 
   <p class="admin-subtitle">Enter the console password to continue.</p>
 
-  <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="adminPassword" placeholder="Console password" autocomplete="off" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
+  <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="adminPassword" placeholder="Console password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
 
   <div class="admin-error" id="adminError"></div>
 
@@ -954,6 +954,10 @@ Admin Access
       <button class="forgot-hint-btn" onclick="showHint(3)">Long-term goal</button>
     </div>
     <div id="adminForgotMsg" class="forgot-msg"></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
+      <button type="button" onclick="resetAdminLock()" style="background:none;border:none;color:var(--adm-red,#e05252);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Still can't get in? Reset the console lock</button>
+      <p style="font-size:0.7rem;color:var(--adm-muted,#999);margin-top:4px;">This removes the password on this device only — you'll set a fresh one right after. Anyone with this device could use this, the same way the console is wide open until a password is ever set.</p>
+    </div>
   </div>
 
   <button class="btn-admin-login" id="adminLoginBtn" onclick="handleAdminLogin()">
@@ -1192,8 +1196,8 @@ LEES.MOBILE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
     <button id="admSetPwBtn" onclick="toggleSetPasswordPanel()" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(201,168,76,0.12);color:#e0e0e0;font-size:0.75rem;cursor:pointer;font-family:'Inter',sans-serif;">🔑 Set Password</button>
   </div>
   <div id="admSetPwPanel" style="display:none;margin-top:10px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);max-width:320px;">
-    <div class="adm-form-group"><label class="adm-form-label">New password</label><input class="adm-input" type="password" id="admNewPw" placeholder="At least 6 characters" autocomplete="new-password"></div>
-    <div class="adm-form-group"><label class="adm-form-label">Confirm password</label><input class="adm-input" type="password" id="admNewPw2" placeholder="Repeat password" autocomplete="new-password"></div>
+    <div class="adm-form-group"><label class="adm-form-label">New password</label><input class="adm-input" type="password" id="admNewPw" placeholder="At least 6 characters" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    <div class="adm-form-group"><label class="adm-form-label">Confirm password</label><input class="adm-input" type="password" id="admNewPw2" placeholder="Repeat password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
     <button class="adm-btn-sm primary" onclick="saveAdminPassword()">Save &amp; Lock Console</button>
     <div id="admSetPwMsg" style="font-size:0.75rem;margin-top:8px;"></div>
   </div>

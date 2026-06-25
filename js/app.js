@@ -1248,6 +1248,18 @@ function showHint(n) {
   msgEl.style.color = '#c9a84c';
 }
 
+function resetAdminLock() {
+  if (!confirm('Remove the console password on this device? You will be let in immediately and can set a fresh password from the Control Console.')) return;
+  localStorage.removeItem('ail_admin_pw_salt');
+  localStorage.removeItem('ail_admin_pw_hash');
+  localStorage.removeItem('ail_require_login');
+  closeAdminLogin();
+  window._firebaseAdmin = true;
+  window._currentRole = 'crown';
+  if (typeof showToast === 'function') showToast('🔓 Console lock cleared — set a new password from Control Console.');
+  openAdminDashboard();
+}
+
 /* ══ ADMIN LOGIN ══ */
 
 function openAdminLogin() {
