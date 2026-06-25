@@ -113,9 +113,14 @@ async function handleStkPush(req, res) {
 
   /* Guard: credentials not yet configured */
   if (!KEY || !SECRET || !PASSKEY) {
+    const missing = [
+      !KEY     && "DARAJA_CONSUMER_KEY",
+      !SECRET  && "DARAJA_CONSUMER_SECRET",
+      !PASSKEY && "DARAJA_PASSKEY"
+    ].filter(Boolean);
     return res.status(503).json({
-      error: "M-Pesa credentials not yet configured on the server. " +
-             "Add DARAJA_* environment variables in your Vercel dashboard and redeploy."
+      error: `M-Pesa credentials not yet configured on the server. Missing: ${missing.join(", ")}. ` +
+             "Add these in Vercel → Project → Settings → Environment Variables, then redeploy."
     });
   }
 

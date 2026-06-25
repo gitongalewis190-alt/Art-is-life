@@ -29,8 +29,8 @@ const DEFAULTS = {
   },
   layout: "1",
   content: {
-    foundationName: "Art Is Life Foundation",
-    footerText:     "© 2026 ART IS LIFE FOUNDATION — Lewis Gitonga. All rights reserved.",
+    foundationName: "LEES.mobile",
+    footerText:     "© 2026 LEES.MOBILE — Lewis Gitonga. All rights reserved.",
     footerSub:      "Each artwork is an original, one-time creation. Nairobi, Kenya.",
     whatsapp:       "254704708178",
     email:          "",

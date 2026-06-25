@@ -52,8 +52,6 @@ let currentSearch             = '';
 
 let uploadedImageUrl          = '';
 
-let _lastUid                  = '';
-
 let currentCommentTarget      = null; // { id, title }
 
 let _commentUnsubscribe       = null;
@@ -1192,60 +1190,55 @@ function closeAccessDenied() {
 
 }
 
-/* ══ ADMIN LOGIN ══ */
+/* ══ ADMIN PASSWORD — local SHA-256, salted + 3000x iterated (no Firebase) ══ */
 
-function openAdminLogin() {
-  // If bypass mode is on (default), skip auth entirely
-  if (localStorage.getItem('ail_require_login') !== '1') {
-    window._firebaseAdmin = true;
-    window._currentRole = 'crown';
-    openAdminDashboard();
-    return;
-  }
-  if (window._firebaseAdmin) { openAdminDashboard(); return; }
-  const modal = document.getElementById('adminLoginModal');
-  modal.classList.add('active'); document.body.style.overflow='hidden';
-  document.getElementById('adminEmail').value = '';
-  document.getElementById('adminPassword').value = '';
-  document.getElementById('adminError').style.display = 'none';
-  document.getElementById('adminUidBox').style.display = 'none';
-  document.getElementById('adminForgotPanel').style.display = 'none';
-  setTimeout(() => document.getElementById('adminEmail').focus(), 100);
+const ADMIN_PW_ITER = 3000;
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function closeAdminLogin() {
-
-  document.getElementById('adminLoginModal').classList.remove('active');
-
-  document.getElementById('adminError').style.display = 'none';
-
-  document.getElementById('adminUidBox').style.display = 'none';
-
-  document.body.style.overflow = '';
-
+async function hashAdminPassword(password, salt) {
+  let h = salt + ':' + password;
+  for (let i = 0; i < ADMIN_PW_ITER; i++) h = await sha256Hex(h + salt);
+  return h;
 }
 
-function toggleForgotPassword() {
-  const panel = document.getElementById('adminForgotPanel');
-  const isVisible = panel.style.display !== 'none';
-  panel.style.display = isVisible ? 'none' : 'block';
-  if (!isVisible) {
-    document.getElementById('adminForgotEmail').value = document.getElementById('adminEmail').value || '';
-  }
+async function verifyAdminPassword(password) {
+  const salt = localStorage.getItem('ail_admin_pw_salt');
+  const hash = localStorage.getItem('ail_admin_pw_hash');
+  if (!salt || !hash) return false;
+  return (await hashAdminPassword(password, salt)) === hash;
 }
 
-async function sendPasswordReset() {
-  const email = document.getElementById('adminForgotEmail').value.trim();
-  const msgEl = document.getElementById('adminForgotMsg');
-  if (!email) { msgEl.textContent = 'Enter your email above.'; msgEl.style.color = 'var(--rose,#fb7185)'; return; }
-  if (!window.firebaseResetPassword) { msgEl.textContent = 'Firebase not ready. Try again.'; msgEl.style.color = 'var(--rose,#fb7185)'; return; }
-  msgEl.textContent = 'Sending…'; msgEl.style.color = '#9a9288';
-  try {
-    await window.firebaseResetPassword(email);
-    msgEl.textContent = '✓ Reset link sent! Check your inbox.'; msgEl.style.color = 'var(--emerald,#34d399)';
-  } catch(e) {
-    msgEl.textContent = 'Error: ' + (e.message || 'Try again.'); msgEl.style.color = 'var(--rose,#fb7185)';
-  }
+function toggleSetPasswordPanel() {
+  const panel = document.getElementById('admSetPwPanel');
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveAdminPassword() {
+  const pw1   = document.getElementById('admNewPw').value;
+  const pw2   = document.getElementById('admNewPw2').value;
+  const msgEl = document.getElementById('admSetPwMsg');
+  if (pw1.length < 6) { msgEl.textContent = 'Use at least 6 characters.'; msgEl.style.color = 'var(--adm-red)'; return; }
+  if (pw1 !== pw2)    { msgEl.textContent = 'Passwords do not match.';   msgEl.style.color = 'var(--adm-red)'; return; }
+
+  msgEl.textContent = 'Hashing…'; msgEl.style.color = 'var(--adm-muted)';
+  const salt = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+  const hash = await hashAdminPassword(pw1, salt);
+
+  localStorage.setItem('ail_admin_pw_salt', salt);
+  localStorage.setItem('ail_admin_pw_hash', hash);
+  localStorage.setItem('ail_require_login', '1');
+
+  document.getElementById('admNewPw').value = '';
+  document.getElementById('admNewPw2').value = '';
+  msgEl.textContent = '✓ Password set — console is now locked.'; msgEl.style.color = 'var(--adm-emerald,#34d399)';
+
+  const lockBtn = document.getElementById('admLockBtn');
+  if (lockBtn) { lockBtn.textContent = '🔒 Console Locked'; lockBtn.style.background = 'rgba(251,113,133,0.15)'; }
+  showToast('🔑 Password set — console locked');
 }
 
 function showHint(n) {
@@ -1255,9 +1248,42 @@ function showHint(n) {
   msgEl.style.color = '#c9a84c';
 }
 
-async function handleAdminLogin() {
+/* ══ ADMIN LOGIN ══ */
 
-  const email    = document.getElementById('adminEmail').value.trim();
+function openAdminLogin() {
+  // Unlocked by default until a console password has been set
+  const hasPassword = !!localStorage.getItem('ail_admin_pw_hash');
+  if (!hasPassword || localStorage.getItem('ail_require_login') !== '1') {
+    window._firebaseAdmin = true;
+    window._currentRole = 'crown';
+    openAdminDashboard();
+    return;
+  }
+  if (window._firebaseAdmin) { openAdminDashboard(); return; }
+  const modal = document.getElementById('adminLoginModal');
+  modal.classList.add('active'); document.body.style.overflow='hidden';
+  document.getElementById('adminPassword').value = '';
+  document.getElementById('adminError').style.display = 'none';
+  document.getElementById('adminForgotPanel').style.display = 'none';
+  setTimeout(() => document.getElementById('adminPassword').focus(), 100);
+}
+
+function closeAdminLogin() {
+
+  document.getElementById('adminLoginModal').classList.remove('active');
+
+  document.getElementById('adminError').style.display = 'none';
+
+  document.body.style.overflow = '';
+
+}
+
+function toggleForgotPassword() {
+  const panel = document.getElementById('adminForgotPanel');
+  panel.style.display = panel.style.display !== 'none' ? 'none' : 'block';
+}
+
+async function handleAdminLogin() {
 
   const password = document.getElementById('adminPassword').value;
 
@@ -1265,23 +1291,11 @@ async function handleAdminLogin() {
 
   const loginBtn = document.getElementById('adminLoginBtn');
 
-  const uidBox   = document.getElementById('adminUidBox');
-
   errEl.style.display = 'none';
 
-  uidBox.style.display = 'none';
+  if (!password) {
 
-  if (!email || !password) {
-
-    errEl.textContent = 'Please enter both email and password.';
-
-    errEl.style.display = 'block'; return;
-
-  }
-
-  if (!window.firebaseAdminLogin) {
-
-    errEl.textContent = 'Firebase not loaded yet. Please wait a moment.';
+    errEl.textContent = 'Please enter the console password.';
 
     errEl.style.display = 'block'; return;
 
@@ -1291,75 +1305,35 @@ async function handleAdminLogin() {
 
   loginBtn.disabled = true;
 
-  const result = await window.firebaseAdminLogin(email, password);
+  const ok = await verifyAdminPassword(password);
 
-  loginBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Sign In with Firebase`;
+  loginBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Unlock Console`;
 
   loginBtn.disabled = false;
 
-  if (result.success) {
+  if (ok) {
+
+    window._firebaseAdmin = true;
+
+    window._currentRole = 'crown';
 
     closeAdminLogin();
 
-    showToast(`👑 Welcome! Role: ${result.role}`);
+    showToast('👑 Welcome back!');
 
     document.getElementById('adminPanelTrigger').classList.add('active');
 
-    document.getElementById('adminPanelTrigger').title = `Admin Dashboard (${result.role})`;
+    document.getElementById('adminPanelTrigger').title = 'Admin Dashboard (crown)';
 
     openAdminDashboard();
 
   } else {
 
-    // Show large access denied modal for wrong credentials / access issue
+    errEl.textContent = 'Incorrect password.';
 
-    closeAdminLogin();
-
-    showAccessDenied();
-
-    // Also show diagnostic if uid returned (Firestore setup needed)
-
-    if (result.uid) {
-
-      _lastUid = result.uid;
-
-      // Re-open login with uid info
-
-      setTimeout(() => {
-
-        closeAccessDenied();
-
-        openAdminLogin();
-
-        document.getElementById('adminUidDisplay').textContent = result.uid;
-
-        document.getElementById('adminUidBox').style.display = 'block';
-
-        document.getElementById('adminError').textContent = result.error || 'Authentication failed.';
-
-        document.getElementById('adminError').style.display = 'block';
-
-      }, 3000);
-
-    }
+    errEl.style.display = 'block';
 
   }
-
-}
-
-function copyUid() {
-
-  if (!_lastUid) return;
-
-  navigator.clipboard.writeText(_lastUid).then(() => {
-
-    showToast('📋 UID copied to clipboard!');
-
-    document.querySelector('.admin-uid-copy').textContent = '✅ Copied!';
-
-    setTimeout(() => { document.querySelector('.admin-uid-copy').textContent = '📋 Copy UID'; }, 2000);
-
-  });
 
 }
 
@@ -1384,7 +1358,7 @@ function openAdminDashboard() {
 
   document.getElementById('admWelcome').textContent = `Welcome back, ${email.split('@')[0]} — ${new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
 
-  if (role === 'crown') document.getElementById('crownSection').style.display = 'block';
+  if (role === 'crown') { const cs = document.getElementById('crownSection'); cs.style.display = ''; cs.classList.add('is-visible'); }
 
   loadDashboardStats();
 
@@ -1406,6 +1380,10 @@ function openAdminDashboard() {
 
 function toggleAdminLock() {
   const current = localStorage.getItem('ail_require_login') === '1';
+  if (!current && !localStorage.getItem('ail_admin_pw_hash')) {
+    showToast('🔑 Set a password first, then lock the console.');
+    return;
+  }
   localStorage.setItem('ail_require_login', current ? '0' : '1');
   const locked = !current;
   const lockBtn = document.getElementById('admLockBtn');
@@ -2250,7 +2228,9 @@ async function handleAdminLogout() {
 
   document.getElementById('adminPanelTrigger').title = 'Admin Login';
 
-  document.getElementById('crownSection').style.display = 'none';
+  const cs = document.getElementById('crownSection');
+  cs.classList.remove('is-visible');
+  cs.style.display = 'none';
 
 }
 
@@ -2346,7 +2326,7 @@ function init() {
 
   track('page_view');
 
-  console.log('✅ Art Is Life Foundation — init complete');
+  console.log('✅ LEES.mobile — init complete');
 
 }
 
