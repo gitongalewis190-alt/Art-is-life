@@ -271,6 +271,7 @@
           '<p class="cc-hint">Only the PUBLIC endpoint URL goes here. Secret keys live on the server — never in this panel.</p>' +
           field("Business name", "cc_dbiz", d.businessName, "text") +
           field("Secure STK-push endpoint URL", "cc_dep", d.endpoint, "url", "https://your-domain.vercel.app/api/mpesa") +
+          '<button class="cc-btn" id="cc-mpesa-test" type="button" style="margin-top:4px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399">🔌 Test Connection</button>' +
           '<div class="cc-keystatus" id="cc_keystatus"></div>' +
         '</section>' +
 
@@ -487,12 +488,12 @@
     var live = (document.getElementById("cc_dep") || {}).value || "";
     var trimmed = live.trim();
     var isStale = /\/(api\/)?stkpush\/?$/i.test(trimmed);
-    box.className = "cc-keystatus " + (isStale ? "warn" : (trimmed ? "ok" : "warn"));
+    box.className = "cc-keystatus " + (isStale ? "warn" : "ok");
     box.textContent = isStale
-      ? "⚠ This points to /stkpush — that endpoint was retired. Change it to .../api/mpesa and Publish."
+      ? "⚠ This points to the retired /stkpush path — donations auto-fall back to /api/mpesa for now, but update this field to .../api/mpesa to keep it accurate."
       : trimmed
         ? "✓ Endpoint set — donations will trigger a live STK push."
-        : "⚠ No endpoint yet — Donate button shows a friendly 'coming soon'. Deploy the Cloud Function, then paste its URL here.";
+        : "✓ Left blank — donations automatically use the built-in /api/mpesa endpoint.";
   }
 
   function wire() {
@@ -511,6 +512,28 @@
     });
     var dep = document.getElementById("cc_dep");
     if (dep) dep.addEventListener("input", updateKeyStatus);
+
+    var mpesaTest = document.getElementById("cc-mpesa-test");
+    if (mpesaTest) mpesaTest.addEventListener("click", function () {
+      var box = document.getElementById("cc_keystatus");
+      var endpoint = (window.Daraja && window.Daraja.config.endpoint) || "/api/mpesa";
+      if (box) { box.className = "cc-keystatus"; box.textContent = "⏳ Testing connection…"; }
+      mpesaTest.disabled = true;
+      fetch(endpoint, { method: "GET" })
+        .then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (data) {
+          mpesaTest.disabled = false;
+          if (!box) return;
+          box.className = "cc-keystatus " + (data.ok ? "ok" : "warn");
+          box.textContent = data.ok
+            ? "✓ " + data.message
+            : "⚠ " + (data.error || "Test failed — check the endpoint URL.");
+        })
+        .catch(function () {
+          mpesaTest.disabled = false;
+          if (box) { box.className = "cc-keystatus warn"; box.textContent = "⚠ Could not reach " + endpoint + " — check the URL and that it's deployed."; }
+        });
+    });
 
     // Arten panel wiring
     document.querySelectorAll('input[name="arten_voice"]').forEach(function(r){

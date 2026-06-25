@@ -190,6 +190,46 @@ async function handleStkPush(req, res) {
   }
 }
 
+/* ── Health check — verifies credentials without sending any STK push ──── */
+
+async function handleHealthCheck(req, res) {
+  const KEY     = process.env.DARAJA_CONSUMER_KEY;
+  const SECRET  = process.env.DARAJA_CONSUMER_SECRET;
+  const PASSKEY = process.env.DARAJA_PASSKEY;
+  const SCODE   = process.env.DARAJA_SHORTCODE || "174379";
+  const ENV     = process.env.DARAJA_ENV       || "sandbox";
+  const BASE    = DARAJA_URLS[ENV] || DARAJA_URLS.sandbox;
+
+  const missing = [
+    !KEY     && "DARAJA_CONSUMER_KEY",
+    !SECRET  && "DARAJA_CONSUMER_SECRET",
+    !PASSKEY && "DARAJA_PASSKEY"
+  ].filter(Boolean);
+
+  if (missing.length) {
+    return res.status(200).json({
+      ok: false,
+      stage: "env",
+      error: `Missing: ${missing.join(", ")}. Add these in Vercel → Project → Settings → Environment Variables, then redeploy.`,
+      env: ENV,
+      shortcode: SCODE
+    });
+  }
+
+  try {
+    await getAccessToken(BASE);
+    return res.status(200).json({
+      ok: true,
+      stage: "oauth",
+      env: ENV,
+      shortcode: SCODE,
+      message: `Connected to Safaricom Daraja (${ENV}). Ready to accept donations.`
+    });
+  } catch (err) {
+    return res.status(200).json({ ok: false, stage: "oauth", error: err.message, env: ENV, shortcode: SCODE });
+  }
+}
+
 /* ── Safaricom async callback ────────────────────────────────────────── */
 
 async function handleCallback(req, res) {
@@ -251,6 +291,7 @@ module.exports = async function handler(req, res) {
 
   /* Preflight */
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method === "GET")    return handleHealthCheck(req, res);
   if (req.method !== "POST")   return res.status(405).json({ error: "POST only" });
 
   /* Route: Safaricom callback vs donor-initiated push */

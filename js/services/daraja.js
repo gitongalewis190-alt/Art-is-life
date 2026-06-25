@@ -27,10 +27,17 @@
      3. Handle the async C2B callback to confirm payment.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/** Endpoints retired during the M-Pesa consolidation — never trust these even if saved. */
+const STALE_ENDPOINT = /\/(api\/)?stkpush\/?$/i;
+
 const Daraja = {
-  /** Read live config (set in window.SITE_CONFIG.daraja). Empty by design. */
+  /** Read live config (set in window.SITE_CONFIG.daraja). Falls back to the
+   *  built-in same-origin endpoint that ships with this codebase, so
+   *  donations work even if the Console field is blank or stale. */
   get config() {
-    return (window.SITE_CONFIG && window.SITE_CONFIG.daraja) || {};
+    const cfg = (window.SITE_CONFIG && window.SITE_CONFIG.daraja) || {};
+    const endpoint = (!cfg.endpoint || STALE_ENDPOINT.test(cfg.endpoint)) ? '/api/mpesa' : cfg.endpoint;
+    return { ...cfg, endpoint };
   },
 
   get isConfigured() {
@@ -64,15 +71,6 @@ const Daraja = {
     const v = this.validate(phone, amount);
     if (!v.ok) return { ok: false, message: v.error };
 
-    if (!this.isConfigured) {
-      // Honest, non-fake fallback until the backend endpoint is wired.
-      return {
-        ok: false,
-        pending: true,
-        message: 'M-Pesa donations are being finalised. Add your secure Daraja endpoint in SITE_CONFIG to activate the STK push prompt.'
-      };
-    }
-
     try {
       const res = await fetch(this.config.endpoint, {
         method: 'POST',
@@ -84,15 +82,17 @@ const Daraja = {
           businessName: this.config.businessName || 'Art is Life Foundation'
         })
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, message: data.error || ('Payment service error (HTTP ' + res.status + '). Please try again shortly.') };
+      }
       if (typeof window.track === 'function') window.track('donation_stk_requested', { amount: v.amount });
       return {
         ok: true,
         message: data.CustomerMessage || 'Check your phone — enter your M-Pesa PIN to complete the donation. Thank you!'
       };
     } catch (err) {
-      return { ok: false, message: 'Could not reach the payment service. Please try again shortly.' };
+      return { ok: false, message: 'Could not reach the payment service. Please check your connection and try again.' };
     }
   }
 };
