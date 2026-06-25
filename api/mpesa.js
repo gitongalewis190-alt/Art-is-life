@@ -104,19 +104,19 @@ function isSafaricomCallback(body) {
 /* ── STK Push initiation ─────────────────────────────────────────────── */
 
 async function handleStkPush(req, res) {
-  const KEY     = process.env.DARAJA_CONSUMER_KEY;
-  const SECRET  = process.env.DARAJA_CONSUMER_SECRET;
-  const PASSKEY = process.env.DARAJA_PASSKEY;
-  const SCODE   = process.env.DARAJA_SHORTCODE || "174379";
-  const ENV     = process.env.DARAJA_ENV       || "sandbox";
+  const KEY     = process.env.DARAJA_CONSUMER_KEY    || process.env.MPESA_CONSUMER_KEY;
+  const SECRET  = process.env.DARAJA_CONSUMER_SECRET || process.env.MPESA_CONSUMER_SECRET;
+  const PASSKEY = process.env.DARAJA_PASSKEY         || process.env.MPESA_PASSKEY;
+  const SCODE   = process.env.DARAJA_SHORTCODE       || process.env.MPESA_SHORTCODE || "174379";
+  const ENV     = process.env.DARAJA_ENV             || process.env.MPESA_ENV       || "sandbox";
   const BASE    = DARAJA_URLS[ENV] || DARAJA_URLS.sandbox;
 
   /* Guard: credentials not yet configured */
   if (!KEY || !SECRET || !PASSKEY) {
     const missing = [
-      !KEY     && "DARAJA_CONSUMER_KEY",
-      !SECRET  && "DARAJA_CONSUMER_SECRET",
-      !PASSKEY && "DARAJA_PASSKEY"
+      !KEY     && "DARAJA_CONSUMER_KEY (or MPESA_CONSUMER_KEY)",
+      !SECRET  && "DARAJA_CONSUMER_SECRET (or MPESA_CONSUMER_SECRET)",
+      !PASSKEY && "DARAJA_PASSKEY (or MPESA_PASSKEY)"
     ].filter(Boolean);
     return res.status(503).json({
       error: `M-Pesa credentials not yet configured on the server. Missing: ${missing.join(", ")}. ` +
@@ -193,17 +193,17 @@ async function handleStkPush(req, res) {
 /* ── Health check — verifies credentials without sending any STK push ──── */
 
 async function handleHealthCheck(req, res) {
-  const KEY     = process.env.DARAJA_CONSUMER_KEY;
-  const SECRET  = process.env.DARAJA_CONSUMER_SECRET;
-  const PASSKEY = process.env.DARAJA_PASSKEY;
-  const SCODE   = process.env.DARAJA_SHORTCODE || "174379";
-  const ENV     = process.env.DARAJA_ENV       || "sandbox";
+  const KEY     = process.env.DARAJA_CONSUMER_KEY    || process.env.MPESA_CONSUMER_KEY;
+  const SECRET  = process.env.DARAJA_CONSUMER_SECRET || process.env.MPESA_CONSUMER_SECRET;
+  const PASSKEY = process.env.DARAJA_PASSKEY         || process.env.MPESA_PASSKEY;
+  const SCODE   = process.env.DARAJA_SHORTCODE       || process.env.MPESA_SHORTCODE || "174379";
+  const ENV     = process.env.DARAJA_ENV             || process.env.MPESA_ENV       || "sandbox";
   const BASE    = DARAJA_URLS[ENV] || DARAJA_URLS.sandbox;
 
   const missing = [
-    !KEY     && "DARAJA_CONSUMER_KEY",
-    !SECRET  && "DARAJA_CONSUMER_SECRET",
-    !PASSKEY && "DARAJA_PASSKEY"
+    !KEY     && "DARAJA_CONSUMER_KEY (or MPESA_CONSUMER_KEY)",
+    !SECRET  && "DARAJA_CONSUMER_SECRET (or MPESA_CONSUMER_SECRET)",
+    !PASSKEY && "DARAJA_PASSKEY (or MPESA_PASSKEY)"
   ].filter(Boolean);
 
   if (missing.length) {

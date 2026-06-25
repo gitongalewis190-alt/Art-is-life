@@ -425,11 +425,11 @@
             var standalone = window.matchMedia("(display-mode:standalone)").matches || window.navigator.standalone === true;
             var swOk = "serviceWorker" in navigator;
             return '<div style="display:grid;gap:7px">' +
-              '<div class="cc-keystatus ' + (swOk?"ok":"warn") + '">' + (swOk?"✓ Service Worker active · cache: ail-v5":"⚠ Service Worker not supported") + '</div>' +
+              '<div class="cc-keystatus ' + (swOk?"ok":"warn") + '">' + (swOk?"✓ Service Worker active · cache: ail-v6":"⚠ Service Worker not supported") + '</div>' +
               '<div class="cc-keystatus ' + (standalone?"ok":"warn") + '">' + (standalone?"✓ Running as installed app":"ℹ Browser mode · install via Share → Add to Home Screen") + '</div>' +
             '</div>' +
             '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-              '<div><label class="cc-label">Cache</label><div style="font-size:.85rem;font-weight:700">ail-v5</div></div>' +
+              '<div><label class="cc-label">Cache</label><div style="font-size:.85rem;font-weight:700">ail-v6</div></div>' +
               '<div><label class="cc-label">Mode</label><div style="font-size:.85rem;font-weight:700">' + (standalone?"Standalone":"Browser") + '</div></div>' +
             '</div>' +
             '<p class="cc-hint" style="margin-top:10px">iOS: Share → Add to Home Screen. Android: install prompt in browser address bar. App works offline.</p>';
