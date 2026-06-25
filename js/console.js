@@ -270,7 +270,7 @@
         '<section class="cc-card"><h4>💳 M-Pesa / Daraja</h4>' +
           '<p class="cc-hint">Only the PUBLIC endpoint URL goes here. Secret keys live on the server — never in this panel.</p>' +
           field("Business name", "cc_dbiz", d.businessName, "text") +
-          field("Secure STK-push endpoint URL", "cc_dep", d.endpoint, "url", "https://your-backend/stkpush") +
+          field("Secure STK-push endpoint URL", "cc_dep", d.endpoint, "url", "https://your-domain.vercel.app/api/mpesa") +
           '<div class="cc-keystatus" id="cc_keystatus"></div>' +
         '</section>' +
 
@@ -485,10 +485,14 @@
     var box = document.getElementById("cc_keystatus");
     if (!box) return;
     var live = (document.getElementById("cc_dep") || {}).value || "";
-    box.className = "cc-keystatus " + (live.trim() ? "ok" : "warn");
-    box.textContent = live.trim()
-      ? "✓ Endpoint set — donations will trigger a live STK push."
-      : "⚠ No endpoint yet — Donate button shows a friendly 'coming soon'. Deploy the Cloud Function, then paste its URL here.";
+    var trimmed = live.trim();
+    var isStale = /\/(api\/)?stkpush\/?$/i.test(trimmed);
+    box.className = "cc-keystatus " + (isStale ? "warn" : (trimmed ? "ok" : "warn"));
+    box.textContent = isStale
+      ? "⚠ This points to /stkpush — that endpoint was retired. Change it to .../api/mpesa and Publish."
+      : trimmed
+        ? "✓ Endpoint set — donations will trigger a live STK push."
+        : "⚠ No endpoint yet — Donate button shows a friendly 'coming soon'. Deploy the Cloud Function, then paste its URL here.";
   }
 
   function wire() {

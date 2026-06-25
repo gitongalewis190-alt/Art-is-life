@@ -20,7 +20,7 @@
 
    The deployed URL looks like:
      https://us-central1-artislife-44968.cloudfunctions.net/stkpush
-   ── OR use the Vercel endpoint in /api/stkpush.js (simpler) ────────────
+   ── OR use the consolidated Vercel endpoint in /api/mpesa.js (simpler) ──
    ═══════════════════════════════════════════════════════════════════════ */
 
 const functions = require("firebase-functions");
