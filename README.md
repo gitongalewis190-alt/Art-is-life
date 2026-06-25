@@ -84,6 +84,28 @@ firebase deploy --only firestore:rules,hosting
 
 Secrets live **only** on the server — never in the site.
 
+The Donate button talks to the same-origin **`/api/mpesa`** Vercel function
+by default — no Control Console field needs to be set. Just add these
+environment variables in Vercel → Project → Settings → Environment
+Variables, then redeploy:
+
+```
+DARAJA_CONSUMER_KEY
+DARAJA_CONSUMER_SECRET
+DARAJA_PASSKEY
+DARAJA_SHORTCODE      # 174379 (sandbox) or your PayBill number (live)
+DARAJA_ENV            # "sandbox" or "production"
+```
+
+Verify it's wired up from Admin → **Control Console → M-Pesa** → **Test
+Connection** — it checks the env vars and does a real OAuth handshake with
+Safaricom without sending an STK push. If the Console's endpoint field is
+ever left blank or still points at the retired `/stkpush` path, the Donate
+button automatically falls back to `/api/mpesa` so donations keep working.
+
+<details>
+<summary>Alternate backend: Firebase Cloud Functions instead of Vercel</summary>
+
 ```bash
 cd functions && npm install && cd ..
 
@@ -97,9 +119,9 @@ firebase functions:config:set \
 firebase deploy --only functions
 ```
 
-Then open the site → Admin → **Control Console → M-Pesa** and paste your
-deployed `/stkpush` URL. The Donate button activates instantly. Until then it
-shows a friendly "coming soon" — no fake values are ever displayed.
+Paste the deployed `/stkpush` URL into Control Console → M-Pesa to use this
+instead of the built-in `/api/mpesa` endpoint.
+</details>
 
 ### Granting yourself the crown role
 
