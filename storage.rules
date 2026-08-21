@@ -2,9 +2,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     // Artwork originals are private to elevated publishing roles.
-    match /artworks/{fileName} {
+    match /artworks/{userId}/{fileName} {
       allow read: if true;
       allow write: if isPublisher()
+        && request.auth.uid == userId
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
       allow delete: if isAdmin();
