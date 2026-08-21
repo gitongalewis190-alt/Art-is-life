@@ -8,10 +8,16 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
     }
 
-    // ✅ ARTWORKS: public read; admin/crown write
+    // ARTWORKS: public read; admin/editor/crown write.
+    // The role check is repeated server-side so client-side guards cannot be bypassed.
     match /artworks/{artworkId} {
       allow read: if true;
-      allow create, update, delete: if hasRole(['admin', 'crown']);
+      allow create: if hasRole(['editor', 'admin', 'crown'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160;
+      allow update: if hasRole(['editor', 'admin', 'crown']);
+      allow delete: if hasRole(['admin', 'crown']);
     }
 
     // ✅ ORDERS: anyone can place; admin/crown read & manage

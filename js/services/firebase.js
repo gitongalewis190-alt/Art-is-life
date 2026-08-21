@@ -606,9 +606,26 @@
 
   window.uploadArtworkImage = function(file, onProgress, onComplete, onError) {
 
-    const storageRef = ref(storage, `artworks/${Date.now()}_${file.name}`);
+    if (!file || !hasPermission(window._currentRole, "editor")) {
+      const error = new Error("An editor role is required to upload artwork.");
+      onError?.(error);
+      return null;
+    }
 
-    const task = uploadBytesResumable(storageRef, file);
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (!allowedTypes.has(file.type) || file.size > 10 * 1024 * 1024) {
+      const error = new Error("Use a JPEG, PNG, or WebP image under 10 MB.");
+      onError?.(error);
+      return null;
+    }
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
+    const storageRef = ref(storage, `artworks/${auth.currentUser.uid}/${crypto.randomUUID()}_${safeName}`);
+
+    const task = uploadBytesResumable(storageRef, file, {
+      contentType: file.type,
+      customMetadata: { uploadedBy: auth.currentUser.uid }
+    });
 
     task.on('state_changed',
 
