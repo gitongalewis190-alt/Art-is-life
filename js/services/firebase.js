@@ -1,756 +1,622 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   firebase.js — Auth, Firestore, Storage, RBAC, real-time bridges
+   ───────────────────────────────────────────────────────────────────────
+   SECURITY MODEL
+   • The ONLY thing that grants admin privileges is a verified Firebase
+     session whose `users/{uid}.role` in Firestore is admin or crown.
+     Firestore security rules (firestore.rules) are the real gate — this
+     module merely mirrors that decision for the UI.
+   • Nothing here trusts localStorage. A local "console PIN" is a device
+     screen-lock, never a permission.
+   • Everything written to Firestore is validated/trimmed client-side so
+     the rules and the UI agree on shape.
+   ═══════════════════════════════════════════════════════════════════════ */
 
-  import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc, getDoc, getDocs,
+  collection, addDoc, query, where, orderBy, limit,
+  updateDoc, deleteDoc, setDoc,
+  onSnapshot,
+  serverTimestamp,
+  increment
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getStorage, ref,
+  uploadBytesResumable, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-  import { getAnalytics }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+/* A Firebase web config is public by design (it identifies the project, it
+   does not authorise anything). Access control lives in firestore.rules and
+   storage.rules. */
+const firebaseConfig = {
+  apiKey:            "AIzaSyD3EHTs5MJO1614T6VfDZF31CANhAMzQbw",
+  authDomain:        "artislife-44968.firebaseapp.com",
+  projectId:         "artislife-44968",
+  storageBucket:     "artislife-44968.firebasestorage.app",
+  messagingSenderId: "634431592292",
+  appId:             "1:634431592292:web:7e88d54be7291310f74c71",
+  measurementId:     "G-G0NN8SHKMR"
+};
 
-  import {
+const app = initializeApp(firebaseConfig);
 
-    getAuth,
-
-    signInWithEmailAndPassword,
-
-    signOut,
-
-    onAuthStateChanged
-
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-  import {
-
-    getFirestore,
-
-    doc, getDoc, getDocs,
-
-    collection, addDoc, query, orderBy, limit, where,
-
-    updateDoc, deleteDoc, setDoc,
-
-    onSnapshot,
-
-    serverTimestamp,
-
-    increment
-
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  import {
-
-    getStorage, ref,
-
-    uploadBytesResumable, getDownloadURL
-
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-  const firebaseConfig = {
-
-    apiKey:            "AIzaSyD3EHTs5MJO1614T6VfDZF31CANhAMzQbw",
-
-    authDomain:        "artislife-44968.firebaseapp.com",
-
-    projectId:         "artislife-44968",
-
-    storageBucket:     "artislife-44968.firebasestorage.app",
-
-    messagingSenderId: "634431592292",
-
-    appId:             "1:634431592292:web:7e88d54be7291310f74c71",
-
-    measurementId:     "G-G0NN8SHKMR"
-
-  };
-
-  const app     = initializeApp(firebaseConfig);
-
+/* Analytics is optional polish — never let an ad-blocker or an unsupported
+   browser take the whole module down with an unhandled exception. */
+try {
   getAnalytics(app);
+} catch (err) {
+  console.warn("Analytics unavailable:", err && err.message);
+}
 
-  const auth    = getAuth(app);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+let storage   = null;
+try {
+  storage = getStorage(app);
+} catch (err) {
+  console.warn("Firebase Storage unavailable:", err && err.message);
+}
 
-  const db      = getFirestore(app);
+const ROLE_HIERARCHY = { crown: 4, admin: 3, editor: 2, viewer: 1 };
+const ADMIN_ROLES    = ["admin", "crown"];
+const MAX_TEXT       = { title: 140, desc: 2000, comment: 1000, name: 80, phone: 24, address: 240 };
 
-  const storage = getStorage(app);
+/* ── small helpers ───────────────────────────────────────────────────── */
 
-  const ROLE_HIERARCHY = { crown:4, admin:3, editor:2, viewer:1 };
+/** Coerce to a trimmed, single-line, length-capped string. */
+function cleanText(value, max) {
+  return String(value == null ? "" : value)
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "")
+    .trim()
+    .slice(0, max);
+}
 
-  async function fetchUserRole(uid) {
+function normaliseRole(raw) {
+  const role = String(raw == null ? "" : raw).trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(ROLE_HIERARCHY, role) ? role : null;
+}
 
-    try {
+function hasPermission(userRole, requiredRole) {
+  if (!userRole || !requiredRole) return false;
+  return (ROLE_HIERARCHY[userRole] || 0) >= (ROLE_HIERARCHY[requiredRole] || 999);
+}
 
-      const snap = await getDoc(doc(db, "users", uid));
+function isAdminRole(role) {
+  return ADMIN_ROLES.includes(role);
+}
 
-      if (!snap.exists()) {
+/* ── role lookup ─────────────────────────────────────────────────────── */
 
-        console.warn(`⛔ No Firestore doc for UID: ${uid}`);
-
-        return { role: null, error: 'no_doc', uid };
-
-      }
-
-      const raw = (snap.data().role || "").toLowerCase().trim();
-
-      if (!ROLE_HIERARCHY[raw]) {
-
-        console.warn(`⛔ Unknown role: "${snap.data().role}"`);
-
-        return { role: null, error: 'invalid_role', rawRole: snap.data().role };
-
-      }
-
-      return { role: raw, error: null };
-
-    } catch(e) {
-
-      console.error("Role fetch error:", e);
-
-      return { role: null, error: 'fetch_error', message: e.message };
-
+/**
+ * Read users/{uid}.role.
+ * @returns {{role: string|null, error: string|null, rawRole?: string, message?: string}}
+ */
+async function fetchUserRole(uid) {
+  if (!uid) return { role: null, error: "no_uid" };
+  try {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (!snap.exists()) {
+      console.warn("No Firestore role document for this account.");
+      return { role: null, error: "no_doc", uid };
     }
-
-  }
-
-  function hasPermission(userRole, requiredRole) {
-
-    if (!userRole || !requiredRole) return false;
-
-    return (ROLE_HIERARCHY[userRole]||0) >= (ROLE_HIERARCHY[requiredRole]||999);
-
-  }
-
-  window._authReady     = false;
-
-  window._currentUser   = null;
-
-  window._currentRole   = null;
-
-  window._firebaseAdmin = false;
-
-  window._db            = db;
-
-  window._auth          = auth;
-
-  window._storage       = storage;
-
-  // ── REAL-TIME ARTWORKS SYNC ──
-
-  // 🔧 FIRESTORE SECURITY RULES (SERVER-SIDE ENFORCEMENT)
-  // IMPLEMENT THE FOLLOWING IN FIRESTORE CONSOLE:
-  /*
-    rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        
-        // ✅ ARTWORKS: Admin/Crown only can modify
-        match /artworks/{artworkId} {
-          allow read: if true;
-          allow create, update, delete: if hasRole(['admin', 'crown']);
-        }
-        
-        // ✅ ORDERS: Admin/Crown can manage
-        match /orders/{orderId} {
-          allow read: if request.auth != null && hasRole(['admin', 'crown']);
-          allow create: if true;
-          allow update, delete: if hasRole(['admin', 'crown']);
-        }
-        
-        // ✅ LIKES: Users can create 1 per artwork; public read
-        match /likes/{likeId} {
-          allow read: if true;
-          allow create: if request.auth != null || request.resource.data.userId != null;
-          allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-        }
-        
-        // ✅ COMMENTS: Public read/create; admin can manage
-        match /comments/{commentId} {
-          allow read: if true;
-          allow create: if true;
-          allow update, delete: if hasRole(['admin', 'crown']);
-        }
-        
-        // ✅ USERS: Admin/Crown only
-        match /users/{userId} {
-          allow read, write: if hasRole(['admin', 'crown']);
-        }
-        
-        // Helper function
-        function hasRole(roles) {
-          return request.auth != null && 
-                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
-        }
-      }
+    const role = normaliseRole(snap.data().role);
+    if (!role) {
+      console.warn("Unknown role value on users/" + uid);
+      return { role: null, error: "invalid_role", rawRole: snap.data().role };
     }
-  */
+    return { role, error: null };
+  } catch (err) {
+    console.error("Role fetch error:", err && err.message);
+    return { role: null, error: "fetch_error", message: err && err.message };
+  }
+}
 
-  window._artworksUnsubscribe = null;
+/* ── shared state (read by app.js / console.js / studio.js) ───────────── */
 
-  window.startArtworksSync = function() {
+window._authReady     = false;
+window._currentUser   = null;
+window._currentRole   = null;
+window._firebaseAdmin = false;
+window._db            = db;
+window._auth          = auth;
+window._storage       = storage;
+window._artworksUnsubscribe = null;
+window._firestoreArtworks   = [];
+window._firestoreLikeCounts = {};
 
-    if (window._artworksUnsubscribe) return;
+/* ── REAL-TIME ARTWORKS SYNC (public read) ───────────────────────────── */
 
-    console.log("🔄 Starting real-time artworks sync...");
+window.startArtworksSync = function () {
+  if (window._artworksUnsubscribe) return;
 
-    window._artworksUnsubscribe = onSnapshot(
+  window._artworksUnsubscribe = onSnapshot(
+    query(collection(db, "artworks"), orderBy("createdAt", "desc")),
+    (snap) => {
+      const firestoreArts = snap.docs.map((d) => {
+        try {
+          const data = d.data();
+          // Soft-deleted pieces stay in Firestore for recovery but must not
+          // reappear in the public gallery.
+          if (data.deleted === true) return null;
+          const priceNum = parseInt(data.priceNum || data.price, 10) || 0;
+          // Coerce every field: legacy documents may hold non-string values
+          // and a single bad document must not break the whole gallery.
+          return {
+            id: String(d.id),
+            title: String(data.title || "Untitled").slice(0, 140),
+            price: String(data.price || `${priceNum} KES`).slice(0, 32),
+            priceNum,
+            image: String(data.image || "").trim().slice(0, 500) || "assets/brand/cover.jpg",
+            desc: String(data.desc || data.description || "").slice(0, 2000),
+            likes: Number(data.likeCount ?? data.likes) || 0,
+            status: ["available", "featured", "sold"].includes(data.status) ? data.status : "available"
+          };
+        } catch (docErr) {
+          console.warn("Skipping malformed Firestore artwork document:", d.id);
+          return null;
+        }
+      }).filter(Boolean);
 
-      query(collection(db, "artworks"), orderBy("createdAt", "desc")),
+      window._firestoreArtworks = firestoreArts;
+      window.dispatchEvent(new Event("artworks_updated"));
+    },
+    (err) => {
+      console.warn("Artworks sync error (using local data):", err && err.message);
+    }
+  );
+};
 
-      (snap) => {
+/* ── REAL-TIME LIKE-COUNT SYNC ──────────────────────────────────────────
+   Reads only the small likes collection. Bounded so a flood of likes can
+   never turn into an unbounded realtime listener.                       */
 
-        const firestoreArts = snap.docs.map(d => {
-
-          try {
-
-            const data = d.data();
-
-            const priceNum = parseInt(data.priceNum || data.price) || 0;
-
-            return {
-
-              id: d.id,
-
-              title: data.title || 'Untitled',
-
-              price: data.price || `${priceNum} KES`,
-
-              priceNum,
-
-              image: (data.image && data.image.trim() !== '' && data.image.trim() !== 'assets/brand/cover.jpg') ? data.image.trim() : 'assets/brand/cover.jpg',
-
-              desc: data.desc || data.description || '',
-
-              likes: data.likes || 0,
-
-              status: data.status || 'available'
-
-            };
-
-          } catch(docErr) {
-
-            console.warn(`⚠️ Skipping malformed Firestore doc ${d.id}:`, docErr);
-
-            return null;
-
-          }
-
-        }).filter(Boolean);
-
-        window._firestoreArtworks = firestoreArts;
-
-        window.dispatchEvent(new Event("artworks_updated"));
-
-        console.log(`✅ Artworks synced: ${firestoreArts.length} Firestore items`);
-
-      },
-
-      (err) => {
-
-        console.warn("Artworks sync error (using local data):", err.message);
-
-      }
-
-    );
-
-  };
-
-  // ── REAL-TIME LIKES COUNT SYNC ──
-
-  window.startLikesSync = function() {
-
-    onSnapshot(collection(db, "likes"), (snap) => {
-
-      const likeCounts = {};
-
-      snap.docs.forEach(d => {
-
+window.startLikesSync = function () {
+  onSnapshot(
+    query(collection(db, "likes"), limit(5000)),
+    (snap) => {
+      const likeCounts = Object.create(null);
+      snap.docs.forEach((d) => {
         const artId = d.data().artworkId;
-
-        if (artId) likeCounts[artId] = (likeCounts[artId] || 0) + 1;
-
+        if (artId && typeof artId === "string") likeCounts[artId] = (likeCounts[artId] || 0) + 1;
       });
-
       window._firestoreLikeCounts = likeCounts;
-
       window.dispatchEvent(new Event("likes_updated"));
+    },
+    (err) => {
+      console.warn("Likes sync error (counts stay local):", err && err.message);
+    }
+  );
+};
 
-    });
+/* ── REAL-TIME ORDERS BRIDGE (admin only; rules enforce the gate) ─────── */
 
-  };
+window._ordersSnapFn = function (callback) {
+  return onSnapshot(
+    query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(100)),
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => { console.warn("Orders snapshot error:", err && err.message); }
+  );
+};
 
-  // ── REAL-TIME ORDERS SNAP BRIDGE ──
+/* ── REAL-TIME COMMENTS (per artwork) ─────────────────────────────────── */
 
-  window._ordersSnapFn = function(callback) {
-
+window.startCommentsSync = function (artworkId, callback) {
+  const safeId = cleanText(artworkId, 64);
+  if (!safeId) {
+    callback([]);
+    return () => {};
+  }
+  try {
     return onSnapshot(
-
-      query(collection(db, "orders"), orderBy("createdAt", "desc")),
-
-      (snap) => {
-
-        const orders = snap.docs.map(d => ({id: d.id, ...d.data()}));
-
-        callback(orders);
-
-      },
-
-      (err) => { console.warn("Orders snap error:", err.message); }
-
+      query(
+        collection(db, "comments"),
+        where("artworkId", "==", safeId),
+        orderBy("createdAt", "asc"),
+        limit(200)
+      ),
+      (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      (err) => {
+        console.warn("Comments sync error:", err && err.message);
+        callback([]);
+      }
     );
+  } catch (err) {
+    console.error("Comments sync setup error:", err && err.message);
+    callback([]);
+    return () => {};
+  }
+};
 
-  };
+/* ── AUTH STATE — the single source of truth for privileges ───────────── */
 
-  // ── REAL-TIME COMMENTS SYNC ──
+function publishAuthState() {
+  window._authReady = true;
+  window.dispatchEvent(new Event("auth_ready"));
+}
 
-  // 🔧 COMMENTS QUERY FIX START - Filter by artworkId in Firestore query instead of client-side
-  window.startCommentsSync = function(artworkId, callback) {
+onAuthStateChanged(auth, async (user) => {
+  window._authReady = false;
 
-    try {
-
-      return onSnapshot(
-
-        query(
-
-          collection(db, "comments"),
-
-          where("artworkId", "==", artworkId),
-
-          orderBy("createdAt", "asc")
-
-        ),
-
-        (snap) => {
-
-          const comments = snap.docs.map(d => ({id: d.id, ...d.data()}));
-
-          callback(comments);
-
-          console.log(`📝 Comments loaded for artwork ${artworkId}: ${comments.length} items`);
-
-        },
-
-        (err) => {
-
-          console.error(`⚠️ Comments sync error for ${artworkId}:`, err.message);
-
-          callback([]);
-
-        }
-
-      );
-
-    } catch(e) {
-
-      console.error("Comments sync setup error:", e);
-
-      callback([]);
-
-    }
-
-  };
-  // 🔧 COMMENTS QUERY FIX END
-
-  onAuthStateChanged(auth, async (user) => {
-
-    window._authReady = false;
-
-    if (user) {
-
-      const result = await fetchUserRole(user.uid);
-
-      const role = result.role;
-
-      window._currentUser   = user;
-
-      window._currentRole   = role;
-
-      window._firebaseAdmin = hasPermission(role, "admin");
-
-      if (window._firebaseAdmin) console.log(`✅ Admin: ${user.email} | Role: ${role}`);
-
-      else console.warn(`⛔ Role check failed:`, result);
-
+  if (user) {
+    const result = await fetchUserRole(user.uid);
+    window._currentUser   = user;
+    window._currentRole   = result.role;
+    window._firebaseAdmin = isAdminRole(result.role);
+    if (window._firebaseAdmin) {
+      console.log("Admin session active. Role:", result.role);
     } else {
-
-      window._currentUser = window._currentRole = null;
-
-      window._firebaseAdmin = false;
-
+      console.warn("Signed in without an admin role:", result.error || result.role);
     }
-
-    window._authReady = true;
-
-    window.dispatchEvent(new Event("auth_ready"));
-
-  });
-
-  window.firebaseAdminLogin = async function(email, password) {
-
-    try {
-
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-
-      const uid  = cred.user.uid;
-
-      if (!window._authReady) {
-
-        await new Promise(res => {
-
-          const h = () => { window.removeEventListener("auth_ready", h); res(); };
-
-          window.addEventListener("auth_ready", h);
-
-        });
-
-      }
-
-      const role = window._currentRole;
-
-      if (!hasPermission(role, "admin")) {
-
-        let diagMsg = '';
-
-        try {
-
-          const snap = await getDoc(doc(db, "users", uid));
-
-          if (!snap.exists()) {
-
-            diagMsg = `No Firestore record found for this account.\n\nTo fix: Go to Firestore → "users" collection → Create document:\n  Document ID: ${uid}\n  Field: role  |  Value: crown`;
-
-          } else {
-
-            const rawRole = snap.data().role;
-
-            if (!rawRole) {
-
-              diagMsg = `Account found but has no "role" field.\n\nTo fix: Edit document "${uid}" in Firestore → add field:\n  role = crown`;
-
-            } else {
-
-              diagMsg = `Role "${rawRole}" does not have admin access.\nRequires: admin or crown. Contact system administrator.`;
-
-            }
-
-          }
-
-        } catch(e) {
-
-          diagMsg = `Could not read role data: ${e.message}`;
-
-        }
-
-        await signOut(auth);
-
-        return { success: false, error: diagMsg, uid };
-
-      }
-
-      return { success: true, role };
-
-    } catch(err) {
-
-      const msgs = {
-
-        "auth/user-not-found":    "No account with this email.",
-
-        "auth/wrong-password":    "Incorrect password.",
-
-        "auth/invalid-email":     "Invalid email address.",
-
-        "auth/too-many-requests": "Too many attempts. Please wait.",
-
-        "auth/invalid-credential":"Invalid email or password."
-
-      };
-
-      return { success: false, error: msgs[err.code] || err.message };
-
-    }
-
-  };
-
-  window.firebaseResetPassword = async function(email) {
-    const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-    return sendPasswordResetEmail(window._auth, email);
-  };
-
-  window.firebaseAdminLogout = async function() {
-
-    await signOut(auth);
-
-    window._currentUser = window._currentRole = null;
-
+  } else {
+    window._currentUser = null;
+    window._currentRole = null;
     window._firebaseAdmin = false;
-
-    if(typeof showToast==='function') showToast('👋 Signed out');
-
-  };
-
-  window.saveOrderToFirestore = async function(orderData) {
-
-    try { await addDoc(collection(db,"orders"), {...orderData, status:"pending", createdAt:serverTimestamp()}); }
-
-    catch(e) { console.error("Order save error:",e); if(typeof showToast==='function') showToast('❌ Order save error: ' + e.message); }
-
-  };
-
-  // ── LIKES — stored per user in Firestore ──
-
-  // 🔧 LIKE SYSTEM SCALING START - Optional per-artwork like count using increment()
-  window.toggleLikeFirestore = async function(artworkId) {
-
-    const user = auth.currentUser;
-
-    let anonId = localStorage.getItem("ail_anon_id");
-
-    if (!anonId) { anonId = "anon_" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("ail_anon_id", anonId); }
-
-    const likeId = user ? `${user.uid}_${artworkId}` : `${anonId}_${artworkId}`;
-
-    try {
-
-      const likeRef = doc(db, "likes", likeId);
-
-      const snap = await getDoc(likeRef);
-
-      if (snap.exists()) {
-
-        // User already liked — remove like
-        await deleteDoc(likeRef);
-
-        // 🔧 OPTIONAL: Decrement artwork like count
-        try {
-          await updateDoc(doc(db, "artworks", artworkId), {
-            likeCount: increment(-1)
-          });
-          console.log(`➖ Artwork like count decremented for ${artworkId}`);
-        } catch(e) {
-          console.warn(`⚠️ Could not decrement like count:`, e.message);
-        }
-
-        return 'unliked';
-
-      } else {
-
-        // User hasn't liked — add like
-        await setDoc(likeRef, { userId: user?.uid || 'anon', artworkId, createdAt: serverTimestamp() });
-
-        // 🔧 OPTIONAL: Increment artwork like count
-        try {
-          await updateDoc(doc(db, "artworks", artworkId), {
-            likeCount: increment(1)
-          });
-          console.log(`➕ Artwork like count incremented for ${artworkId}`);
-        } catch(e) {
-          console.warn(`⚠️ Could not increment like count:`, e.message);
-        }
-
-        return 'liked';
-
-      }
-
-    } catch(e) {
-
-      console.error("Like toggle error:", e);
-
-      return null;
-
-    }
-
-  };
-  // 🔧 LIKE SYSTEM SCALING END
-
-  // ── COMMENTS ──
-
-  window.saveCommentFirestore = async function(artworkId, text) {
-
-    const user = auth.currentUser;
-
-    try {
-
-      // 🔧 ERROR LOGGING ENHANCEMENT START
-      console.log(`📝 Attempting to save comment for artwork ${artworkId}...`);
-
-      const docRef = await addDoc(collection(db, "comments"), {
-
-        artworkId,
-
-        text,
-
-        author: user?.email?.split('@')[0] || 'Visitor',
-
-        createdAt: serverTimestamp()
-
-      });
-
-      console.log(`✅ Comment saved successfully:`, docRef.id);
-      // 🔧 ERROR LOGGING ENHANCEMENT END
-
-      return true;
-
-    } catch(e) {
-
-      console.error("❌ Comment save failed:", {
-
-        error: e.message,
-
-        code: e.code,
-
-        artworkId,
-
-        timestamp: new Date().toISOString()
-
-      });
-
-      return false;
-
-    }
-
-  };
-
-  window.uploadArtworkImage = function(file, onProgress, onComplete, onError) {
-
-    const storageRef = ref(storage, `artworks/${Date.now()}_${file.name}`);
-
-    const task = uploadBytesResumable(storageRef, file);
-
-    task.on('state_changed',
-
-      s => onProgress?.(Math.round((s.bytesTransferred/s.totalBytes)*100)),
-
-      e => { console.error("Upload error:",e); onError?.(e); },
-
-      async () => onComplete?.(await getDownloadURL(task.snapshot.ref))
-
-    );
-
-  };
-
-  function requireAdmin() {
-
-    if (!window._firebaseAdmin) { if(typeof showToast==='function') showToast('⛔ Admin role required.'); return false; }
-
-    return true;
-
   }
 
-  window.adminAddArtwork    = async (data) => { if (!requireAdmin()) return; return await addDoc(collection(db,"artworks"), {...data, createdAt:serverTimestamp()}); };
+  publishAuthState();
+});
 
-  window.adminUpdateArtwork = async (id, updates) => { if (!requireAdmin()) return; await updateDoc(doc(db,"artworks",id), updates); };
+const AUTH_ERRORS = {
+  "auth/user-not-found":     "No account with this email.",
+  "auth/wrong-password":     "Incorrect password.",
+  "auth/invalid-email":      "That email address is not valid.",
+  "auth/too-many-requests":  "Too many attempts. Please wait a few minutes.",
+  "auth/invalid-credential": "Invalid email or password.",
+  "auth/user-disabled":      "This account has been disabled.",
+  "auth/network-request-failed": "Network error — check your connection."
+};
 
-  window.adminDeleteArtwork = async (id) => { if (!requireAdmin()) return; await updateDoc(doc(db,"artworks",id), {deleted:true, deletedAt:serverTimestamp()}); };
+/**
+ * Sign in and verify the Firestore role in one step.
+ * Resolves to { success, role?, error? }. Never throws.
+ */
+window.firebaseAdminLogin = async function (email, password) {
+  const cleanEmail = cleanText(email, 254);
+  if (!cleanEmail || typeof password !== "string" || !password) {
+    return { success: false, error: "Enter your admin email and password." };
+  }
 
-  window.adminRestoreArtwork = async (id) => { if (!requireAdmin()) return; await updateDoc(doc(db,"artworks",id), {deleted:false, deletedAt:null}); };
+  try {
+    const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
+    const uid = cred.user.uid;
 
-  window.fetchDeletedArtworks = async () => { try { const s = await getDocs(collection(db,"artworks")); return s.docs.filter(d=>d.data().deleted===true).map(d=>({id:d.id,...d.data()})); } catch(e){return[];} };
+    // Authoritative role check for THIS uid (don't trust stale globals).
+    const result = await fetchUserRole(uid);
 
-  window.adminUpdateOrder   = async (id, updates) => { if (!requireAdmin()) return; await updateDoc(doc(db,"orders",id), updates); };
-
-  window.adminDeleteOrder   = async (id) => { if (!requireAdmin()) return; await deleteDoc(doc(db,"orders",id)); };
-
-  window.fetchDashboardStats = async function() {
-
-    try {
-
-      const [ordersSnap, likesSnap] = await Promise.all([
-
-        getDocs(collection(db,"orders")),
-
-        getDocs(collection(db,"likes"))
-
-      ]);
-
-      const orders = ordersSnap.docs.map(d => ({id:d.id,...d.data()}));
-
-      const pending  = orders.filter(o => o.status === 'pending').length;
-
-      const complete = orders.filter(o => o.status === 'completed').length;
-
-      const revenue  = orders.filter(o=>o.totalPrice).reduce((s,o)=>s+(o.totalPrice||0),0);
-
-      return { totalOrders: orders.length, pending, complete, totalLikes: likesSnap.size, revenue };
-
-    } catch(e) { console.error(e); return { totalOrders:0, pending:0, complete:0, totalLikes:0, revenue:0 }; }
-
-  };
-
-  window.fetchOrders = async function() {
-
-    try {
-
-      const snap = await getDocs(query(collection(db,"orders"), orderBy("createdAt","desc"), limit(50)));
-
-      return snap.docs.map(d => ({id:d.id,...d.data()}));
-
-    } catch(e) { return []; }
-
-  };
-
-  window.fetchUsers = async function() {
-
-    try {
-
-      const snap = await getDocs(collection(db,"users"));
-
-      return snap.docs.map(d => ({id:d.id,...d.data()}));
-
-    } catch(e) { return []; }
-
-  };
-
-  window.adminUpdateUser = async function(uid, updates) {
-
-    if (!requireAdmin()) return;
-
-    await updateDoc(doc(db,"users",uid), updates);
-
-  };
-
-  // ── ARTWORK LIKES COUNT FROM FIRESTORE for dashboard ──
-
-  window.fetchArtworkLikesCounts = async function() {
-
-    try {
-
-      const snap = await getDocs(collection(db, "likes"));
-
-      const counts = {};
-
-      snap.docs.forEach(d => {
-
-        const id = d.data().artworkId;
-
-        if (id) counts[id] = (counts[id] || 0) + 1;
-
-      });
-
-      return counts;
-
-    } catch(e) { return {}; }
-
-  };
-
-  window.getAdminSetupInfo = async function(email, password) {
-
-    try {
-
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-
-      const uid = cred.user.uid;
-
+    if (!isAdminRole(result.role)) {
+      let diagMsg;
+      if (result.error === "no_doc") {
+        diagMsg = "This account has no role record. Ask the site owner to create " +
+                  "Firestore → users → " + uid + " with field role = crown.";
+      } else if (result.error === "invalid_role") {
+        diagMsg = 'The role "' + cleanText(result.rawRole, 32) +
+                  '" does not grant admin access. Requires admin or crown.';
+      } else if (result.error === "fetch_error") {
+        diagMsg = "Could not verify your role (" + cleanText(result.message, 120) +
+                  "). Check that firestore.rules is deployed.";
+      } else {
+        diagMsg = 'The role "' + cleanText(result.role, 32) +
+                  '" does not have admin access. Requires admin or crown.';
+      }
       await signOut(auth);
-
-      return { uid, email };
-
-    } catch(e) {
-
-      return { error: e.message };
-
+      return { success: false, error: diagMsg, uid };
     }
 
+    // Commit immediately so callers don't race the auth listener.
+    window._currentUser   = cred.user;
+    window._currentRole   = result.role;
+    window._firebaseAdmin = true;
+    publishAuthState();
+
+    return { success: true, role: result.role };
+  } catch (err) {
+    const code = err && err.code;
+    return { success: false, error: AUTH_ERRORS[code] || "Sign-in failed. Please try again." };
+  }
+};
+
+window.firebaseResetPassword = async function (email) {
+  const cleanEmail = cleanText(email, 254);
+  if (!cleanEmail) return { success: false, error: "Enter your email address." };
+  try {
+    await sendPasswordResetEmail(auth, cleanEmail);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: AUTH_ERRORS[err && err.code] || "Could not send the reset email." };
+  }
+};
+
+window.firebaseAdminLogout = async function () {
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.warn("Sign-out error:", err && err.message);
+  }
+  window._currentUser   = null;
+  window._currentRole   = null;
+  window._firebaseAdmin = false;
+  publishAuthState();
+  if (typeof window.showToast === "function") window.showToast("👋 Signed out");
+};
+
+/* ── ORDERS ──────────────────────────────────────────────────────────── */
+
+window.saveOrderToFirestore = async function (orderData) {
+  try {
+    const src      = orderData || {};
+    const customer = src.customerInfo || {};
+    const items    = Array.isArray(src.items) ? src.items.slice(0, 50) : [];
+    const channel  = ["wa", "email", "sms"].includes(src.channel) ? src.channel : "wa";
+    const total    = Math.max(0, Math.floor(Number(src.totalPrice) || 0));
+
+    const order = {
+      customerInfo: {
+        name:    cleanText(customer.name, MAX_TEXT.name),
+        address: cleanText(customer.address, MAX_TEXT.address),
+        phone:   cleanText(customer.phone, MAX_TEXT.phone)
+      },
+      // Store only the fields we need — never arbitrary client objects.
+      items: items.map((it) => ({
+        id:       cleanText(it && it.id, 64),
+        title:    cleanText(it && it.title, MAX_TEXT.title),
+        price:    cleanText(it && it.price, 32),
+        priceNum: Math.max(0, Math.floor(Number(it && it.priceNum) || 0)),
+        qty:      Math.min(99, Math.max(1, Math.floor(Number(it && it.qty) || 1)))
+      })),
+      totalPrice: total,
+      channel,
+      status: "pending",
+      createdAt: serverTimestamp()
+    };
+
+    if (!order.customerInfo.name || !order.customerInfo.address || !order.items.length) {
+      throw new Error("Order is missing required fields");
+    }
+
+    await addDoc(collection(db, "orders"), order);
+    return true;
+  } catch (err) {
+    console.error("Order save error:", err && err.message);
+    if (typeof window.showToast === "function") window.showToast("❌ Could not save the order. Please send it via WhatsApp instead.");
+    return false;
+  }
+};
+
+/* ── LIKES ───────────────────────────────────────────────────────────── */
+
+/* Signed-in only: the rules reject anonymous writes, so don't attempt them.
+   Visitors still get local likes from app.js.                              */
+window.toggleLikeFirestore = async function (artworkId) {
+  const user = auth.currentUser;
+  if (!user) return null;
+
+  const artId = cleanText(artworkId, 64);
+  if (!artId || !/^[\w:-]+$/.test(artId)) return null;
+
+  const likeRef = doc(db, "likes", `${user.uid}_${artId}`);
+
+  try {
+    const snap = await getDoc(likeRef);
+
+    if (snap.exists()) {
+      await deleteDoc(likeRef);
+      try {
+        await updateDoc(doc(db, "artworks", artId), { likeCount: increment(-1) });
+      } catch (_) { /* artwork may not exist (e.g. the story) */ }
+      return "unliked";
+    }
+
+    await setDoc(likeRef, {
+      userId: user.uid,
+      artworkId: artId,
+      createdAt: serverTimestamp()
+    });
+    try {
+      await updateDoc(doc(db, "artworks", artId), { likeCount: increment(1) });
+    } catch (_) { /* artwork may not exist (e.g. the story) */ }
+    return "liked";
+  } catch (err) {
+    console.warn("Like toggle error:", err && err.message);
+    return null;
+  }
+};
+
+/* ── COMMENTS ────────────────────────────────────────────────────────── */
+
+window.saveCommentFirestore = async function (artworkId, text) {
+  const artId = cleanText(artworkId, 64);
+  const body  = String(text == null ? "" : text).trim();
+
+  if (!artId || body.length < 2) return false;
+  if (body.length > MAX_TEXT.comment) {
+    if (typeof window.showToast === "function") window.showToast("⚠️ Comment is too long (max 1000 characters)");
+    return false;
+  }
+
+  const user = auth.currentUser;
+  try {
+    await addDoc(collection(db, "comments"), {
+      artworkId: artId,
+      text: body,
+      author: user ? cleanText((user.email || "").split("@")[0], 40) || "Visitor" : "Visitor",
+      createdAt: serverTimestamp()
+    });
+    return true;
+  } catch (err) {
+    console.error("Comment save failed:", err && err.message);
+    return false;
+  }
+};
+
+/* ── STORAGE UPLOAD ──────────────────────────────────────────────────── */
+
+window.uploadArtworkImage = function (file, onProgress, onComplete, onError) {
+  if (!storage) { onError?.(new Error("Storage is not available")); return; }
+  if (!file || !/^image\//.test(file.type || "")) {
+    onError?.(new Error("Only image files can be uploaded"));
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    onError?.(new Error("Image must be smaller than 10 MB"));
+    return;
+  }
+
+  const safeName = String(file.name || "upload").replace(/[^\w.\-]/g, "_").slice(-80);
+  const storageRef = ref(storage, `artworks/${Date.now()}_${safeName}`);
+  const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
+
+  task.on("state_changed",
+    (s) => onProgress?.(Math.round((s.bytesTransferred / s.totalBytes) * 100)),
+    (e) => { console.error("Upload error:", e && e.message); onError?.(e); },
+    async () => onComplete?.(await getDownloadURL(task.snapshot.ref))
+  );
+};
+
+/* ── ADMIN-GATED WRITES (rules are the real gate) ─────────────────────── */
+
+function requireAdmin() {
+  if (!window._firebaseAdmin) {
+    if (typeof window.showToast === "function") window.showToast("⛔ Admin role required.");
+    return false;
+  }
+  return true;
+}
+
+function artworkPayload(data) {
+  const d = data || {};
+  return {
+    title:      cleanText(d.title, MAX_TEXT.title) || "Untitled",
+    price:      cleanText(d.price, 32) || "0 KES",
+    priceNum:   Math.max(0, Math.floor(Number(d.priceNum) || 0)),
+    image:      cleanText(d.image, 500) || "assets/brand/cover.jpg",
+    desc:       cleanText(d.desc, MAX_TEXT.desc),
+    status:     ["available", "featured", "sold"].includes(d.status) ? d.status : "available",
+    dimensions: cleanText(d.dimensions, 60)
   };
+}
 
-  // Start real-time syncs immediately
+window.adminAddArtwork = async (data) => {
+  if (!requireAdmin()) return null;
+  return addDoc(collection(db, "artworks"), { ...artworkPayload(data), createdAt: serverTimestamp() });
+};
 
-  window.startArtworksSync();
+window.adminUpdateArtwork = async (id, updates) => {
+  if (!requireAdmin()) return null;
+  return updateDoc(doc(db, "artworks", String(id)), updates || {});
+};
 
-  window.startLikesSync();
+window.adminDeleteArtwork = async (id) => {
+  if (!requireAdmin()) return null;
+  return updateDoc(doc(db, "artworks", String(id)), { deleted: true, deletedAt: serverTimestamp() });
+};
 
-  console.log("🔥 Firebase — Auth ✅ Firestore ✅ Storage ✅ RBAC ✅ Real-time ✅");
+window.adminRestoreArtwork = async (id) => {
+  if (!requireAdmin()) return null;
+  return updateDoc(doc(db, "artworks", String(id)), { deleted: false, deletedAt: null });
+};
 
+window.fetchDeletedArtworks = async () => {
+  if (!requireAdmin()) return [];
+  try {
+    const snap = await getDocs(collection(db, "artworks"));
+    return snap.docs.filter((d) => d.data().deleted === true).map((d) => ({ id: d.id, ...d.data() }));
+  } catch (_) { return []; }
+};
+
+window.adminUpdateOrder = async (id, updates) => {
+  if (!requireAdmin()) return null;
+  const allowed = {};
+  if (updates && ["pending", "completed", "cancelled"].includes(updates.status)) allowed.status = updates.status;
+  if (!Object.keys(allowed).length) return null;
+  return updateDoc(doc(db, "orders", String(id)), allowed);
+};
+
+window.adminDeleteOrder = async (id) => {
+  if (!requireAdmin()) return null;
+  return deleteDoc(doc(db, "orders", String(id)));
+};
+
+/* ── DASHBOARD READS ─────────────────────────────────────────────────── */
+
+window.fetchDashboardStats = async function () {
+  const empty = { totalOrders: 0, pending: 0, complete: 0, totalLikes: 0, revenue: 0 };
+  if (!window._firebaseAdmin) return empty;
+  try {
+    const [ordersSnap, likesSnap] = await Promise.all([
+      getDocs(query(collection(db, "orders"), limit(1000))),
+      getDocs(query(collection(db, "likes"), limit(5000)))
+    ]);
+
+    const orders = ordersSnap.docs.map((d) => d.data());
+    const pending  = orders.filter((o) => o.status === "pending").length;
+    const complete = orders.filter((o) => o.status === "completed").length;
+    const revenue  = orders
+      .filter((o) => o.status === "completed")
+      .reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+
+    return { totalOrders: orders.length, pending, complete, totalLikes: likesSnap.size, revenue };
+  } catch (err) {
+    console.error("Stats error:", err && err.message);
+    return empty;
+  }
+};
+
+window.fetchOrders = async function () {
+  if (!window._firebaseAdmin) return [];
+  try {
+    const snap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(50)));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (_) { return []; }
+};
+
+window.fetchUsers = async function () {
+  if (!window._firebaseAdmin) return [];
+  try {
+    const snap = await getDocs(query(collection(db, "users"), limit(500)));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (_) { return []; }
+};
+
+window.adminUpdateUser = async function (uid, updates) {
+  if (!window._firebaseAdmin) return null;
+  if (window._currentRole !== "crown") {
+    if (typeof window.showToast === "function") window.showToast("⛔ Crown role required to manage users.");
+    return null;
+  }
+  const role = normaliseRole(updates && updates.role);
+  if (!role) return null;
+  if (String(uid) === String(window._currentUser && window._currentUser.uid) && role !== "crown") {
+    if (typeof window.showToast === "function") window.showToast("⛔ You cannot demote your own crown account.");
+    return null;
+  }
+  return updateDoc(doc(db, "users", String(uid)), { role });
+};
+
+window.fetchArtworkLikesCounts = async function () {
+  try {
+    const snap = await getDocs(query(collection(db, "artworks"), limit(1000)));
+    const counts = {};
+    snap.docs.forEach((d) => {
+      const n = Number(d.data().likeCount) || 0;
+      if (n) counts[d.id] = n;
+    });
+    return counts;
+  } catch (_) { return {}; }
+};
+
+/* ── boot ────────────────────────────────────────────────────────────── */
+
+window.startArtworksSync();
+window.startLikesSync();
+
+console.log("🔥 Firebase — Auth ✅ Firestore ✅ RBAC ✅ Real-time ✅");

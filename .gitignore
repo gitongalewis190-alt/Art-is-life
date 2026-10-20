@@ -1,17 +1,28 @@
 # Dependencies
 functions/node_modules/
 node_modules/
+tests/node_modules/
 
 # Firebase
 .firebase/
 firebase-debug.log
 functions/.env
 *-debug.log
+ui-debug.log
+
+# Vercel
+.vercel/
 
 # Secrets — never commit Daraja / API credentials
 .env
 .env.*
+!.env.example
 secrets.json
+
+# Tests / tooling
+coverage/
+.nyc_output/
+/package-lock.json
 
 # OS / editor
 .DS_Store

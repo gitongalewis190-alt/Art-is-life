@@ -36,8 +36,12 @@ const Daraja = {
    *  donations work even if the Console field is blank or stale. */
   get config() {
     const cfg = (window.SITE_CONFIG && window.SITE_CONFIG.daraja) || {};
-    const endpoint = (!cfg.endpoint || STALE_ENDPOINT.test(cfg.endpoint)) ? '/api/mpesa' : cfg.endpoint;
-    return { ...cfg, endpoint };
+    const raw = String(cfg.endpoint || '').trim();
+    // Only same-origin paths or HTTPS endpoints are accepted: an http:// or
+    // javascript: endpoint from CMS content must never receive a phone number.
+    const usable = raw && !STALE_ENDPOINT.test(raw) &&
+      (/^\/(?!\/)/.test(raw) || /^https:\/\//i.test(raw));
+    return { ...cfg, endpoint: usable ? raw : '/api/mpesa' };
   },
 
   get isConfigured() {
@@ -53,13 +57,19 @@ const Daraja = {
     return p;
   },
 
+  /** KES 200,000 per donation — mirrors the server-side cap in api/mpesa.js. */
+  MAX_AMOUNT: 200000,
+
   validate(phone, amount) {
     const msisdn = this.normalizePhone(phone);
-    if (!/^2547\d{8}$/.test(msisdn) && !/^2541\d{8}$/.test(msisdn)) {
+    if (!/^254[71]\d{8}$/.test(msisdn)) {
       return { ok: false, error: 'Enter a valid Safaricom number, e.g. 07XX XXX XXX.' };
     }
     const amt = Math.floor(Number(amount));
     if (!amt || amt < 1) return { ok: false, error: 'Enter a donation amount of at least KES 1.' };
+    if (amt > this.MAX_AMOUNT) {
+      return { ok: false, error: 'For donations above KES ' + this.MAX_AMOUNT.toLocaleString() + ', please contact Lewis directly.' };
+    }
     return { ok: true, msisdn, amount: amt };
   },
 
@@ -71,20 +81,29 @@ const Daraja = {
     const v = this.validate(phone, amount);
     if (!v.ok) return { ok: false, message: v.error };
 
+    // Don't leave the donor staring at a spinner if the network stalls.
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 25000) : null;
+
     try {
       const res = await fetch(this.config.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'omit',
+        cache: 'no-store',
+        signal: controller ? controller.signal : undefined,
         body: JSON.stringify({
           phone: v.msisdn,
           amount: v.amount,
-          accountReference: reference,
+          accountReference: String(reference || 'Donation').slice(0, 12),
           businessName: this.config.businessName || 'Art is Life Foundation'
         })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        return { ok: false, message: data.error || ('Payment service error (HTTP ' + res.status + '). Please try again shortly.') };
+        return { ok: false, message: typeof data.error === 'string' && data.error
+          ? data.error
+          : 'Payment service error (HTTP ' + res.status + '). Please try again shortly.' };
       }
       if (typeof window.track === 'function') window.track('donation_stk_requested', { amount: v.amount });
       return {
@@ -92,7 +111,12 @@ const Daraja = {
         message: data.CustomerMessage || 'Check your phone — enter your M-Pesa PIN to complete the donation. Thank you!'
       };
     } catch (err) {
-      return { ok: false, message: 'Could not reach the payment service. Please check your connection and try again.' };
+      const aborted = err && err.name === 'AbortError';
+      return { ok: false, message: aborted
+        ? 'The payment service timed out. Please try again.'
+        : 'Could not reach the payment service. Please check your connection and try again.' };
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 };
@@ -136,7 +160,12 @@ window.sendDonation = async function () {
   setNote('Processing…', '');
   if (btn) btn.disabled = true;
 
-  const result = await Daraja.initiateSTKPush({ phone, amount, reference: 'Art is Life Donation' });
+  let result;
+  try {
+    result = await Daraja.initiateSTKPush({ phone, amount, reference: 'Art is Life Donation' });
+  } catch (_) {
+    result = { ok: false, message: 'Something went wrong. Please try again.' };
+  }
 
   if (btn) btn.disabled = false;
   setNote(result.message, result.ok ? 'ok' : (result.pending ? '' : 'err'));

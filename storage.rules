@@ -1,0 +1,43 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Firebase Storage rules — artwork uploads from the Admin dashboard.
+
+       Default in a new bucket is "deny everything", which is why image
+       uploads silently failed before this file existed. Uploads are now
+       limited to admins/crown, to image content types, and to 10 MB.
+
+       Role lookup reads users/{uid}.role from Firestore (same project),
+       mirroring firestore.rules.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid))
+             .data.get('role', '') in ['admin', 'crown'];
+    }
+
+    match /artworks/{fileName} {
+      // Artwork images are public — they are the gallery itself.
+      allow read: if true;
+
+      allow create, update: if isAdmin()
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if isAdmin();
+    }
+
+    // Nothing else is client-accessible.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

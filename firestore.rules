@@ -2,66 +2,231 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper — role lookup against users/{uid}.role (RBAC: crown>admin>editor>viewer)
-    function hasRole(roles) {
-      return request.auth != null &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+    /* ═══════════════════════════════════════════════════════════════════
+       RBAC HELPERS — crown > admin > editor > viewer
+       Role lives in users/{uid}.role and is only ever written by a crown
+       account (or by the owner in the Firebase console, which bypasses
+       these rules). Everything else is denied by default.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
     }
 
-    // ✅ ARTWORKS: public read; admin/crown write
+    function userDoc(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function role() {
+      return isSignedIn() && exists(userDoc(request.auth.uid))
+        ? get(userDoc(request.auth.uid)).data.get('role', '')
+        : '';
+    }
+
+    function hasRole(roles) {
+      return isSignedIn() && role() in roles;
+    }
+
+    function isAdmin() {
+      return hasRole(['admin', 'crown']);
+    }
+
+    function isCrown() {
+      return hasRole(['crown']);
+    }
+
+    /* ── ARTWORKS ──────────────────────────────────────────────────────
+       Public catalogue. Only admin/crown may create, edit or remove.
+       Any signed-in visitor may move likeCount by exactly ±1 so the
+       heart button can keep its tally without granting edit rights.    */
     match /artworks/{artworkId} {
       allow read: if true;
-      allow create, update, delete: if hasRole(['admin', 'crown']);
+
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+             'title', 'price', 'priceNum', 'image', 'desc', 'status',
+             'dimensions', 'createdAt', 'likeCount', 'deleted', 'deletedAt'
+           ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 140
+        && request.resource.data.price is string
+        && request.resource.data.price.size() <= 32
+        && request.resource.data.priceNum is int
+        && request.resource.data.priceNum >= 0
+        && request.resource.data.image is string
+        && request.resource.data.image.size() <= 500
+        && request.resource.data.desc is string
+        && request.resource.data.desc.size() <= 2000
+        && request.resource.data.status in ['available', 'featured', 'sold']
+        && request.resource.data.createdAt == request.time;
+
+      function isLikeCountChange() {
+        return isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
+          && request.resource.data.likeCount is int
+          && request.resource.data.likeCount >= 0
+          && (
+            request.resource.data.likeCount == resource.data.get('likeCount', 0) + 1 ||
+            request.resource.data.likeCount == resource.data.get('likeCount', 0) - 1
+          );
+      }
+
+      allow update: if isAdmin() || isLikeCountChange();
+
+      allow delete: if isAdmin();
     }
 
-    // ✅ ORDERS: anyone can place; admin/crown read & manage
+    /* ── ORDERS ────────────────────────────────────────────────────────
+       Visitors may place an order without an account (there is no customer
+       sign-in), so create is public but tightly shaped: the client cannot
+       set its own status, inject fields, or write an absurd total. Read,
+       update and delete are admin-only.                                */
     match /orders/{orderId} {
-      allow read: if request.auth != null && hasRole(['admin', 'crown']);
-      allow create: if true;
-      allow update, delete: if hasRole(['admin', 'crown']);
+      allow read: if isAdmin();
+
+      allow create: if request.resource.data.keys().hasOnly([
+             'customerInfo', 'items', 'totalPrice', 'channel', 'status', 'createdAt'
+           ])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.channel in ['wa', 'email', 'sms']
+        && request.resource.data.totalPrice is int
+        && request.resource.data.totalPrice >= 0
+        && request.resource.data.totalPrice <= 10000000
+        && request.resource.data.customerInfo is map
+        && request.resource.data.customerInfo.keys().hasOnly(['name', 'address', 'phone'])
+        && request.resource.data.customerInfo.name is string
+        && request.resource.data.customerInfo.name.size() > 0
+        && request.resource.data.customerInfo.name.size() <= 80
+        && request.resource.data.customerInfo.address is string
+        && request.resource.data.customerInfo.address.size() <= 240
+        && request.resource.data.customerInfo.phone is string
+        && request.resource.data.customerInfo.phone.size() <= 24
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 50
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if isAdmin();
     }
 
-    // ✅ LIKES: public read; one per user
+    /* ── LIKES ─────────────────────────────────────────────────────────
+       One document per (user, artwork), id = "{uid}_{artworkId}" so a
+       visitor cannot forge or stack likes. Public read is required for
+       the live like counters; documents hold no personal data beyond the
+       opaque Firebase uid.                                             */
     match /likes/{likeId} {
       allow read: if true;
-      allow create: if request.auth != null || request.resource.data.userId != null;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      allow create: if isSignedIn()
+        && likeId == request.auth.uid + '_' + request.resource.data.artworkId
+        && request.resource.data.keys().hasOnly(['userId', 'artworkId', 'createdAt'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.artworkId is string
+        && request.resource.data.artworkId.size() > 0
+        && request.resource.data.artworkId.size() <= 64
+        && request.resource.data.createdAt == request.time;
+
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.get('userId', '');
+
+      allow update: if false;
     }
 
-    // ✅ COMMENTS: public read/create; admin manage
+    /* ── COMMENTS ──────────────────────────────────────────────────────
+       Public read + public create (no customer accounts), strictly typed
+       and length-capped so comments cannot inject markup or huge payloads.
+       ────────────────────────────────────────────────────────────────── */
     match /comments/{commentId} {
       allow read: if true;
-      allow create: if true;
-      allow update, delete: if hasRole(['admin', 'crown']);
+
+      allow create: if request.resource.data.keys().hasOnly(['artworkId', 'text', 'author', 'createdAt'])
+        && request.resource.data.artworkId is string
+        && request.resource.data.artworkId.size() > 0
+        && request.resource.data.artworkId.size() <= 64
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 2
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.author is string
+        && request.resource.data.author.size() <= 40
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if isAdmin();
     }
 
-    // ✅ USERS: admin/crown only
+    /* ── USERS ─────────────────────────────────────────────────────────
+       A signed-in user may read their own role document (the UI needs it).
+       Only crown may change roles, and only to a valid role value.
+       Deletion is never allowed from a client.                          */
     match /users/{userId} {
-      allow read, write: if hasRole(['admin', 'crown']);
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      allow create: if isCrown()
+        && request.resource.data.role in ['crown', 'admin', 'editor', 'viewer'];
+
+      allow update: if isCrown()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['role', 'displayName', 'disabled', 'updatedAt'])
+        && request.resource.data.role in ['crown', 'admin', 'editor', 'viewer'];
+
+      allow delete: if false;
     }
 
-    // ✅ SITE CONFIG (Control Console): public read (theme/content for visitors);
-    //    only crown may publish. NEVER store secrets here — world-readable.
+    /* ── SITE CONFIG (Control Console) ─────────────────────────────────
+       World-readable because it is the public theme/CMS. Only crown may
+       publish. NEVER store secrets here — see README.                   */
     match /siteConfig/{docId} {
       allow read: if true;
-      allow write: if hasRole(['crown']);
+      allow write: if isCrown();
     }
 
-    // ✅ STUDIO — Process videos: public read; admin/crown manage
+    /* ── STUDIO — process videos ───────────────────────────────────────*/
     match /studioVideos/{videoId} {
       allow read: if true;
-      allow create, update, delete: if hasRole(['admin', 'crown']);
+
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+             'youtube', 'title', 'description', 'tags', 'timestamp', 'thumb', 'createdAt'
+           ])
+        && request.resource.data.youtube is string
+        && request.resource.data.youtube.size() == 11
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 140
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 1000
+        && request.resource.data.tags is list
+        && request.resource.data.tags.size() <= 12
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if isAdmin();
     }
 
-    // ✅ STUDIO — Archive pieces: public read; admin/crown manage
+    /* ── STUDIO — archive pieces ───────────────────────────────────────*/
     match /studioArchive/{itemId} {
       allow read: if true;
-      allow create, update, delete: if hasRole(['admin', 'crown']);
+
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['image', 'title', 'year', 'medium', 'createdAt'])
+        && request.resource.data.image is string
+        && request.resource.data.image.size() > 0
+        && request.resource.data.image.size() <= 500
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 140
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if isAdmin();
     }
 
-    // ✅ DONATIONS — written only by the trusted server (Cloud Function /
-    //    Admin SDK bypasses rules). Clients may never write or read them.
+    /* ── DONATIONS ─────────────────────────────────────────────────────
+       Written only by the trusted server (Admin SDK bypasses rules).
+       Clients can never read or write them.                            */
     match /donations/{donationId} {
+      allow read, write: if false;
+    }
+
+    /* ── DEFAULT DENY ──────────────────────────────────────────────────
+       Any collection added later is locked until explicitly opened.     */
+    match /{document=**} {
       allow read, write: if false;
     }
   }

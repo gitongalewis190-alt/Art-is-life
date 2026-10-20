@@ -36,11 +36,77 @@ let artworks = [...LOCAL_ARTWORKS];
 
 const CONTACT = { waNum:'254704708178', phone:'0704708178', email:'artislifefoundation2023@gmail.com' };
 
-let cart                      = JSON.parse(localStorage.getItem('ail_cart')  || '[]');
+/* ── Safe storage + escaping ────────────────────────────────────────────
+   localStorage throws in private mode / when quota is exhausted, and a
+   corrupt value must never stop the gallery from booting. Escaping helpers
+   come from js/sanitize.js (loaded first in <head>); the local fallbacks
+   below keep this file working even if that request fails.               */
+const store = {
+  get(key, fallback) {
+    try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, String(value)); return true; } catch (_) { return false; }
+  },
+  remove(key) { try { localStorage.removeItem(key); } catch (_) { /* ignore */ } }
+};
 
-let likes                     = JSON.parse(localStorage.getItem('ail_likes') || '[]');
+const escapeHtml = window.escapeHtml || function (value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
 
-let storyLiked                = localStorage.getItem('ail_story_liked') === '1';
+const jsArg = window.jsArg || function (value) {
+  return String(value == null ? '' : value)
+    .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r').replace(/\n/g, '\\n')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+};
+
+const safeImageUrl = window.safeImageUrl || function (value) {
+  const s = String(value == null ? '' : value).trim();
+  if (!s || /^(?:javascript|vbscript|data|file|blob):/i.test(s.replace(/[\u0000-\u0020]/g, ''))) return '';
+  return s;
+};
+
+const safeUrl = window.safeUrl || function (value) { return safeImageUrl(value); };
+
+const readList = (key) => {
+  const parsed = (window.safeJsonParse || ((t, f) => { try { return JSON.parse(t); } catch (_) { return f; } }))(store.get(key, '[]'), []);
+  return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+};
+
+const readJsonArray = (key) => {
+  const parsed = (window.safeJsonParse || ((t, f) => { try { return JSON.parse(t); } catch (_) { return f; } }))(store.get(key, '[]'), []);
+  return Array.isArray(parsed) ? parsed : [];
+};
+
+/* localStorage is shared, long-lived storage: treat anything read back as
+   untrusted input and rebuild clean, typed cart entries from it. */
+function normaliseCartItem(item) {
+
+  if (!item || typeof item !== 'object') return null;
+
+  const id = String(item.id == null ? '' : item.id).slice(0, 64);
+
+  if (!id) return null;
+
+  return {
+    id,
+    title:    String(item.title == null ? 'Unknown' : item.title).slice(0, 140),
+    price:    String(item.price == null ? '' : item.price).slice(0, 32),
+    priceNum: Math.max(0, Math.floor(Number(item.priceNum) || 0)),
+    qty:      Math.min(99, Math.max(1, Math.floor(Number(item.qty) || 1)))
+  };
+
+}
+
+let cart                      = readJsonArray('ail_cart').map(normaliseCartItem).filter(Boolean).slice(0, 50);
+
+let likes                     = readList('ail_likes');
+
+let storyLiked                = store.get('ail_story_liked', '0') === '1';
 
 let currentOrderIndex         = null;
 
@@ -56,7 +122,7 @@ let currentCommentTarget      = null; // { id, title }
 
 let _commentUnsubscribe       = null;
 
-const saveCart  = () => localStorage.setItem('ail_cart',  JSON.stringify(cart));
+const saveCart  = () => store.set('ail_cart', JSON.stringify(cart));
 
 /* ══ REAL-TIME SYNC LISTENERS ══ */
 
@@ -227,7 +293,10 @@ function openZoom(src, caption) {
 
   const overlay = document.getElementById('imgZoomOverlay');
 
-  document.getElementById('zoomImg').src = src;
+  // Never hand an unvalidated URL to the DOM (blocks javascript:/data: etc.)
+  const safeSrc = safeImageUrl(src) || 'assets/brand/cover.jpg';
+
+  document.getElementById('zoomImg').src = safeSrc;
 
   document.getElementById('zoomCaption').textContent = caption || '';
 
@@ -235,7 +304,7 @@ function openZoom(src, caption) {
 
   document.body.style.overflow = 'hidden';
 
-  track('image_zoom', {src});
+  track('image_zoom', {src: safeSrc});
 
 }
 
@@ -251,15 +320,15 @@ function closeZoom() {
    Accepts: full URL, assets/artworks/x.jpg, bare filename x.jpg
    Always returns a usable src string.                            */
 function resolveImage(image) {
-  if (!image) return 'assets/brand/cover.jpg';
-  if (typeof image !== 'string') return 'assets/brand/cover.jpg';
+  const fallback = 'assets/brand/cover.jpg';
+  if (!image || typeof image !== 'string') return fallback;
   const trimmed = image.trim();
-  if (!trimmed) return 'assets/brand/cover.jpg';
-  if (trimmed.startsWith('http')) return trimmed;
+  if (!trimmed) return fallback;
+  if (/^https?:\/\//i.test(trimmed)) return safeImageUrl(trimmed) || fallback;
   if (trimmed.startsWith('assets/')) return trimmed;
   // Legacy bare filename from Firestore — assume it's an artwork
-  if (trimmed.startsWith('images/')) return 'assets/artworks/' + trimmed.substring(7);
-  return 'assets/artworks/' + trimmed;
+  if (trimmed.startsWith('images/')) return safeImageUrl('assets/artworks/' + trimmed.substring(7)) || fallback;
+  return safeImageUrl('assets/artworks/' + trimmed.replace(/^\/+/, '')) || fallback;
 }
 
 /* ══ GALLERY RENDER ══ */
@@ -268,7 +337,11 @@ function getLikeCount(id) {
 
   const counts = window._firestoreLikeCounts || {};
 
-  return counts[String(id)] || 0;
+  // Coerce: the like map is built from Firestore data and must never leak a
+  // non-numeric value into an HTML template.
+  const n = Number(counts[String(id)]);
+
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 
 }
 
@@ -280,11 +353,13 @@ function renderGallery(filter) {
 
   const term = (filter||'').toLowerCase().trim();
 
-  const filtered = artworks.filter(a =>
-
-    !term || a.title.toLowerCase().includes(term) || a.desc.toLowerCase().includes(term) || (a.price||'').toLowerCase().includes(term)
-
-  );
+  const filtered = artworks.filter(a => {
+    if (!term) return true;
+    const haystack = [a.title, a.desc, a.price, a.dimensions]
+      .map(v => String(v == null ? '' : v).toLowerCase())
+      .join(' ');
+    return haystack.includes(term);
+  });
 
   document.getElementById('galleryCount').textContent =
 
@@ -317,14 +392,16 @@ function renderGallery(filter) {
       : `<div class="badge-available">✦ Available</div>`;
 
     const imgSrc = resolveImage(a.image);
+    const safeTitle = escapeHtml(a.title);
+    const safeId    = jsArg(a.id);
 
     return `
 
     <div class="art-card" style="animation-delay:${i*0.06}s">
 
-      <div class="art-img-wrap" onclick="openZoom('${imgSrc}','${a.title.replace(/'/g,"\\'")}')">
+      <div class="art-img-wrap" onclick="openZoom('${jsArg(imgSrc)}','${jsArg(a.title)}')">
 
-        <img src="${imgSrc}" alt="${a.title}" loading="lazy" onerror="this.src='assets/brand/cover.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
+        <img src="${escapeHtml(imgSrc)}" alt="${safeTitle}" loading="lazy" onerror="this.src='assets/brand/cover.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
 
         <div class="art-img-overlay">
 
@@ -344,9 +421,9 @@ function renderGallery(filter) {
 
         <div class="art-title-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
 
-          <div class="art-title" style="flex:1;">${a.title}</div>
+          <div class="art-title" style="flex:1;">${safeTitle}</div>
 
-          <button class="like-btn${isLiked?' liked':''}" onclick="event.stopPropagation();toggleLike('${a.id}')" title="${isLiked?'Unlike':'Like'}" aria-label="${isLiked?'Unlike':'Like'}" style="flex-shrink:0;">
+          <button class="like-btn${isLiked?' liked':''}" onclick="event.stopPropagation();toggleLike('${safeId}')" title="${isLiked?'Unlike':'Like'}" aria-label="${isLiked?'Unlike':'Like'}" style="flex-shrink:0;">
 
             <svg viewBox="0 0 24 24" fill="${isLiked?'#e05252':'none'}" stroke="${isLiked?'#e05252':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
 
@@ -354,11 +431,11 @@ function renderGallery(filter) {
 
         </div>
 
-        <div class="art-price">${a.price}</div>
+        <div class="art-price">${escapeHtml(a.price)}</div>
 
-        ${a.dimensions ? `<div class="art-dims">${a.dimensions}</div>` : ''}
+        ${a.dimensions ? `<div class="art-dims">${escapeHtml(a.dimensions)}</div>` : ''}
 
-        <div class="art-desc">${a.desc}</div>
+        <div class="art-desc">${escapeHtml(a.desc)}</div>
 
         ${likeCount > 0 ? `<div class="art-like-count"><svg viewBox="0 0 24 24" fill="#e05252" stroke="#e05252" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${likeCount} like${likeCount!==1?'s':''}</div>` : ''}
 
@@ -366,7 +443,7 @@ function renderGallery(filter) {
 
       <div class="art-actions">
 
-        <button class="art-btn art-btn-order" onclick="openOrder('${a.id}')">
+        <button class="art-btn art-btn-order" onclick="openOrder('${safeId}')">
 
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
 
@@ -374,7 +451,7 @@ function renderGallery(filter) {
 
         </button>
 
-        <button class="art-btn art-btn-cart" onclick="addToCart('${a.id}')">
+        <button class="art-btn art-btn-cart" onclick="addToCart('${safeId}')">
 
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
 
@@ -382,7 +459,7 @@ function renderGallery(filter) {
 
         </button>
 
-        <button class="art-btn art-btn-call" onclick="callGallery('${a.title.replace(/'/g,"\\'")}')">
+        <button class="art-btn art-btn-call" onclick="callGallery('${jsArg(a.title)}')">
 
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 11.66a19.79 19.79 0 01-3.07-8.67A2 2 0 011.91 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
 
@@ -442,9 +519,14 @@ function clearSearch() {
 
 /* ══ LIKES (Firestore-backed) ══ */
 
+/** Escape a value for use inside a CSS attribute selector string. */
+function cssAttrValue(value) {
+  return String(value).replace(/["\\]/g, '\\$&');
+}
+
 function triggerHeartBounce(id) {
 
-  const btn = document.querySelector(`.like-btn[onclick*="'${id}'"]`);
+  const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(id)}'"]`);
 
   if (!btn) return;
 
@@ -494,11 +576,11 @@ async function toggleLike(id) {
 
   }
 
-  localStorage.setItem('ail_likes', JSON.stringify(likes));
+  store.set('ail_likes', JSON.stringify(likes));
 
   // Update ONLY the like button — no full gallery re-render (prevents page shake/reflow)
 
-  const btn = document.querySelector(`.like-btn[onclick*="'${sid}'"]`);
+  const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(sid)}'"]`);
 
   if (btn) {
 
@@ -552,7 +634,7 @@ function toggleStoryLike() {
 
   storyLiked = !storyLiked;
 
-  localStorage.setItem('ail_story_liked', storyLiked ? '1' : '0');
+  store.set('ail_story_liked', storyLiked ? '1' : '0');
 
   const btn = document.getElementById('storyLikeBtn');
 
@@ -704,27 +786,31 @@ async function submitComment() {
 
   if (!text || !currentCommentTarget) return;
 
-  if (text.length < 2) { showToast('⚠️ Comment too short'); return; }
+    if (text.length < 2) { showToast('⚠️ Comment too short'); return; }
+  if (text.length > 1000) { showToast('⚠️ Comment is too long (max 1000 characters)'); return; }
 
   input.value = '';
 
   if (window.saveCommentFirestore) {
 
-    const ok = await window.saveCommentFirestore(currentCommentTarget.id, text);
+    const target = currentCommentTarget.id;
 
-    if (!ok) showToast('❌ Could not post comment');
+    const ok = await window.saveCommentFirestore(target, text);
+
+    if (!ok) {
+
+      // Give the text back — losing what someone typed is unforgivable.
+      if (!input.value) input.value = text;
+
+      showToast('❌ Could not post comment');
+
+    }
 
   } else {
 
     showToast('💬 Comment feature requires Firebase');
 
   }
-
-}
-
-function escapeHtml(str) {
-
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 }
 
@@ -764,7 +850,7 @@ function cartIncreaseQty(id) {
 
   if (!item) return;
 
-  item.qty = (item.qty || 1) + 1;
+  item.qty = Math.min(99, (item.qty || 1) + 1);
 
   saveCart(); updateCartCount(); renderCartDrawer();
 
@@ -834,17 +920,17 @@ function renderCartDrawer() {
 
     <div class="cart-item">
 
-      <div class="cart-item-info"><strong>${c.title||'Unknown'}</strong><span>${c.price||''}</span></div>
+      <div class="cart-item-info"><strong>${escapeHtml(c.title || 'Unknown')}</strong><span>${escapeHtml(c.price || '')}</span></div>
 
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
 
-        <button style="width:26px;height:26px;border:1px solid #e0dbd4;border-radius:50%;background:white;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:all 0.2s;" onclick="cartDecreaseQty('${c.id}')" title="Decrease" aria-label="Decrease quantity">−</button>
+        <button style="width:26px;height:26px;border:1px solid #e0dbd4;border-radius:50%;background:white;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:all 0.2s;" onclick="cartDecreaseQty('${jsArg(c.id)}')" title="Decrease" aria-label="Decrease quantity">−</button>
 
         <span style="font-size:0.84rem;font-weight:700;min-width:18px;text-align:center;">${c.qty||1}</span>
 
-        <button style="width:26px;height:26px;border:1px solid #e0dbd4;border-radius:50%;background:white;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:all 0.2s;" onclick="cartIncreaseQty('${c.id}')" title="Increase" aria-label="Increase quantity">+</button>
+        <button style="width:26px;height:26px;border:1px solid #e0dbd4;border-radius:50%;background:white;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--ink);transition:all 0.2s;" onclick="cartIncreaseQty('${jsArg(c.id)}')" title="Increase" aria-label="Increase quantity">+</button>
 
-        <button class="cart-item-del" onclick="removeFromCart('${c.id}')" title="Remove" aria-label="Remove">
+        <button class="cart-item-del" onclick="removeFromCart('${jsArg(c.id)}')" title="Remove" aria-label="Remove">
 
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
@@ -992,9 +1078,11 @@ function sendOrder() {
 
     const art = artworks.find(a => String(a.id) === String(currentOrderIndex));
 
+    if (!art) { showToast('⚠️ That artwork is no longer available'); return; }
+
     artworkLine = `🖼️ ${art.title} — ${art.price}`;
 
-    totalPrice = art.priceNum;
+    totalPrice = Number(art.priceNum) || 0;
 
   } else {
 
@@ -1010,7 +1098,7 @@ function sendOrder() {
 
   const enc = encodeURIComponent(msg);
 
-  if (selectedChannel === 'wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`, '_blank');
+  if (selectedChannel === 'wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`, '_blank', 'noopener,noreferrer');
 
   else if (selectedChannel === 'email') {
 
@@ -1018,11 +1106,11 @@ function sendOrder() {
 
     const subj = art ? `Art Order — ${art.title}` : `Art Order — ${cart.length} items`;
 
-    window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent(subj)}&body=${enc}`, '_blank');
+    window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent(subj)}&body=${enc}`, '_blank', 'noopener,noreferrer');
 
   } else {
 
-    window.open(`sms:${CONTACT.phone}?body=${enc}`, '_blank');
+    window.open(`sms:${CONTACT.phone}?body=${enc}`, '_blank', 'noopener,noreferrer');
 
   }
 
@@ -1108,14 +1196,12 @@ function selectCommissionChannel(ch) {
 
   const [txt, cls, ico] = map[ch] || map.wa;
 
-  btn.innerHTML = `${ico} ${txt}`;
-
-  btn.className = cls;
+  if (btn) { btn.innerHTML = `${ico} ${txt}`; btn.className = cls; }
 
 }
 
 function handleCommissionPolicyYes() {
-  sessionStorage.setItem('ail_commission_agreed','1');
+  try { sessionStorage.setItem('ail_commission_agreed','1'); } catch (_) { /* private mode */ }
   const policyBox = document.getElementById('commissionPolicyBox');
   const sendSection = document.getElementById('commissionSendSection');
   if (policyBox) { policyBox.style.background='#f0fff4'; policyBox.innerHTML='<p style="color:#1aa34a;font-weight:700;font-size:0.88rem;">✅ Agreed! Please choose how to send your commission below.</p>'; }
@@ -1124,7 +1210,7 @@ function handleCommissionPolicyYes() {
 
 function handleCommissionPolicyNo() {
   closeCommission();
-  sessionStorage.removeItem('ail_commission_agreed');
+  try { sessionStorage.removeItem('ail_commission_agreed'); } catch (_) { /* private mode */ }
   setTimeout(() => { showToast("Oops! The commission can't be processed!"); }, 300);
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1140,11 +1226,11 @@ function sendCommission() {
 
   const enc=encodeURIComponent(msg);
 
-  if(selectedCommissionChannel==='wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`,'_blank');
+  if(selectedCommissionChannel==='wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`,'_blank','noopener,noreferrer');
 
-  else if(selectedCommissionChannel==='email') window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent('Commission Request — '+name)}&body=${enc}`,'_blank');
+  else if(selectedCommissionChannel==='email') window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent('Commission Request — '+name)}&body=${enc}`,'_blank','noopener,noreferrer');
 
-  else window.open(`sms:${CONTACT.phone}?body=${enc}`,'_blank');
+  else window.open(`sms:${CONTACT.phone}?body=${enc}`,'_blank','noopener,noreferrer');
 
   track('commission_sent',{channel:selectedCommissionChannel});
 
@@ -1190,9 +1276,14 @@ function closeAccessDenied() {
 
 }
 
-/* ══ ADMIN PASSWORD — local SHA-256, salted + 3000x iterated (no Firebase) ══ */
+/* ══ DEVICE PIN — an optional local screen-lock, NEVER a privilege ═══════
+   Admin rights come exclusively from a verified Firebase session whose
+   users/{uid}.role is admin/crown (enforced by firestore.rules). This PIN
+   only stops a passer-by using an already-signed-in browser, so clearing it
+   cannot grant access to any data.                                        */
 
 const ADMIN_PW_ITER = 3000;
+const DEVICE_UNLOCK_KEY = 'ail_device_unlocked';
 
 async function sha256Hex(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -1205,11 +1296,32 @@ async function hashAdminPassword(password, salt) {
   return h;
 }
 
+/** Constant-time-ish comparison so timing cannot leak the stored hash. */
+function constantTimeEqual(a, b) {
+  const left = String(a || ''), right = String(b || '');
+  if (left.length !== right.length) return false;
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) diff |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  return diff === 0;
+}
+
 async function verifyAdminPassword(password) {
-  const salt = localStorage.getItem('ail_admin_pw_salt');
-  const hash = localStorage.getItem('ail_admin_pw_hash');
-  if (!salt || !hash) return false;
-  return (await hashAdminPassword(password, salt)) === hash;
+  const salt = store.get('ail_admin_pw_salt', null);
+  const hash = store.get('ail_admin_pw_hash', null);
+  if (!salt || !hash || !password) return false;
+  return constantTimeEqual(await hashAdminPassword(password, salt), hash);
+}
+
+function deviceLockArmed() {
+  return store.get('ail_require_login', '0') === '1' && !!store.get('ail_admin_pw_hash', null);
+}
+
+function deviceUnlocked() {
+  try { return sessionStorage.getItem(DEVICE_UNLOCK_KEY) === '1'; } catch (_) { return false; }
+}
+
+function markDeviceUnlocked() {
+  try { sessionStorage.setItem(DEVICE_UNLOCK_KEY, '1'); } catch (_) { /* private mode */ }
 }
 
 function toggleSetPasswordPanel() {
@@ -1218,141 +1330,232 @@ function toggleSetPasswordPanel() {
 }
 
 async function saveAdminPassword() {
-  const pw1   = document.getElementById('admNewPw').value;
-  const pw2   = document.getElementById('admNewPw2').value;
-  const msgEl = document.getElementById('admSetPwMsg');
-  if (pw1.length < 6) { msgEl.textContent = 'Use at least 6 characters.'; msgEl.style.color = 'var(--adm-red)'; return; }
-  if (pw1 !== pw2)    { msgEl.textContent = 'Passwords do not match.';   msgEl.style.color = 'var(--adm-red)'; return; }
+  // Setting a PIN is an admin action, not a way to become one.
+  if (!window._firebaseAdmin) {
+    showToast('⛔ Sign in with your admin account first.');
+    return;
+  }
 
-  msgEl.textContent = 'Hashing…'; msgEl.style.color = 'var(--adm-muted)';
-  const salt = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+  const pw1   = (document.getElementById('admNewPw') || {}).value || '';
+  const pw2   = (document.getElementById('admNewPw2') || {}).value || '';
+  const msgEl = document.getElementById('admSetPwMsg');
+  const say = (msg, colour) => { if (msgEl) { msgEl.textContent = msg; msgEl.style.color = colour; } };
+
+  if (pw1.length < 6) { say('Use at least 6 characters.', 'var(--adm-red)'); return; }
+  if (pw1 !== pw2)    { say('Passwords do not match.', 'var(--adm-red)'); return; }
+
+  say('Hashing…', 'var(--adm-muted)');
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const salt = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
   const hash = await hashAdminPassword(pw1, salt);
 
-  localStorage.setItem('ail_admin_pw_salt', salt);
-  localStorage.setItem('ail_admin_pw_hash', hash);
-  localStorage.setItem('ail_require_login', '1');
+  store.set('ail_admin_pw_salt', salt);
+  store.set('ail_admin_pw_hash', hash);
+  store.set('ail_require_login', '1');
+  markDeviceUnlocked();
 
   document.getElementById('admNewPw').value = '';
   document.getElementById('admNewPw2').value = '';
-  msgEl.textContent = '✓ Password set — console is now locked.'; msgEl.style.color = 'var(--adm-emerald,#34d399)';
+  say('✓ PIN set — the console now locks on this device.', 'var(--adm-emerald,#34d399)');
 
   const lockBtn = document.getElementById('admLockBtn');
   if (lockBtn) { lockBtn.textContent = '🔒 Console Locked'; lockBtn.style.background = 'rgba(251,113,133,0.15)'; }
-  showToast('🔑 Password set — console locked');
+  showToast('🔑 PIN set — console locked on this device');
 }
 
-function showHint(n) {
-  const hints = [null,'Discovery','Agnes Wanjiku','To build something that lasts'];
-  const msgEl = document.getElementById('adminForgotMsg');
-  msgEl.textContent = 'Hint ' + n + ': ' + (hints[n]||'—');
-  msgEl.style.color = '#c9a84c';
+/** Remove the local screen-lock. Does NOT sign out or grant any access. */
+function clearDeviceLock() {
+  store.remove('ail_admin_pw_salt');
+  store.remove('ail_admin_pw_hash');
+  store.remove('ail_require_login');
+  try { sessionStorage.removeItem(DEVICE_UNLOCK_KEY); } catch (_) { /* ignore */ }
 }
 
 function resetAdminLock() {
-  if (!confirm('Remove the console password on this device? You will be let in immediately and can set a fresh password from the Control Console.')) return;
-  localStorage.removeItem('ail_admin_pw_salt');
-  localStorage.removeItem('ail_admin_pw_hash');
-  localStorage.removeItem('ail_require_login');
+  if (!confirm('Remove the console PIN from this device?\n\nThis only clears the local screen-lock — you will still need to sign in with your admin account.')) return;
+  clearDeviceLock();
   closeAdminLogin();
-  window._firebaseAdmin = true;
-  window._currentRole = 'crown';
-  if (typeof showToast === 'function') showToast('🔓 Console lock cleared — set a new password from Control Console.');
-  openAdminDashboard();
+  showToast('🔓 Device PIN cleared — sign in with your admin account.');
+  openAdminLogin();
 }
 
 /* ══ ADMIN LOGIN ══ */
 
+/** Switch the modal between the Firebase sign-in step and the local PIN step. */
+function setLoginMode(mode) {
+  const pinOnly = mode === 'pin';
+  const emailGroup = document.getElementById('adminEmailGroup');
+  if (emailGroup) emailGroup.style.display = pinOnly ? 'none' : '';
+  const subtitle = document.getElementById('adminLoginSubtitle');
+  if (subtitle) {
+    subtitle.textContent = pinOnly
+      ? 'Enter your console PIN to unlock this device.'
+      : 'Sign in with the admin account that holds an admin or crown role.';
+  }
+  const btn = document.getElementById('adminLoginBtn');
+  if (btn && !btn.disabled) {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> ' +
+      (pinOnly ? 'Unlock Console' : 'Sign In');
+  }
+  const forgot = document.getElementById('adminForgotPanel');
+  if (forgot) forgot.style.display = 'none';
+  const note = document.getElementById('adminForgotToggle');
+  if (note) note.style.display = pinOnly ? '' : 'none';
+}
+
+function showAdminLoginModal() {
+  const modal = document.getElementById('adminLoginModal');
+  if (!modal) return;
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  const pw = document.getElementById('adminPassword');
+  if (pw) pw.value = '';
+  const email = document.getElementById('adminEmail');
+  if (email && window._currentUser && window._currentUser.email) email.value = window._currentUser.email;
+  const errEl = document.getElementById('adminError');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  setTimeout(() => {
+    const target = document.getElementById('adminEmailGroup')?.style.display === 'none'
+      ? document.getElementById('adminPassword')
+      : (document.getElementById('adminEmail') || document.getElementById('adminPassword'));
+    if (target) target.focus();
+  }, 100);
+}
+
+/* Guards the one-time wait below so a stalled Firebase init cannot make
+   openAdminLogin() recurse forever. */
+let _authWaitExpired = false;
+
 function openAdminLogin() {
-  // Unlocked by default until a console password has been set
-  const hasPassword = !!localStorage.getItem('ail_admin_pw_hash');
-  if (!hasPassword || localStorage.getItem('ail_require_login') !== '1') {
-    window._firebaseAdmin = true;
-    window._currentRole = 'crown';
+  // Firebase restores a persisted session asynchronously on load. Wait for
+  // that decision instead of showing the sign-in form to an admin.
+  if (window._auth && !window._authReady && !_authWaitExpired) {
+    let settled = false;
+    const proceed = () => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('auth_ready', proceed);
+      _authWaitExpired = true;
+      openAdminLogin();
+    };
+    window.addEventListener('auth_ready', proceed);
+    setTimeout(proceed, 4000);
+    return;
+  }
+
+  // Already verified against Firebase: only the optional device PIN remains.
+  if (window._firebaseAdmin) {
+    if (deviceLockArmed() && !deviceUnlocked()) {
+      setLoginMode('pin');
+      showAdminLoginModal();
+      return;
+    }
+    closeAdminLogin();
     openAdminDashboard();
     return;
   }
-  if (window._firebaseAdmin) { openAdminDashboard(); return; }
-  const modal = document.getElementById('adminLoginModal');
-  modal.classList.add('active'); document.body.style.overflow='hidden';
-  document.getElementById('adminPassword').value = '';
-  document.getElementById('adminError').style.display = 'none';
-  document.getElementById('adminForgotPanel').style.display = 'none';
-  setTimeout(() => document.getElementById('adminPassword').focus(), 100);
+
+  setLoginMode('signin');
+  showAdminLoginModal();
 }
 
 function closeAdminLogin() {
-
-  document.getElementById('adminLoginModal').classList.remove('active');
-
-  document.getElementById('adminError').style.display = 'none';
-
+  const modal = document.getElementById('adminLoginModal');
+  if (modal) modal.classList.remove('active');
+  const errEl = document.getElementById('adminError');
+  if (errEl) errEl.style.display = 'none';
   document.body.style.overflow = '';
-
 }
 
 function toggleForgotPassword() {
   const panel = document.getElementById('adminForgotPanel');
+  if (!panel) return;
   panel.style.display = panel.style.display !== 'none' ? 'none' : 'block';
 }
 
+/* Simple client-side throttle: 5 tries, then a 60s cool-down. Firebase
+   applies its own server-side throttling to real sign-in attempts.        */
+const _loginGuard = { failures: 0, blockedUntil: 0 };
+
 async function handleAdminLogin() {
-
-  const password = document.getElementById('adminPassword').value;
-
   const errEl    = document.getElementById('adminError');
-
   const loginBtn = document.getElementById('adminLoginBtn');
+  const pwEl     = document.getElementById('adminPassword');
+  const emailEl  = document.getElementById('adminEmail');
+  const password = pwEl ? pwEl.value : '';
+  const email    = emailEl ? emailEl.value.trim() : '';
+  const fail = (msg) => {
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+  };
 
-  errEl.style.display = 'none';
+  if (errEl) errEl.style.display = 'none';
 
-  if (!password) {
-
-    errEl.textContent = 'Please enter the console password.';
-
-    errEl.style.display = 'block'; return;
-
+  if (Date.now() < _loginGuard.blockedUntil) {
+    fail('Too many attempts. Try again in a minute.');
+    return;
   }
 
-  loginBtn.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite;margin-right:8px;">⏳</span> Verifying…';
+  const pinStep = !!window._firebaseAdmin;
 
-  loginBtn.disabled = true;
+  if (!password) { fail(pinStep ? 'Enter your console PIN.' : 'Enter your password.'); return; }
+  if (!pinStep && !email) { fail('Enter your admin email and password.'); return; }
 
-  const ok = await verifyAdminPassword(password);
+  const originalLabel = loginBtn ? loginBtn.innerHTML : '';
+  if (loginBtn) {
+    loginBtn.innerHTML = '<span style="display:inline-block;animation:spin 0.8s linear infinite;margin-right:8px;">⏳</span> Verifying…';
+    loginBtn.disabled = true;
+  }
 
-  loginBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Unlock Console`;
+  let ok = false;
+  let message = '';
 
-  loginBtn.disabled = false;
-
-  if (ok) {
-
-    window._firebaseAdmin = true;
-
-    window._currentRole = 'crown';
-
-    closeAdminLogin();
-
-    showToast('👑 Welcome back!');
-
-    document.getElementById('adminPanelTrigger').classList.add('active');
-
-    document.getElementById('adminPanelTrigger').title = 'Admin Dashboard (crown)';
-
-    openAdminDashboard();
-
+  if (pinStep) {
+    ok = await verifyAdminPassword(password);
+    if (ok) markDeviceUnlocked();
+    else message = 'Incorrect PIN.';
+  } else if (typeof window.firebaseAdminLogin !== 'function') {
+    message = 'Firebase is unavailable. Check your connection and reload the page.';
   } else {
-
-    errEl.textContent = 'Incorrect password.';
-
-    errEl.style.display = 'block';
-
+    const result = await window.firebaseAdminLogin(email, password);
+    ok = !!result.success;
+    message = result.error || 'Sign-in failed.';
+    if (ok) markDeviceUnlocked();
   }
 
+  if (loginBtn) { loginBtn.innerHTML = originalLabel; loginBtn.disabled = false; }
+
+  if (!ok) {
+    _loginGuard.failures += 1;
+    if (_loginGuard.failures >= 5) {
+      _loginGuard.failures = 0;
+      _loginGuard.blockedUntil = Date.now() + 60_000;
+    }
+    if (pwEl) pwEl.value = '';
+    fail(message || 'Sign-in failed.');
+    return;
+  }
+
+  _loginGuard.failures = 0;
+  _loginGuard.blockedUntil = 0;
+  closeAdminLogin();
+  showToast('👑 Welcome back!');
+  const trigger = document.getElementById('adminPanelTrigger');
+  if (trigger) {
+    trigger.classList.add('active');
+    trigger.title = 'Admin Dashboard (' + (window._currentRole || 'admin') + ')';
+  }
+  openAdminDashboard();
 }
 
 /* ══ ADMIN DASHBOARD ══ */
 
 function openAdminDashboard() {
-  if (!window._firebaseAdmin) { window._firebaseAdmin = true; window._currentRole = 'crown'; }
+  // Hard gate: no verified Firebase admin session → no dashboard.
+  if (!window._firebaseAdmin || !window._currentRole) {
+    setLoginMode('signin');
+    showAdminLoginModal();
+    return;
+  }
 
   document.getElementById('adminDashboard').classList.add('active');
 
@@ -1375,7 +1578,7 @@ function openAdminDashboard() {
   loadDashboardStats();
 
   // Show lock status
-  const locked = localStorage.getItem('ail_require_login') === '1';
+  const locked = deviceLockArmed();
   const lockBtn = document.getElementById('admLockBtn');
   if (lockBtn) {
     lockBtn.textContent = locked ? '🔒 Console Locked' : '🔓 Console Unlocked';
@@ -1391,13 +1594,18 @@ function openAdminDashboard() {
 }
 
 function toggleAdminLock() {
-  const current = localStorage.getItem('ail_require_login') === '1';
-  if (!current && !localStorage.getItem('ail_admin_pw_hash')) {
-    showToast('🔑 Set a password first, then lock the console.');
+  if (!window._firebaseAdmin) {
+    showToast('⛔ Sign in with your admin account first.');
     return;
   }
-  localStorage.setItem('ail_require_login', current ? '0' : '1');
+  const current = deviceLockArmed();
+  if (!current && !store.get('ail_admin_pw_hash', null)) {
+    showToast('🔑 Set a PIN first, then lock the console.');
+    return;
+  }
+  store.set('ail_require_login', current ? '0' : '1');
   const locked = !current;
+  if (locked) markDeviceUnlocked(); // an explicit lock toggles the current session too
   const lockBtn = document.getElementById('admLockBtn');
   if (lockBtn) {
     lockBtn.textContent = locked ? '🔒 Console Locked' : '🔓 Console Unlocked';
@@ -1465,7 +1673,7 @@ async function loadDashboardStats() {
 
     const b = document.getElementById('pendingBadge');
 
-    b.textContent = stats.pending; b.style.display = 'inline-flex';
+    if (b) { b.textContent = stats.pending; b.style.display = 'inline-flex'; }
 
   }
 
@@ -1479,11 +1687,9 @@ function renderOverviewArtGrid() {
 
     <div style="text-align:center;">
 
-      <img src="${a.image}" alt="${a.title}" style="width:100%;height:80px;object-fit:cover;border-radius:4px;background:#222;cursor:pointer;" onclick="openZoom('${a.image}','${a.title.replace(/'/g,"\\'")}');document.getElementById('adminDashboard').style.zIndex='2999'" onerror="this.style.background='#2c2510';this.style.height='80px'">
-
-      <div style="font-size:0.7rem;color:var(--adm-text);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</div>
-
-      <div style="font-size:0.66rem;color:var(--adm-gold);">${a.price}</div>
+      <img src="${escapeHtml(safeImageUrl(a.image))}" alt="${escapeHtml(a.title)}" style="width:100%;height:80px;object-fit:cover;border-radius:4px;background:#222;cursor:pointer;" onclick="openZoom('${jsArg(safeImageUrl(a.image))}','${jsArg(a.title)}');document.getElementById('adminDashboard').style.zIndex='2999'" onerror="this.style.background='#2c2510';this.style.height='80px'">
+      <div style="font-size:0.7rem;color:var(--adm-text);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.title)}</div>
+      <div style="font-size:0.66rem;color:var(--adm-gold);">${escapeHtml(a.price)}</div>
 
     </div>`).join('');
 
@@ -1527,13 +1733,10 @@ async function renderArtworksTable() {
 
         <div style="display:flex;align-items:center;gap:10px;">
 
-          <img src="${a.image}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
-
+          <img src="${escapeHtml(safeImageUrl(a.image))}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
           <div>
-
-            <div style="font-weight:600;">${a.title}</div>
-
-            <div style="font-size:0.7rem;color:var(--adm-muted);margin-top:2px;">${a.desc ? a.desc.slice(0,50)+'…' : ''}</div>
+            <div style="font-weight:600;">${escapeHtml(a.title)}</div>
+            <div style="font-size:0.7rem;color:var(--adm-muted);margin-top:2px;">${a.desc ? escapeHtml(String(a.desc).slice(0,50)) + '…' : ''}</div>
 
           </div>
 
@@ -1543,15 +1746,15 @@ async function renderArtworksTable() {
 
       <td>
 
-        <input class="adm-input" type="text" value="${a.price}" style="width:110px;padding:5px 8px;font-size:0.78rem;" onchange="updateArtworkPrice('${a.id}',this.value)" title="Edit price">
+        <input class="adm-input" type="text" value="${escapeHtml(a.price)}" style="width:110px;padding:5px 8px;font-size:0.78rem;" onchange="updateArtworkPrice('${jsArg(a.id)}',this.value)" title="Edit price">
 
       </td>
 
-      <td style="font-size:0.78rem;color:var(--adm-muted);">${a.dimensions||'—'}</td>
+      <td style="font-size:0.78rem;color:var(--adm-muted);">${escapeHtml(a.dimensions || '—')}</td>
 
       <td>
 
-        <select class="adm-status-select" onchange="updateArtworkStatus('${a.id}',this.value)">
+        <select class="adm-status-select" onchange="updateArtworkStatus('${jsArg(a.id)}',this.value)">
 
           <option value="available" ${(a.status||'available')==='available'?'selected':''}>Available</option>
 
@@ -1579,9 +1782,8 @@ async function renderArtworksTable() {
 
         <div style="display:flex;gap:6px;">
 
-          <button class="adm-btn-sm" onclick="viewArtworkDetails('${a.id}')">View</button>
-
-          <button class="adm-btn-sm danger" onclick="confirmRemoveArtwork('${a.id}','${a.title.replace(/'/g,"\\'")}')">Remove</button>
+          <button class="adm-btn-sm" onclick="viewArtworkDetails('${jsArg(a.id)}')">View</button>
+          <button class="adm-btn-sm danger" onclick="confirmRemoveArtwork('${jsArg(a.id)}','${jsArg(a.title)}')">Remove</button>
 
         </div>
 
@@ -1667,11 +1869,9 @@ async function loadRecoveryPanel() {
 
   el.innerHTML = deleted.map(a => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--adm-border);">
 
-    <img src="${a.image}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
-
-    <div style="flex:1;"><div style="font-size:0.82rem;color:var(--adm-text);font-weight:600;">${a.title}</div><div style="font-size:0.7rem;color:var(--adm-muted);">${a.price}</div></div>
-
-    <button class="adm-btn-sm" style="color:var(--adm-green);border-color:var(--adm-green);" onclick="restoreArtwork('${a.id}','${(a.title||'').replace(/'/g,"\\'")}')">↩ Restore</button>
+    <img src="${escapeHtml(safeImageUrl(a.image))}" style="width:40px;height:40px;object-fit:cover;border-radius:3px;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
+    <div style="flex:1;"><div style="font-size:0.82rem;color:var(--adm-text);font-weight:600;">${escapeHtml(a.title)}</div><div style="font-size:0.7rem;color:var(--adm-muted);">${escapeHtml(a.price)}</div></div>
+    <button class="adm-btn-sm" style="color:var(--adm-green);border-color:var(--adm-green);" onclick="restoreArtwork('${jsArg(a.id)}','${jsArg(a.title)}')">↩ Restore</button>
 
   </div>`).join('');
 
@@ -1679,15 +1879,37 @@ async function loadRecoveryPanel() {
 
 async function restoreArtwork(id, title) {
 
-  if (!window.adminRestoreArtwork) return;
+  if (!window.adminRestoreArtwork) { showToast('❌ Firestore not connected'); return; }
 
-  await window.adminRestoreArtwork(id);
+  try {
 
-  // Re-add to artworks list
+    await window.adminRestoreArtwork(id);
 
-  showToast(`✅ "${title}" restored to collection`);
+    showToast(`✅ "${title}" restored to collection`);
 
-  loadRecoveryPanel();
+    // The public listener re-emits without deleted documents, but refresh the
+    // local views immediately so the restored piece is visible at once.
+    const fsArts = window._firestoreArtworks || [];
+
+    if (!artworks.some(a => String(a.id) === String(id)) && fsArts.some(a => String(a.id) === String(id))) {
+      artworks = [...fsArts, ...artworks.filter(a => !fsArts.some(f => String(f.id) === String(a.id)))];
+    }
+
+    renderGallery(currentSearch);
+
+    renderArtworksTable();
+
+    renderOverviewArtGrid();
+
+    loadRecoveryPanel();
+
+  } catch (err) {
+
+    console.error('Restore failed:', err);
+
+    showToast('❌ Could not restore: ' + ((err && err.message) || 'unknown error'));
+
+  }
 
 }
 
@@ -1698,61 +1920,28 @@ function handleImageUpload(input) {
   if (!window.uploadArtworkImage) { showToast('Firebase Storage not ready'); return; }
 
   const prog = document.getElementById('uploadProgress'), bar = document.getElementById('uploadBar');
+  if (prog) prog.style.display = 'block';
+  if (bar) bar.style.width = '0%';
 
-  prog.style.display = 'block'; bar.style.width = '0%';
-
+  // Only stores the URL. Publishing happens once, when the admin presses
+  // "Add to Collection" — uploading must never create a second document.
   window.uploadArtworkImage(file,
 
-    pct => { bar.style.width = pct + '%'; },
+    pct => { if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%'; },
 
     url => {
-
       uploadedImageUrl = url;
-
-      document.getElementById('uploadedUrl').textContent = '✅ Uploaded: ' + url;
-
-      prog.style.display = 'none';
-
-      showToast('📷 Image uploaded! Publishing to gallery…');
-
-      // Auto-publish: immediately create Firestore doc with current form values
-      const title      = (document.getElementById('newTitle')?.value || '').trim();
-      const price      = (document.getElementById('newPrice')?.value || '').trim();
-      const desc       = (document.getElementById('newDesc')?.value  || '').trim();
-      const status     = document.getElementById('newStatus')?.value || 'available';
-      const dimensions = (document.getElementById('newDimensions')?.value || '').trim();
-
-      if (title && price && window.adminAddArtwork) {
-
-        const priceNum = parseInt(price) || 0;
-
-        const artData  = {
-          title,
-          price: price.endsWith('KES') ? price : `${price} KES`,
-          priceNum,
-          image: url,
-          desc: desc || 'A new original piece.',
-          status,
-          dimensions
-        };
-
-        window.adminAddArtwork(artData).then(ref => {
-
-          if (ref) {
-
-            showToast(`✅ "${title}" published to gallery!`);
-
-            clearAddForm();
-
-          }
-
-        }).catch(e => showToast('❌ Publish failed: ' + e.message));
-
-      }
-
+      const label = document.getElementById('uploadedUrl');
+      if (label) label.textContent = '✅ Uploaded — press “Add to Collection” to publish.';
+      if (prog) prog.style.display = 'none';
+      showToast('📷 Image uploaded');
     },
 
-    err => { prog.style.display = 'none'; showToast('❌ Upload failed: ' + err.message); }
+    err => {
+      if (prog) prog.style.display = 'none';
+      uploadedImageUrl = '';
+      showToast('❌ Upload failed: ' + (err && err.message ? err.message : 'unknown error'));
+    }
 
   );
 
@@ -1816,9 +2005,11 @@ function clearAddForm() {
 
 let _ordersUnsubscribe = null;
 
-function loadOrders() {
+async function loadOrders() {
 
   const el = document.getElementById('ordersContent');
+
+  if (!window._firebaseAdmin) { el.innerHTML = '<div class="adm-empty">Admin sign-in required.</div>'; return; }
 
   el.innerHTML = '<div class="adm-loader">⏳ Connecting real-time orders feed…</div>';
 
@@ -1826,9 +2017,8 @@ function loadOrders() {
 
   if (_ordersUnsubscribe) { _ordersUnsubscribe(); _ordersUnsubscribe = null; }
 
-  const { collection: col, query: q, orderBy: ob, onSnapshot: ons } = window._db._delegate ? { collection: window._collection, query: window._query, orderBy: window._orderBy, onSnapshot: window._onSnapshot } : {};
-
-  // Use Firebase directly via module scope — call through window bridge
+    // All Firestore access goes through the bridge exposed by
+  // js/services/firebase.js — this file never touches the SDK directly.
 
   if (!window._ordersSnapFn) {
 
@@ -1882,41 +2072,27 @@ function renderOrdersTable(orders) {
 
       const time = ts ? ts.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
 
-      const name  = o.customerInfo?.name || o.buyer_name || 'Unknown';
-
-      const phone = o.customerInfo?.phone || o.phone || '—';
-
-      const items = (o.items||[]).map(i => i.title||i).join(', ') || '—';
-
-      const total = o.totalPrice ? `${o.totalPrice.toLocaleString()} KES` : '—';
-
-      const method = o.channel || o.purchase_method || '—';
-
-      const st    = o.status || 'pending';
+            const name  = String(o.customerInfo?.name || o.buyer_name || 'Unknown').slice(0, 80);
+      const phone = String(o.customerInfo?.phone || o.phone || '—').slice(0, 24);
+      const items = (Array.isArray(o.items) ? o.items : []).map(i => String((i && i.title) || i || '')).join(', ').slice(0, 300) || '—';
+      const total = Number.isFinite(Number(o.totalPrice)) && Number(o.totalPrice) > 0 ? `${Number(o.totalPrice).toLocaleString()} KES` : '—';
+      const method = String(o.channel || o.purchase_method || '—').slice(0, 24);
+      const st    = ['pending', 'completed', 'cancelled'].includes(o.status) ? o.status : 'pending';
 
       return `<tr>
 
         <td style="font-size:0.74rem;color:var(--adm-muted);">${date}<br><span style="font-size:0.66rem;">${time}</span></td>
 
-        <td style="font-weight:600;">${name}</td>
-
-        <td style="font-size:0.78rem;">${phone}</td>
-
-        <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${items}">${items}</td>
-
-        <td style="color:var(--adm-gold);font-weight:600;">${total}</td>
-
-        <td style="font-size:0.76rem;text-transform:capitalize;">${method}</td>
-
-        <td><span class="adm-status-badge ${st}">${st}</span></td>
-
+                <td style="font-weight:600;">${escapeHtml(name)}</td>
+        <td style="font-size:0.78rem;">${escapeHtml(phone)}</td>
+        <td style="font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(items)}">${escapeHtml(items)}</td>
+        <td style="color:var(--adm-gold);font-weight:600;">${escapeHtml(total)}</td>
+        <td style="font-size:0.76rem;text-transform:capitalize;">${escapeHtml(method)}</td>
+        <td><span class="adm-status-badge ${escapeHtml(st)}">${escapeHtml(st)}</span></td>
         <td>
-
           <div style="display:flex;gap:5px;">
-
-            ${st==='pending'?`<button class="adm-btn-sm" style="color:var(--adm-green);border-color:var(--adm-green);" onclick="markOrderComplete('${o.id}')">✓ Done</button>`:''}
-
-            <button class="adm-btn-sm danger" onclick="deleteOrder('${o.id}')">✕</button>
+            ${st==='pending'?`<button class="adm-btn-sm" style="color:var(--adm-green);border-color:var(--adm-green);" onclick="markOrderComplete('${jsArg(o.id)}')">✓ Done</button>`:''}
+            <button class="adm-btn-sm danger" onclick="deleteOrder('${jsArg(o.id)}')">✕</button>
 
           </div>
 
@@ -1964,7 +2140,16 @@ async function clearAllOrders() {
 
 }
 
+/** Quote a CSV cell and neutralise spreadsheet formula injection. */
+function csvCell(value) {
+  let text = String(value == null ? '' : value).replace(/\r?\n/g, ' ');
+  if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+  return '"' + text.replace(/"/g, '""') + '"';
+}
+
 function exportOrders() {
+
+  if (!window._firebaseAdmin) { showToast('⛔ Admin role required.'); return; }
 
   if (!window.fetchOrders) { showToast('❌ Firestore not connected'); return; }
 
@@ -1996,7 +2181,7 @@ function exportOrders() {
 
     });
 
-    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv = rows.map(r => r.map(csvCell).join(',')).join('\r\n');
 
     const blob = new Blob([csv], {type:'text/csv'});
 
@@ -2016,27 +2201,51 @@ function exportOrders() {
 
 async function markOrderComplete(id) {
 
-  if (!window.adminUpdateOrder) return;
+  if (!window.adminUpdateOrder) { showToast('❌ Firestore not connected'); return; }
 
-  await window.adminUpdateOrder(id, {status:'completed'});
+  try {
 
-  showToast('✅ Order marked complete');
+    await window.adminUpdateOrder(id, {status:'completed'});
 
-  loadOrders(); loadDashboardStats();
+    showToast('✅ Order marked complete');
+
+    loadOrders();
+
+    loadDashboardStats();
+
+  } catch (err) {
+
+    console.error('Order update failed:', err);
+
+    showToast('❌ Could not update the order. Check your connection and role.');
+
+  }
 
 }
 
 async function deleteOrder(id) {
 
-  if (!confirm('Delete this order?')) return;
+  if (!confirm('Delete this order? This cannot be undone.')) return;
 
-  if (!window.adminDeleteOrder) return;
+  if (!window.adminDeleteOrder) { showToast('❌ Firestore not connected'); return; }
 
-  await window.adminDeleteOrder(id);
+  try {
 
-  showToast('🗑️ Order deleted');
+    await window.adminDeleteOrder(id);
 
-  loadOrders(); loadDashboardStats();
+    showToast('🗑️ Order deleted');
+
+    loadOrders();
+
+    loadDashboardStats();
+
+  } catch (err) {
+
+    console.error('Order delete failed:', err);
+
+    showToast('❌ Could not delete the order.');
+
+  }
 
 }
 
@@ -2050,7 +2259,7 @@ async function renderLikesTab() {
 
   const sorted = [...artworks]
 
-    .map(a => ({...a, likeCount: likeCounts[String(a.id)] || 0}))
+    .map(a => ({...a, likeCount: getLikeCount(a.id)}))
 
     .filter(a => a.likeCount > 0)
 
@@ -2070,13 +2279,10 @@ async function renderLikesTab() {
 
       <div style="position:absolute;top:6px;left:6px;background:var(--adm-gold);color:var(--adm-bg);font-size:0.62rem;font-weight:800;padding:2px 7px;border-radius:50px;">#${i+1}</div>
 
-      <img src="${a.image}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
-
+      <img src="${escapeHtml(safeImageUrl(a.image))}" style="width:100%;height:90px;object-fit:cover;background:#222;" onerror="this.src='assets/brand/cover.jpg'">
       <div style="padding:8px;">
-
-        <div style="font-size:0.76rem;color:var(--adm-text);font-weight:600;">${a.title}</div>
-
-        <div style="font-size:0.7rem;color:var(--adm-gold);">${a.price}</div>
+        <div style="font-size:0.76rem;color:var(--adm-text);font-weight:600;">${escapeHtml(a.title)}</div>
+        <div style="font-size:0.7rem;color:var(--adm-gold);">${escapeHtml(a.price)}</div>
 
         <div style="font-size:0.68rem;color:#e05252;margin-top:4px;">❤️ ${a.likeCount} like${a.likeCount!==1?'s':''}</div>
 
@@ -2098,7 +2304,7 @@ function clearFavoritesView() {
 
 function viewArtworkDetails(artworkId) {
 
-  const artwork = artworks.find(a => a.id === artworkId);
+  const artwork = artworks.find(a => String(a.id) === String(artworkId));
 
   if (!artwork) { showToast('Artwork not found'); return; }
 
@@ -2108,23 +2314,21 @@ function viewArtworkDetails(artworkId) {
 
     <div style="max-width:600px;margin:0 auto;">
 
-      <div style="background:var(--card-bg);border:1px solid rgba(0,0,0,0.06);border-radius:8px;padding:24px;margin-bottom:20px;">
+      <div style="background:var(--adm-surface2);border:1px solid rgba(0,0,0,0.06);border-radius:8px;padding:24px;margin-bottom:20px;">
 
-        <h3 style="color:var(--charcoal);margin-bottom:12px;font-size:1.3rem;">${artwork.title}</h3>
-
-        <img src="${resolveImage(artwork.image)}" alt="${artwork.title}" style="width:100%;height:300px;object-fit:cover;border-radius:6px;margin-bottom:16px;" onerror="this.src='assets/brand/cover.jpg'">
+        <h3 style="color:var(--adm-text);margin-bottom:12px;font-size:1.3rem;">${escapeHtml(artwork.title)}</h3>
+        <img src="${escapeHtml(resolveImage(artwork.image))}" alt="${escapeHtml(artwork.title)}" style="width:100%;height:300px;object-fit:cover;border-radius:6px;margin-bottom:16px;" onerror="this.src='assets/brand/cover.jpg'">
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
 
-          <div><div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Price</div><div style="font-size:1.2rem;color:#ADD8E6;font-weight:700;">${artwork.price}</div></div>
-
-          <div><div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Status</div><div style="font-size:1.2rem;color:var(--gold);font-weight:700;text-transform:capitalize;">${artwork.status || 'available'}</div></div>
+          <div><div style="font-size:0.75rem;color:var(--adm-muted);text-transform:uppercase;margin-bottom:4px;">Price</div><div style="font-size:1.2rem;color:#ADD8E6;font-weight:700;">${escapeHtml(artwork.price)}</div></div>
+          <div><div style="font-size:0.75rem;color:var(--adm-muted);text-transform:uppercase;margin-bottom:4px;">Status</div><div style="font-size:1.2rem;color:var(--adm-gold);font-weight:700;text-transform:capitalize;">${escapeHtml(artwork.status || 'available')}</div></div>
 
         </div>
 
         <div style="border-top:1px solid rgba(0,0,0,0.06);padding-top:16px;margin-bottom:16px;">
 
-          <p style="color:var(--muted);line-height:1.6;">${artwork.desc || 'No description available'}</p>
+          <p style="color:var(--adm-muted);line-height:1.6;">${escapeHtml(artwork.desc || 'No description available')}</p>
 
         </div>
 
@@ -2138,11 +2342,11 @@ function viewArtworkDetails(artworkId) {
 
           </div>
 
-          <div style="font-size:0.8rem;color:var(--muted);">Total engagement on this piece</div>
+          <div style="font-size:0.8rem;color:var(--adm-muted);">Total engagement on this piece</div>
 
         </div>
 
-        <button onclick="closeArtworkDetails()" style="width:100%;padding:12px;background:var(--charcoal);color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:background 0.3s;">Close Details</button>
+        <button onclick="closeArtworkDetails()" style="width:100%;padding:12px;background:var(--adm-gold);color:#141310;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:background 0.3s;">Close Details</button>
 
       </div>
 
@@ -2176,6 +2380,8 @@ async function loadUsers() {
 
   const el = document.getElementById('usersContent');
 
+  if (!window._firebaseAdmin) { el.innerHTML = '<div class="adm-empty">Admin sign-in required.</div>'; return; }
+
   if (window._currentRole !== 'crown') { el.innerHTML = '<div class="adm-empty">👑 Crown-level access required to manage users.</div>'; return; }
 
   el.innerHTML = '<div class="adm-loader">⏳ Loading users…</div>';
@@ -2192,13 +2398,10 @@ async function loadUsers() {
 
     <tbody>${users.map(u => `<tr>
 
-      <td style="font-size:0.7rem;color:var(--adm-muted);font-family:monospace;">${u.id.slice(0,12)}…</td>
-
-      <td>${u.email||u.id}</td>
-
+      <td style="font-size:0.7rem;color:var(--adm-muted);font-family:monospace;">${escapeHtml(String(u.id).slice(0,12))}…</td>
+      <td>${escapeHtml(u.email || u.id)}</td>
       <td>
-
-        <select class="adm-role-select" onchange="changeUserRole('${u.id}',this.value)">
+        <select class="adm-role-select" onchange="changeUserRole('${jsArg(u.id)}',this.value)">
 
           <option ${u.role==='crown'?'selected':''}>crown</option>
 
@@ -2212,7 +2415,7 @@ async function loadUsers() {
 
       </td>
 
-      <td><button class="adm-btn-sm" onclick="navigator.clipboard.writeText('${u.id}').then(()=>showToast('UID copied'))">Copy UID</button></td>
+      <td><button class="adm-btn-sm" onclick="navigator.clipboard.writeText('${jsArg(u.id)}').then(()=>showToast('UID copied'))">Copy UID</button></td>
 
     </tr>`).join('')}</tbody>
 
@@ -2220,30 +2423,65 @@ async function loadUsers() {
 
 }
 
+const ASSIGNABLE_ROLES = ['crown', 'admin', 'editor', 'viewer'];
+
 async function changeUserRole(uid, newRole) {
 
-  if (!window.adminUpdateUser) return;
+  const role = String(newRole || '').toLowerCase();
 
-  await window.adminUpdateUser(uid, {role: newRole});
+  // The <select> is the only caller, but never trust a DOM value: reject
+  // anything outside the whitelist before it reaches Firestore.
+  if (!ASSIGNABLE_ROLES.includes(role)) { showToast('❌ Unknown role'); loadUsers(); return; }
 
-  showToast(`✅ Role updated to "${newRole}"`);
+  if (!window.adminUpdateUser) { showToast('❌ Firestore not connected'); loadUsers(); return; }
+
+  try {
+
+    const done = await window.adminUpdateUser(uid, {role});
+
+    if (done === null) { loadUsers(); return; }   // refused (e.g. self-demotion)
+
+    showToast(`✅ Role updated to "${role}"`);
+
+    loadUsers();
+
+  } catch (err) {
+
+    console.error('Role update failed:', err);
+
+    showToast('❌ Could not change the role. Check your permissions.');
+
+    loadUsers();
+
+  }
 
 }
 
 async function handleAdminLogout() {
+  if (typeof window.firebaseAdminLogout === 'function') {
+    await window.firebaseAdminLogout();
+  } else {
+    window._firebaseAdmin = false;
+    window._currentRole = null;
+    window._currentUser = null;
+  }
 
-  await window.firebaseAdminLogout?.();
+  // Drop the per-session device unlock so the PIN is required next time.
+  try { sessionStorage.removeItem(DEVICE_UNLOCK_KEY); } catch (_) { /* ignore */ }
 
   closeAdminDashboard();
 
-  document.getElementById('adminPanelTrigger').classList.remove('active');
-
-  document.getElementById('adminPanelTrigger').title = 'Admin Login';
+  const trigger = document.getElementById('adminPanelTrigger');
+  if (trigger) { trigger.classList.remove('active'); trigger.title = 'Admin Login'; }
 
   const cs = document.getElementById('crownSection');
-  cs.classList.remove('is-visible');
-  cs.style.display = 'none';
+  if (cs) { cs.classList.remove('is-visible'); cs.style.display = 'none'; }
 
+  // Clear privileged data from the page.
+  const orders = document.getElementById('ordersContent');
+  if (orders) orders.innerHTML = '';
+  const users = document.getElementById('usersContent');
+  if (users) users.innerHTML = '';
 }
 
 /* ══ KEYBOARD ══ */
@@ -2328,11 +2566,19 @@ function init() {
 
   if (storyLiked) {
 
-    document.getElementById('storyLikeBtn').classList.add('liked');
+    const likeBtn  = document.getElementById('storyLikeBtn');
 
-    document.getElementById('storyLikeIcon').setAttribute('fill','#e05252');
+    const likeIcon = document.getElementById('storyLikeIcon');
 
-    document.getElementById('storyLikeIcon').setAttribute('stroke','#e05252');
+    if (likeBtn) likeBtn.classList.add('liked');
+
+    if (likeIcon) {
+
+      likeIcon.setAttribute('fill', '#e05252');
+
+      likeIcon.setAttribute('stroke', '#e05252');
+
+    }
 
   }
 
@@ -2342,7 +2588,42 @@ function init() {
 
 }
 
-init();
+/* A single missing element must never abort start-up: the gallery, cart and
+   analytics are already live by this point, so contain any late failure. */
+try { init(); } catch (err) { console.error('Initialisation problem:', err); }
+
+/* ══ ACCESSIBILITY: keep aria-hidden in step with the visual state ══════
+   Overlays are shown by toggling a class, so screen readers would otherwise
+   keep announcing content that is visually closed (or hide open dialogs). */
+(function syncOverlayAria() {
+
+  const SELECTOR = '.modal-overlay, .adm-overlay, .cart-drawer, .video-overlay, .img-zoom-overlay, .access-denied-overlay';
+
+  const apply = (el) => {
+    const open = el.classList.contains('active') || el.classList.contains('open');
+    el.setAttribute('aria-hidden', open ? 'false' : 'true');
+  };
+
+  const overlays = Array.from(document.querySelectorAll(SELECTOR));
+
+  overlays.forEach(apply);
+
+  if (typeof MutationObserver !== 'function') return;
+
+  const observer = new MutationObserver((records) => {
+    records.forEach((record) => { if (record.target && record.target.nodeType === 1) apply(record.target); });
+  });
+
+  overlays.forEach((el) => observer.observe(el, { attributes: true, attributeFilter: ['class'] }));
+
+  // Elements rendered later (e.g. the artwork details modal) are picked up here.
+  document.addEventListener('click', () => {
+    document.querySelectorAll(SELECTOR).forEach((el) => {
+      if (!el.dataset.ariaObserved) { el.dataset.ariaObserved = '1'; apply(el); observer.observe(el, { attributes: true, attributeFilter: ['class'] }); }
+    });
+  }, true);
+
+})();
 
 window.addEventListener('beforeunload', () => {
   if (window._artworksUnsubscribe) { window._artworksUnsubscribe(); window._artworksUnsubscribe = null; }

@@ -2,6 +2,12 @@
    arten.js — Arten AI Creative Concierge  v2
    3 built-in Web Speech voices + optional ElevenLabs premium voices.
    All settings editable from the Control Console.
+
+   ⚠ CURRENTLY DISABLED (the script tag is commented out in index.html).
+   ⚠ SECURITY: this file must never hold an ElevenLabs API key. The Control
+   Console no longer stores one, and any legacy `ail_arten_el_key` value is
+   purged on load. If premium voices are wanted, proxy the ElevenLabs call
+   through your own server and keep the key out of the browser entirely.
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -21,7 +27,8 @@
     eyeColor:    _ls('ail_arten_eye',         '#00e5ff'),
     pos:         _ls('ail_arten_pos',         'left'),
     personality: _ls('ail_arten_personality', 'warm'),
-    elKey:       _ls('ail_arten_el_key',      ''),
+    // Never read a stored secret back into the page (see header note).
+    elKey:       '',
     elVoiceId:   _ls('ail_arten_el_voice',    'EXAVITQu4vr4xnSDxMaL'),
     lang:        _ls('ail_arten_lang',        'en-US')
   };
@@ -303,7 +310,8 @@
     var p = settings.pos || settings.position;
     if (p)                    { CFG.pos          = p;                    _lsSet('ail_arten_pos',   p); }
     if (settings.personality) { CFG.personality  = settings.personality; _lsSet('ail_arten_personality', settings.personality); }
-    if (settings.elKey)       { CFG.elKey        = settings.elKey;       _lsSet('ail_arten_el_key',  settings.elKey); }
+    /* API keys are never persisted (see header note). */
+    if (settings.elKey)       { CFG.elKey        = settings.elKey; }
     /* Accept both "elVoiceId" and "elVoice" (console sends "elVoice") */
     var ev = settings.elVoiceId || settings.elVoice;
     if (ev)                   { CFG.elVoiceId    = ev;                   _lsSet('ail_arten_el_voice', ev); }
