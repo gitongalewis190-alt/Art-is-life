@@ -3,7 +3,16 @@
    Neural-network canvas background + Cloudinary image upload
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
-  var esc = function (s) { return window.escapeHtml ? window.escapeHtml(s) : String(s == null ? "" : s); };
+  var esc = function (s) {
+    if (window.escapeHtml) return window.escapeHtml(s);
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  };
+  var imgUrl = function (s) {
+    var raw = String(s == null ? "" : s);
+    return window.safeImageUrl ? window.safeImageUrl(raw) : raw;
+  };
 
   var LAYOUTS = [
     { id: "1", name: "Obsidian",   desc: "Void + liquid glass (default)" },
@@ -109,7 +118,7 @@
     if (!_uploadedUrls.length) { grid.innerHTML = ""; return; }
     grid.innerHTML = _uploadedUrls.map(function (url, idx) {
       return '<div class="cc-upload-thumb">' +
-        '<img src="' + esc(url) + '" loading="lazy">' +
+        '<img src="' + esc(imgUrl(url)) + '" loading="lazy">' +
         '<button class="cc-upload-thumb-del" onclick="window._ccDelThumb(' + idx + ')">×</button>' +
         '</div>';
     }).join("");
@@ -166,6 +175,7 @@
       for (var i = 0; i < files.length; i++) {
         var f = files[i];
         if (!f.type.startsWith("image/")) { errors.push(f.name + " is not an image"); continue; }
+        if (f.size > 10 * 1024 * 1024) { errors.push(f.name + " is larger than 10 MB"); continue; }
         var result = await uploadToCloudinary(f);
         if (result.url) {
           _uploadedUrls.push(result.url);
@@ -286,7 +296,7 @@
               (ok ? "✓ gtag active — " + evts.length + " event(s) fired this session." : "⚠ gtag not responding — may be blocked by an ad-blocker. Real visitors still tracked.") +
               '</div>' +
               '<div style="margin-top:10px;max-height:80px;overflow-y:auto;font-family:monospace;font-size:.69rem;background:rgba(0,0,0,0.04);border-radius:6px;padding:7px 9px;color:var(--muted);line-height:1.65">' +
-              (evts.slice(-5).map(function(e){return String(e[1]||"event")+(e[2]?" · "+JSON.stringify(e[2]).slice(0,38):"");}).join("<br>")||"No events yet this session.") +
+              (evts.slice(-5).map(function(e){return esc(String(e[1]||"event"))+(e[2]?" · "+esc(JSON.stringify(e[2]).slice(0,38)):"");}).join("<br>")||"No events yet this session.") +
               '</div>';
           })() +
           '<div style="margin-top:10px"><a href="https://analytics.google.com" target="_blank" rel="noopener" style="font-size:.74rem;color:var(--gold-dark);text-decoration:underline">Open Google Analytics →</a></div>' +
@@ -334,7 +344,10 @@
           try { a.eyeColor    = localStorage.getItem('ail_arten_eye')         || '#00e5ff'; } catch(e){}
           try { a.position    = localStorage.getItem('ail_arten_pos')         || 'left'; } catch(e){}
           try { a.personality = localStorage.getItem('ail_arten_personality') || 'warm'; } catch(e){}
-          try { a.elKey       = localStorage.getItem('ail_arten_el_key')      || ''; } catch(e){}
+          // Never read a stored ElevenLabs key back into the page. Secret
+          // keys must live behind a server proxy, not in localStorage.
+          a.elKey = '';
+          try { localStorage.removeItem('ail_arten_el_key'); } catch(e){}
           try { a.elVoice     = localStorage.getItem('ail_arten_el_voice')    || ''; } catch(e){}
           return '<section class="cc-card" id="cc-arten-card"><h4>🤖 Arten AI Assistant</h4>' +
             '<p class="cc-hint">All settings are device-local. No ElevenLabs key is needed for the built-in voices.</p>' +
@@ -350,11 +363,9 @@
             '</div>' +
 
             '<div id="cc-arten-el-wrap" style="margin-top:10px;' + (a.voice==='elevenlabs'?'':'display:none') + '">' +
-              '<label class="cc-label">ElevenLabs API Key <span style="font-size:.68rem;color:#9ca3af">(stored on this device only)</span></label>' +
-              '<input class="cc-input" id="cc-arten-el-key" type="password" placeholder="sk_…" value="' + esc(a.elKey) + '">' +
-              '<label class="cc-label" style="margin-top:6px">ElevenLabs Voice ID</label>' +
+              '<label class="cc-label">ElevenLabs Voice ID</label>' +
               '<input class="cc-input" id="cc-arten-el-voice" type="text" placeholder="21m00Tcm4TlvDq8ikWAM" value="' + esc(a.elVoice) + '">' +
-              '<p class="cc-hint">Find Voice IDs at elevenlabs.io/voice-library. Key never leaves your device.</p>' +
+              '<p class="cc-hint">⚠ The ElevenLabs API key is deliberately <strong>not</strong> stored in the browser: any script on the page could read it. Add it to a server-side proxy if you enable premium voices.</p>' +
             '</div>' +
 
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">' +
@@ -422,14 +433,15 @@
         // PWA & APP
         '<section class="cc-card"><h4>📱 PWA &amp; App</h4>' +
           (function(){
-            var standalone = window.matchMedia("(display-mode:standalone)").matches || window.navigator.standalone === true;
+            var standalone = (typeof window.matchMedia === "function" &&
+              window.matchMedia("(display-mode:standalone)").matches) || window.navigator.standalone === true;
             var swOk = "serviceWorker" in navigator;
             return '<div style="display:grid;gap:7px">' +
-              '<div class="cc-keystatus ' + (swOk?"ok":"warn") + '">' + (swOk?"✓ Service Worker active · cache: ail-v6":"⚠ Service Worker not supported") + '</div>' +
+              '<div class="cc-keystatus ' + (swOk?"ok":"warn") + '">' + (swOk?"✓ Service Worker active":"⚠ Service Worker not supported") + '</div>' +
               '<div class="cc-keystatus ' + (standalone?"ok":"warn") + '">' + (standalone?"✓ Running as installed app":"ℹ Browser mode · install via Share → Add to Home Screen") + '</div>' +
             '</div>' +
             '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-              '<div><label class="cc-label">Cache</label><div style="font-size:.85rem;font-weight:700">ail-v6</div></div>' +
+              '<div><label class="cc-label">Cache</label><div style="font-size:.85rem;font-weight:700">versioned</div></div>' +
               '<div><label class="cc-label">Mode</label><div style="font-size:.85rem;font-weight:700">' + (standalone?"Standalone":"Browser") + '</div></div>' +
             '</div>' +
             '<p class="cc-hint" style="margin-top:10px">iOS: Share → Add to Home Screen. Android: install prompt in browser address bar. App works offline.</p>';
@@ -566,7 +578,7 @@
         eyeColor:    g2('cc-arten-eye')        || '#00e5ff',
         position:    rval('arten_pos')         || 'left',
         personality: rval('arten_personality') || 'warm',
-        elKey:       g2('cc-arten-el-key').trim(),
+        elKey:       '', // secrets are never stored in the browser
         elVoice:     g2('cc-arten-el-voice').trim(),
         lang:        g2('cc-arten-lang')       || 'en-US'
       };
@@ -576,7 +588,7 @@
         localStorage.setItem('ail_arten_eye',         settings.eyeColor);
         localStorage.setItem('ail_arten_pos',         settings.position);
         localStorage.setItem('ail_arten_personality', settings.personality);
-        if (settings.elKey)   localStorage.setItem('ail_arten_el_key',   settings.elKey);
+        localStorage.removeItem('ail_arten_el_key'); // purge any legacy key
         if (settings.elVoice) localStorage.setItem('ail_arten_el_voice', settings.elVoice);
         if (settings.lang)    localStorage.setItem('ail_arten_lang',     settings.lang);
       } catch(e){}

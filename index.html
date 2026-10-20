@@ -4,33 +4,44 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>LEES.mobile — Lewis Gitonga</title>
+<link rel="canonical" href="https://artislife-44968.web.app/">
 <meta name="description" content="Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces. Commissions open.">
 
 <!-- SOCIAL / SEO -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="LEES.mobile — Lewis Gitonga">
 <meta property="og:description" content="Original Kenyan contemporary emotional artworks. One-off collector pieces. Commissions open.">
-<meta property="og:image" content="assets/brand/cover.jpg">
+<meta property="og:url" content="https://artislife-44968.web.app/">
+<meta property="og:image" content="https://artislife-44968.web.app/assets/brand/cover.jpg">
+<meta property="og:image:alt" content="Artwork by Lewis Gitonga">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="1024">
+<meta property="og:site_name" content="LEES.mobile">
+<meta property="og:locale" content="en_KE">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="LEES.mobile — Lewis Gitonga">
 <meta name="twitter:description" content="Original Kenyan contemporary emotional artworks. One-off collector pieces. Commissions open.">
-<meta name="twitter:image" content="assets/brand/cover.jpg">
+<meta name="twitter:image" content="https://artislife-44968.web.app/assets/brand/cover.jpg">
 
 <!-- PWA / APP -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LEES.mobile">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="assets/brand/cover.jpg">
-<link rel="apple-touch-icon" href="assets/brand/cover.jpg">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/brand/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/brand/apple-touch-icon.png">
 
 <!-- Splash safety net: if JS never runs, never trap the user behind it -->
 <noscript><style>#splash{display:none!important}</style></noscript>
 
 <!-- Pre-paint dark background so there's no flash of white before CSS loads -->
 <style>html,body{background:#0a0908!important}</style>
+
+<!-- SAFETY HELPERS (escaping + URL validation) — must load before app code -->
+<script src="js/sanitize.js"></script>
 
 <!-- GOOGLE ANALYTICS -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MPX5MMNRB2"></script>
@@ -139,7 +150,9 @@ LEES<span>.MOBILE</span>
 
   <div class="header-right">
 
-<div id="adminPanelTrigger" title="Admin Login" onclick="openAdminLogin()" aria-label="Admin access">
+<div id="adminPanelTrigger" role="button" tabindex="0" title="Admin Login" aria-label="Admin access"
+     onclick="openAdminLogin()"
+     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminLogin();}">
 
   <img src="assets/brand/admin_icon.png" alt="Admin" width="22" height="22" style="border-radius:50%;object-fit:contain;filter:drop-shadow(0 0 4px rgba(201,168,76,0.8));" onerror="this.style.display='none';this.parentNode.innerHTML+='&#9881;'">
 
@@ -601,7 +614,7 @@ WhatsApp
 
 <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
 
-<div class="cart-drawer" id="cartDrawer">
+<div class="cart-drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-label="Shopping cart" aria-hidden="true">
 
   <div class="cart-head">
 
@@ -673,11 +686,11 @@ Proceed to Order
 
 <!-- STORY MODAL -->
 
-<div class="modal-overlay" id="storyModal" onclick="closeStory()">
+<div class="modal-overlay" id="storyModal" role="dialog" aria-modal="true" aria-label="The story behind the work" aria-hidden="true" onclick="closeStory()">
 
   <div class="modal-box story-box" onclick="event.stopPropagation()">
 
-<button class="modal-close" onclick="closeStory()">
+<button class="modal-close" type="button" aria-label="Close" onclick="closeStory()">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
@@ -727,11 +740,11 @@ Proceed to Order
 
 <!-- ORDER MODAL -->
 
-<div class="modal-overlay" id="orderModal" onclick="closeOrder()">
+<div class="modal-overlay" id="orderModal" role="dialog" aria-modal="true" aria-label="Place an order" aria-hidden="true" onclick="closeOrder()">
 
   <div class="modal-box order-box" onclick="event.stopPropagation()">
 
-<button class="modal-close" onclick="closeOrder()">
+<button class="modal-close" type="button" aria-label="Close" onclick="closeOrder()">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
@@ -743,11 +756,11 @@ Proceed to Order
 
 <span class="order-artwork-tag" id="orderArtworkName"></span>
 
-  <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="orderName" placeholder="Full name" autocomplete="name"></div>
+  <div class="form-group"><label class="form-label" for="orderName">Your Name</label><input class="form-input" type="text" placeholder="Full name" autocomplete="name" id="orderName"></div>
 
-  <div class="form-group"><label class="form-label">Delivery Address</label><input class="form-input" type="text" id="orderAddress" placeholder="Your address or area"></div>
+  <div class="form-group"><label class="form-label" for="orderAddress">Delivery Address</label><input class="form-input" type="text" placeholder="Your address or area" id="orderAddress"></div>
 
-  <div class="form-group"><label class="form-label">Phone (optional)</label><input class="form-input" type="tel" id="orderPhone" placeholder="+254…"></div>
+  <div class="form-group"><label class="form-label" for="orderPhone">Phone (optional)</label><input class="form-input" type="tel" placeholder="+254…" id="orderPhone"></div>
 
 <span class="channel-label">Send your order via:</span>
 
@@ -795,11 +808,11 @@ Send via WhatsApp
 
 <!-- COMMISSION MODAL -->
 
-<div class="modal-overlay" id="commissionModal" onclick="closeCommission()">
+<div class="modal-overlay" id="commissionModal" role="dialog" aria-modal="true" aria-label="Request a commission" aria-hidden="true" onclick="closeCommission()">
 
   <div class="modal-box commission-box" onclick="event.stopPropagation()">
 
-<button class="modal-close" onclick="closeCommission()">
+<button class="modal-close" type="button" aria-label="Close" onclick="closeCommission()">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
@@ -815,23 +828,23 @@ Send via WhatsApp
 
   <div class="form-row">
 
-<div class="form-group"><label class="form-label">Your Name</label><input class="form-input" type="text" id="cName" placeholder="Full name"></div>
+<div class="form-group"><label class="form-label" for="cName">Your Name</label><input class="form-input" type="text" placeholder="Full name" id="cName"></div>
 
-<div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="cPhone" placeholder="+254…"></div>
+<div class="form-group"><label class="form-label" for="cPhone">Phone</label><input class="form-input" type="tel" placeholder="+254…" id="cPhone"></div>
 
   </div>
 
-  <div class="form-group"><label class="form-label">Describe Your Vision</label><textarea class="form-textarea" id="cDesc" placeholder="What should this artwork feel like?"></textarea></div>
+  <div class="form-group"><label class="form-label" for="cDesc">Describe Your Vision</label><textarea class="form-textarea" placeholder="What should this artwork feel like?" id="cDesc"></textarea></div>
 
   <div class="form-row">
 
-<div class="form-group"><label class="form-label">Mood / Emotion</label>
+<div class="form-group"><label for="cMood" class="form-label">Mood / Emotion</label>
 
   <select class="form-select" id="cMood"><option value="">Select mood…</option><option>Peaceful &amp; Calm</option><option>Bold &amp; Energetic</option><option>Melancholic &amp; Deep</option><option>Joyful &amp; Vibrant</option><option>Mysterious &amp; Dark</option><option>Romantic &amp; Warm</option><option>Spiritual &amp; Transcendent</option></select>
 
 </div>
 
-<div class="form-group"><label class="form-label">Size</label>
+<div class="form-group"><label for="cSize" class="form-label">Size</label>
 
   <select class="form-select" id="cSize" onchange="handleCustomSizeSelect(this.value)"><option value="">Select size…</option><option>Small (A4 / 8×10 in)</option><option>Medium (A3 / 12×16 in)</option><option>Large (18×24 in)</option><option>Extra Large (24×36 in)</option><option value="custom">Custom Size</option></select>
 
@@ -841,9 +854,9 @@ Send via WhatsApp
 
   </div>
 
-  <div class="form-group"><label class="form-label">Color Preferences</label><input class="form-input" type="text" id="cColors" placeholder="e.g. warm earth tones, deep blues…"></div>
+  <div class="form-group"><label class="form-label" for="cColors">Color Preferences</label><input class="form-input" type="text" placeholder="e.g. warm earth tones, deep blues…" id="cColors"></div>
 
-  <div class="form-group"><label class="form-label">Delivery Address</label><input class="form-input" type="text" id="cAddress" placeholder="Your address"></div>
+  <div class="form-group"><label class="form-label" for="cAddress">Delivery Address</label><input class="form-input" type="text" placeholder="Your address" id="cAddress"></div>
 
   <!-- POLICY AGREEMENT — bottom of form, before channel & send -->
 
@@ -912,11 +925,11 @@ Send via WhatsApp
 
 <!-- ADMIN LOGIN MODAL -->
 
-<div class="modal-overlay" id="adminLoginModal" onclick="closeAdminLogin()">
+<div class="modal-overlay" id="adminLoginModal" role="dialog" aria-modal="true" aria-label="Admin sign in" aria-hidden="true" onclick="closeAdminLogin()">
 
   <div class="modal-box admin-login-box" onclick="event.stopPropagation()">
 
-<button class="modal-close" onclick="closeAdminLogin()">
+<button class="modal-close" onclick="closeAdminLogin()" aria-label="Close">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
@@ -932,31 +945,25 @@ Admin Access
 
   </h3>
 
-  <p class="admin-subtitle">Enter the console password to continue.</p>
+  <p class="admin-subtitle" id="adminLoginSubtitle">Sign in with the admin account that holds an admin or crown role.</p>
 
-  <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="adminPassword" placeholder="Console password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
+  <div class="form-group" id="adminEmailGroup"><label class="form-label" for="adminEmail">Email</label><input class="form-input" type="email" id="adminEmail" placeholder="you@example.com" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email"></div>
 
-  <div class="admin-error" id="adminError"></div>
+  <div class="form-group"><label class="form-label" for="adminPassword">Password</label><input class="form-input" type="password" id="adminPassword" placeholder="Console password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')handleAdminLogin()"></div>
 
-  <div style="text-align:right;margin-bottom:12px;">
-    <button type="button" onclick="toggleForgotPassword()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Forgot password?</button>
+  <div class="admin-error" id="adminError" role="alert"></div>
+
+  <div style="text-align:right;margin-bottom:12px;" id="adminForgotToggle">
+    <button type="button" onclick="toggleForgotPassword()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Forgot PIN?</button>
   </div>
   <div id="adminForgotPanel" class="forgot-panel" style="display:none;">
     <div class="forgot-panel-header">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-      <span>Password Recovery</span>
+      <span>Forgotten device PIN</span>
     </div>
-    <p class="forgot-panel-sub">The console password lives only on this device — there's no email reset. Use a memory jog, or set a new one from the device where it was last unlocked.</p>
-    <div class="forgot-hints-label">Need a memory jog? Security hints:</div>
-    <div class="forgot-hints-row">
-      <button class="forgot-hint-btn" onclick="showHint(1)">Favourite car</button>
-      <button class="forgot-hint-btn" onclick="showHint(2)">Best friend</button>
-      <button class="forgot-hint-btn" onclick="showHint(3)">Long-term goal</button>
-    </div>
-    <div id="adminForgotMsg" class="forgot-msg"></div>
+    <p class="forgot-panel-sub">The PIN only locks this browser's console screen — it is not a password and it protects no data. Clearing it does <strong>not</strong> sign you in: admin access still requires your Firebase email and password.</p>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
-      <button type="button" onclick="resetAdminLock()" style="background:none;border:none;color:var(--adm-red,#e05252);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Still can't get in? Reset the console lock</button>
-      <p style="font-size:0.7rem;color:var(--adm-muted,#999);margin-top:4px;">This removes the password on this device only — you'll set a fresh one right after. Anyone with this device could use this, the same way the console is wide open until a password is ever set.</p>
+      <button type="button" onclick="resetAdminLock()" style="background:none;border:none;color:var(--adm-red,#e05252);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Clear the PIN on this device</button>
     </div>
   </div>
 
@@ -964,7 +971,7 @@ Admin Access
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
 
-Unlock Console
+Sign In
 
   </button>
 
@@ -998,11 +1005,11 @@ Unlock Console
 
 <!-- COMMENT MODAL -->
 
-<div class="modal-overlay" id="commentModal" onclick="closeCommentModal()">
+<div class="modal-overlay" id="commentModal" role="dialog" aria-modal="true" aria-label="Comments" aria-hidden="true" onclick="closeCommentModal()">
 
   <div class="modal-box comment-modal-box" onclick="event.stopPropagation()">
 
-<button class="modal-close" onclick="closeCommentModal()">
+<button class="modal-close" type="button" aria-label="Close" onclick="closeCommentModal()">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
@@ -1018,7 +1025,7 @@ Unlock Console
 
   <div class="comment-input-row">
 
-<input class="comment-input" type="text" id="commentInput" placeholder="Write a comment…" maxlength="280" onkeydown="if(event.key==='Enter')submitComment()">
+<input class="comment-input" type="text" id="commentInput" placeholder="Write a comment…" maxlength="1000" onkeydown="if(event.key==='Enter')submitComment()">
 
 <button class="comment-submit" onclick="submitComment()">Post</button>
 
@@ -1032,7 +1039,7 @@ Unlock Console
 
 <!-- ADMIN DASHBOARD -->
 
-<div class="adm-overlay" id="adminDashboard">
+<div class="adm-overlay" id="adminDashboard" role="dialog" aria-modal="true" aria-label="Admin dashboard" aria-hidden="true">
 
   <div class="adm-topbar">
 
@@ -1196,8 +1203,8 @@ LEES.MOBILE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
     <button id="admSetPwBtn" onclick="toggleSetPasswordPanel()" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(201,168,76,0.12);color:#e0e0e0;font-size:0.75rem;cursor:pointer;font-family:'Inter',sans-serif;">🔑 Set Password</button>
   </div>
   <div id="admSetPwPanel" style="display:none;margin-top:10px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);max-width:320px;">
-    <div class="adm-form-group"><label class="adm-form-label">New password</label><input class="adm-input" type="password" id="admNewPw" placeholder="At least 6 characters" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-    <div class="adm-form-group"><label class="adm-form-label">Confirm password</label><input class="adm-input" type="password" id="admNewPw2" placeholder="Repeat password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    <div class="adm-form-group"><label class="adm-form-label" for="admNewPw">New password</label><input class="adm-input" type="password" placeholder="At least 6 characters" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" id="admNewPw"></div>
+    <div class="adm-form-group"><label class="adm-form-label" for="admNewPw2">Confirm password</label><input class="adm-input" type="password" placeholder="Repeat password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" id="admNewPw2"></div>
     <button class="adm-btn-sm primary" onclick="saveAdminPassword()">Save &amp; Lock Console</button>
     <div id="admSetPwMsg" style="font-size:0.75rem;margin-top:8px;"></div>
   </div>
@@ -1308,15 +1315,15 @@ LEES.MOBILE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-form-row">
 
-<div class="adm-form-group"><label class="adm-form-label">Title *</label><input class="adm-input" type="text" id="newTitle" placeholder="e.g. Resonant Rhythms"></div>
+<div class="adm-form-group"><label class="adm-form-label" for="newTitle">Title *</label><input class="adm-input" type="text" placeholder="e.g. Resonant Rhythms" id="newTitle"></div>
 
-<div class="adm-form-group"><label class="adm-form-label">Price (KES) *</label><input class="adm-input" type="number" id="newPrice" placeholder="e.g. 1200"></div>
+<div class="adm-form-group"><label class="adm-form-label" for="newPrice">Price (KES) *</label><input class="adm-input" type="number" placeholder="e.g. 1200" id="newPrice"></div>
 
   </div>
 
-  <div class="adm-form-group"><label class="adm-form-label">Description</label><textarea class="adm-input textarea" id="newDesc" placeholder="What emotion does this piece carry?"></textarea></div>
+  <div class="adm-form-group"><label class="adm-form-label" for="newDesc">Description</label><textarea class="adm-input textarea" placeholder="What emotion does this piece carry?" id="newDesc"></textarea></div>
 
-  <div class="adm-form-group"><label class="adm-form-label">Status</label>
+  <div class="adm-form-group"><label for="newStatus" class="adm-form-label">Status</label>
 
 <select class="adm-input" id="newStatus">
 
@@ -1330,13 +1337,13 @@ LEES.MOBILE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   </div>
 
-  <div class="adm-form-group"><label class="adm-form-label">Dimensions</label><input class="adm-input" type="text" id="newDimensions" placeholder="e.g. 60×80 cm"></div>
+  <div class="adm-form-group"><label class="adm-form-label" for="newDimensions">Dimensions</label><input class="adm-input" type="text" placeholder="e.g. 60×80 cm" id="newDimensions"></div>
 
-  <div class="adm-form-group"><label class="adm-form-label">Image Filename (local fallback)</label><input class="adm-input" type="text" id="newImage" placeholder="e.g. my_artwork.jpg"></div>
+  <div class="adm-form-group"><label class="adm-form-label" for="newImage">Image Filename (local fallback)</label><input class="adm-input" type="text" placeholder="e.g. my_artwork.jpg" id="newImage"></div>
 
   <div class="adm-form-group">
 
-<label class="adm-form-label">Upload Image (Firebase Storage)</label>
+<label class="adm-form-label" for="imgFileInput">Upload Image (Firebase Storage)</label>
 
 <div class="adm-upload-zone" onclick="document.getElementById('imgFileInput').click()">
 
@@ -1534,11 +1541,11 @@ Donate
 
 <!-- DONATE MODAL (M-Pesa / Daraja) -->
 
-<div class="modal-overlay" id="donateModal" onclick="closeDonate()">
+<div class="modal-overlay" id="donateModal" role="dialog" aria-modal="true" aria-label="Donate with M-Pesa" aria-hidden="true" onclick="closeDonate()">
 
   <div class="modal-box donate-box glass-panel" onclick="event.stopPropagation()">
 
-<button class="modal-close" onclick="closeDonate()">
+<button class="modal-close" type="button" aria-label="Close" onclick="closeDonate()">
 
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg>
 
@@ -1590,11 +1597,11 @@ Donate with M-Pesa
 
 <!-- TOAST -->
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 
 <!-- VIDEO LIGHTBOX (Process Studio) -->
-<div class="video-overlay" id="videoOverlay" onclick="closeVideo(event)">
+<div class="video-overlay" id="videoOverlay" role="dialog" aria-modal="true" aria-label="Studio film" aria-hidden="true" onclick="closeVideo(event)">
   <button class="video-close" onclick="closeVideo()" aria-label="Close video">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M18 6L6 18M6 6l12 12"/></svg>
   </button>

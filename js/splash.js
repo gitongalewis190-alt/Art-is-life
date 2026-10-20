@@ -13,13 +13,18 @@
   var logoImg     = document.getElementById('splashLogoImg');
   var logoSvg     = document.getElementById('splashLogoSvg');
 
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Guard: some embedded/older browsers expose no matchMedia. Never let the
+  // splash then trap the visitor on a dead screen.
+  var reduce = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
 
   // Apply the logo set in the Control Console, if any
   function applyLogo() {
     var cfg = window.SITE_CONFIG || {};
-    if (cfg.logoUrl && logoImg) {
-      logoImg.src = cfg.logoUrl;
+    var safeLogo = window.safeImageUrl ? window.safeImageUrl(cfg.logoUrl) : '';
+    if (safeLogo && logoImg) {
+      logoImg.src = safeLogo;
       logoImg.style.display = 'block';
       if (logoSvg) logoSvg.style.display = 'none';
     }
@@ -39,21 +44,30 @@
   }
   splash.addEventListener('click', dismiss);
 
-  if (reduce) {
+  // Hard failsafe: whatever happens below, the visitor is never left staring
+  // at the splash. (A missing element or a thrown animation must not trap.)
+  setTimeout(dismiss, 9000);
+
+  if (reduce || !pebble || !markEl || !brandEl) {
     if (pebbleWrap) pebbleWrap.style.display = 'none';
-    markEl.style.opacity = '1';
-    brandEl.style.opacity = '1';
+    if (markEl) markEl.style.opacity = '1';
+    if (brandEl) brandEl.style.opacity = '1';
     remarkReveal(600);
     return;
   }
 
   // PEBBLE VIBRATE SEQUENCE — settles in, trembles briefly, then morphs to the logo
   function startPebble() {
-    pebble.classList.add('is-in');
-    setTimeout(function() {
-      pebble.classList.add('is-vibrating');
-      setTimeout(morphToLogo, 900);
-    }, 350);
+    try {
+      pebble.classList.add('is-in');
+      setTimeout(function() {
+        pebble.classList.add('is-vibrating');
+        setTimeout(morphToLogo, 900);
+      }, 350);
+    } catch (err) {
+      console.warn('Splash animation skipped:', err && err.message);
+      dismiss();
+    }
   }
 
   function morphToLogo() {
@@ -90,8 +104,14 @@
         by: 'Lewis Gitonga — Founder'
       };
       if (remarkEl && remark && remark.text) {
-        remarkEl.innerHTML = String(remark.text).replace(/</g,'&lt;') +
-          (remark.by ? '<span class="by">' + String(remark.by).replace(/</g,'&lt;') + '</span>' : '');
+        // textContent — never innerHTML — so CMS text can never inject markup.
+        remarkEl.textContent = String(remark.text);
+        if (remark.by) {
+          var by = document.createElement('span');
+          by.className = 'by';
+          by.textContent = String(remark.by);
+          remarkEl.appendChild(by);
+        }
         remarkEl.classList.add('show');
       }
       // Fully automated: no button — read for a beat, then enter the gallery.

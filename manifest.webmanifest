@@ -1,15 +1,45 @@
 {
-  "name": "LEES.mobile",
+  "name": "LEES.mobile — Art is Life Foundation",
   "short_name": "LEES.mobile",
   "description": "Original Kenyan contemporary emotional artworks by Lewis Gitonga. One-off collector pieces. Commissions open.",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#141310",
   "theme_color": "#1a1a1a",
+  "lang": "en-KE",
+  "dir": "ltr",
+  "categories": [
+    "shopping",
+    "lifestyle",
+    "art"
+  ],
   "icons": [
-    { "src": "assets/brand/cover.jpg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any maskable" },
-    { "src": "assets/brand/cover.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any maskable" }
+    {
+      "src": "assets/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/brand/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/brand/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

@@ -11,7 +11,23 @@ import {
   collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s == null ? "" : s));
+/* Escaping helpers from js/sanitize.js, with real (not identity) fallbacks. */
+const esc = (s) => (window.escapeHtml
+  ? window.escapeHtml(s)
+  : String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"));
+
+const jarg = (s) => (window.jsArg
+  ? window.jsArg(s)
+  : String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+      .replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"));
+
+const imgUrl = (s) => {
+  const raw = String(s == null ? "" : s);
+  return window.safeImageUrl ? window.safeImageUrl(raw) : raw;
+};
+
+const cleanText = (s, max) => String(s == null ? "" : s).replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max);
 let VIDEOS = [];
 let ARCHIVE = [];
 
@@ -35,9 +51,11 @@ function renderVideos() {
   grid.innerHTML = VIDEOS.map((v) => {
     const id = ytId(v.youtube);
     const tags = (v.tags || []).map((t) => `<span class="studio-tag">${esc(t)}</span>`).join("");
-    return `<div class="studio-card" onclick="openVideo('${esc(id)}')">
+    return `<div class="studio-card" role="button" tabindex="0" aria-label="Play film: ${esc(v.title)}"
+        onclick="openVideo('${jarg(id)}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openVideo('${jarg(id)}');}">
       <div class="studio-thumb">
-        <img loading="lazy" src="${esc(v.thumb || ytThumb(id))}" alt="${esc(v.title)}" onerror="this.src='assets/brand/cover.jpg'">
+        <img loading="lazy" src="${esc(imgUrl(v.thumb) || ytThumb(id))}" alt="${esc(v.title)}" onerror="this.src='assets/brand/cover.jpg'">
         <div class="studio-play"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,0.45)"/><path d="M10 8l6 4-6 4z" fill="#fff"/></svg></div>
       </div>
       <div class="studio-meta">
@@ -59,7 +77,10 @@ function renderArchive() {
   }
   grid.innerHTML = ARCHIVE.map((a) => `
     <div class="studio-archive-card">
-      <img loading="lazy" src="${esc(a.image)}" alt="${esc(a.title)}" onclick="openZoom('${esc(a.image)}','${esc(a.title)}')" onerror="this.src='assets/brand/cover.jpg'">
+      <img loading="lazy" src="${esc(imgUrl(a.image))}" alt="${esc(a.title)}" role="button" tabindex="0"
+        onclick="openZoom('${jarg(imgUrl(a.image))}','${jarg(a.title)}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openZoom('${jarg(imgUrl(a.image))}','${jarg(a.title)}');}"
+        onerror="this.src='assets/brand/cover.jpg'">
       <div class="studio-archive-cap"><h5>${esc(a.title)}</h5><span>${esc(a.year || "")}${a.medium ? " · " + esc(a.medium) : ""}</span></div>
     </div>`).join("");
 }
@@ -75,22 +96,31 @@ window.studioView = function (which) {
 };
 
 window.openVideo = function (id) {
-  if (!id) return;
+  // Defence in depth: only an 11-character YouTube id may reach the iframe src.
+  const safeId = String(id || "").trim();
+  if (!/^[\w-]{11}$/.test(safeId)) return;
   const frame = document.getElementById("videoFrame");
   const ov = document.getElementById("videoOverlay");
   if (!frame || !ov) return;
-  frame.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+  frame.innerHTML = `<iframe src="https://www.youtube.com/embed/${safeId}?autoplay=1&rel=0" title="Studio film" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
   ov.classList.add("active");
+  ov.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
-  if (typeof window.track === "function") window.track("studio_video_play", { id });
+  window._videoReturnFocus = document.activeElement;
+  const closer = ov.querySelector(".video-close");
+  if (closer) { try { closer.focus(); } catch (_) { /* ignore */ } }
+  if (typeof window.track === "function") window.track("studio_video_play", { id: safeId });
 };
 window.closeVideo = function (e) {
   if (e && e.target && e.target.closest && e.target.closest(".video-frame")) return; // ignore clicks inside
   const frame = document.getElementById("videoFrame");
   const ov = document.getElementById("videoOverlay");
   if (frame) frame.innerHTML = ""; // stop playback
-  if (ov) ov.classList.remove("active");
+  if (ov) { ov.classList.remove("active"); ov.setAttribute("aria-hidden", "true"); }
   document.body.style.overflow = "";
+  const back = window._videoReturnFocus;
+  window._videoReturnFocus = null;
+  if (back && typeof back.focus === "function") { try { back.focus(); } catch (_) { /* ignore */ } }
 };
 
 /* ── Live Firestore sync (public read) ───────────────────────────────── */
@@ -159,9 +189,9 @@ function listHtml(items, kind) {
   if (!items.length) return '<p class="cc-hint">None yet.</p>';
   return '<div class="studio-archive-grid">' + items.map((it) =>
     `<div class="studio-archive-card">
-      <img loading="lazy" src="${esc(kind === "video" ? (it.thumb || ytThumb(ytId(it.youtube))) : it.image)}" onerror="this.src='assets/brand/cover.jpg'">
+      <img loading="lazy" alt="${esc(it.title || "")}" src="${esc(kind === "video" ? (imgUrl(it.thumb) || ytThumb(ytId(it.youtube))) : imgUrl(it.image))}" onerror="this.src='assets/brand/cover.jpg'">
       <div class="studio-archive-cap"><h5>${esc(it.title)}</h5>
-      <button class="cc-btn cc-reset" style="margin-top:8px;padding:6px 12px;font-size:.78rem" onclick="studioDelete('${kind}','${esc(it.id)}')">Delete</button></div>
+      <button class="cc-btn cc-reset" style="margin-top:8px;padding:6px 12px;font-size:.78rem" onclick="studioDelete('${jarg(kind)}','${jarg(it.id)}')">Delete</button></div>
     </div>`).join("") + '</div>';
 }
 
@@ -186,10 +216,11 @@ function wireManager() {
     try {
       await addDoc(collection(window._db, "studioVideos"), {
         youtube: id,
-        title: document.getElementById("sv_title").value || "Untitled",
-        description: document.getElementById("sv_desc").value || "",
-        tags: document.getElementById("sv_tags").value.split(",").map((t) => t.trim()).filter(Boolean),
-        timestamp: document.getElementById("sv_time").value || "",
+        title: cleanText(document.getElementById("sv_title").value, 140) || "Untitled",
+        description: cleanText(document.getElementById("sv_desc").value, 1000),
+        tags: document.getElementById("sv_tags").value.split(",")
+          .map((t) => cleanText(t, 24)).filter(Boolean).slice(0, 12),
+        timestamp: cleanText(document.getElementById("sv_time").value, 60),
         createdAt: serverTimestamp()
       });
       st.textContent = "✓ Published"; st.className = "cc-status ok";
@@ -205,11 +236,13 @@ function wireManager() {
     if (!window._firebaseAdmin) { st.textContent = "✕ Admin only"; st.className = "cc-status err"; return; }
     st.textContent = "Adding…"; st.className = "cc-status";
     try {
+      const safeImg = imgUrl(img);
+      if (!safeImg) { st.textContent = "✕ Use an https:// or relative image URL"; st.className = "cc-status err"; return; }
       await addDoc(collection(window._db, "studioArchive"), {
-        image: img,
-        title: document.getElementById("sa_title").value || "Untitled",
-        year: document.getElementById("sa_year").value || "",
-        medium: document.getElementById("sa_medium").value || "",
+        image: safeImg,
+        title: cleanText(document.getElementById("sa_title").value, 140) || "Untitled",
+        year: cleanText(document.getElementById("sa_year").value, 12),
+        medium: cleanText(document.getElementById("sa_medium").value, 60),
         createdAt: serverTimestamp()
       });
       st.textContent = "✓ Added"; st.className = "cc-status ok";
