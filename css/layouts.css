@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════
    layouts.css — 7 Structural & Visual Presets  (Phase 6 — Total Rebuild)
    Switched live from Control Console via  <html data-layout="1..7">.
-   Default: Layout 1 — OBSIDIAN (dark void, liquid glass).
+   Default: Layout 3 — MUSEUM (pure white gallery walls).
    ═══════════════════════════════════════════════════════════════════════
 
-   1. OBSIDIAN   — deep void, iOS 26 liquid glass, chromatic orbs (DEFAULT)
+   1. OBSIDIAN   — deep void, iOS 26 liquid glass, chromatic orbs
    2. LINEN      — warm editorial, terracotta accent, serif-led typography
-   3. MUSEUM     — pure white gallery walls, generous space, art is the star
+   3. MUSEUM     — pure white gallery walls, generous space, art is the star (DEFAULT)
    4. MATRIX     — deep navy collector grid, electric-blue tech aesthetic
    5. AURORA     — nebula dark, violet+ice+rose chromatic glass
    6. CINEMATIC  — near-zero-gap film strip, full-bleed image cards
@@ -358,13 +358,6 @@ html[data-layout="1"] .adm-table td{
   border-bottom-color:rgba(255,255,255,0.04) !important;
   color:#c8c0b0 !important;
 }
-html[data-layout="1"] #splashSkip{
-  background:rgba(255,255,255,0.06) !important;
-  border:1px solid rgba(255,255,255,0.18) !important;
-  color:#ede9df !important;
-  -webkit-backdrop-filter:blur(20px) !important;
-  backdrop-filter:blur(20px) !important;
-}
 
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -542,8 +535,8 @@ html[data-layout="3"]{
   --warm-white:#ffffff;
   --ink:#111111;
   --charcoal:#111111;
-  --muted:#888888;
-  --muted-light:#bbb;
+  --muted:#5c5c5c;
+  --muted-light:#6b6b6b;
   --card-shadow:none;
   --card-hover:0 16px 48px rgba(0,0,0,0.12);
   --glass-alpha:1.0;
@@ -570,13 +563,13 @@ html[data-layout="3"] .header-brand{
   text-transform:uppercase !important;
   color:#111 !important;
 }
-html[data-layout="3"] .header-brand span{ color:#888 !important; font-size:0.72rem !important; letter-spacing:0.15em !important; }
+html[data-layout="3"] .header-brand span{ color:#5c5c5c !important; font-size:0.72rem !important; letter-spacing:0.15em !important; }
 html[data-layout="3"] .header-nav a{ color:#111 !important; font-size:0.75rem !important; letter-spacing:0.14em !important; text-transform:uppercase !important; }
 html[data-layout="3"] .header-brand-dot{ background:#111 !important; box-shadow:none !important; }
 html[data-layout="3"] .hamburger-btn span{ background:#111 !important; }
 
 html[data-layout="3"] .section-eyebrow{
-  color:#888 !important;
+  color:#5c5c5c !important;
   letter-spacing:0.3em !important;
   font-size:0.65rem !important;
   font-family:'Inter',sans-serif !important;
@@ -596,8 +589,8 @@ html[data-layout="3"] .hero-title{
   color:#111 !important;
   line-height:1.0 !important;
 }
-html[data-layout="3"] .hero-eyebrow{ color:#888 !important; }
-html[data-layout="3"] .hero-sub{ color:#888 !important; font-size:0.85rem !important; letter-spacing:0.08em !important; }
+html[data-layout="3"] .hero-eyebrow{ color:#5c5c5c !important; }
+html[data-layout="3"] .hero-sub{ color:#5c5c5c !important; font-size:0.85rem !important; letter-spacing:0.08em !important; }
 html[data-layout="3"] .hero-count-num{ color:#111 !important; }
 
 html[data-layout="3"] .gallery-grid{
@@ -640,7 +633,7 @@ html[data-layout="3"] .art-title{
 }
 html[data-layout="3"] .art-price{ color:#111 !important; font-family:'Inter',sans-serif !important; font-size:0.9rem !important; letter-spacing:0.08em !important; }
 html[data-layout="3"] .art-status.available{ color:#1a5c2e !important; }
-html[data-layout="3"] .art-status.sold{ color:#888 !important; text-decoration:line-through !important; }
+html[data-layout="3"] .art-status.sold{ color:#5c5c5c !important; text-decoration:line-through !important; }
 html[data-layout="3"] .art-btn{
   background:transparent !important;
   border:1px solid #ccc !important;
@@ -664,7 +657,7 @@ html[data-layout="3"] .art-btn-order:hover{ background:#333 !important; }
 html[data-layout="3"] .filter-chip{
   background:transparent !important;
   border:1px solid #ccc !important;
-  color:#888 !important;
+  color:#5c5c5c !important;
   border-radius:0 !important;
   text-transform:uppercase !important;
   font-size:0.7rem !important;
@@ -676,14 +669,14 @@ html[data-layout="3"] .filter-chip.active{
   color:#fff !important;
 }
 html[data-layout="3"] .marquee-band{
-  background:#f5f5f5 !important;
+  background:#ffffff !important;
   border-color:#e8e8e8 !important;
 }
-html[data-layout="3"] .marquee-item{ color:#888 !important; }
+html[data-layout="3"] .marquee-item{ color:#5c5c5c !important; }
 html[data-layout="3"] footer{
-  background:#f5f5f5 !important;
+  background:#ffffff !important;
   border-top:1px solid #e8e8e8 !important;
-  color:#888 !important;
+  color:#5c5c5c !important;
 }
 html[data-layout="3"] .modal-box{
   background:#fff !important;
@@ -708,6 +701,114 @@ html[data-layout="3"] .fab-donate{
   color:#fff !important;
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   ██  LAYOUT 3 — MUSEUM · WHITE CONTRAST PASS
+   ██  The shared base styles were written for the dark theme. Every public
+   ██  text colour on the white walls is set here explicitly so nothing
+   ██  inherits a light-on-dark value. Selectors are scoped to public-page
+   ██  classes so the dark admin dashboard is untouched.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-layout="3"]{ --gold-ink:#7a5c1a; --hairline:#e6e6e6; }
+
+/* Hero — the photo sits behind a white wash so the dark headline reads clearly */
+html[data-layout="3"] .hero-bg::after{
+  background:linear-gradient(to right,rgba(255,255,255,0.97) 0%,rgba(255,255,255,0.9) 40%,rgba(255,255,255,0.35) 75%,rgba(255,255,255,0) 100%) !important;
+}
+html[data-layout="3"] .hero-bg img{ opacity:1 !important; }
+@media (max-width:768px){
+  html[data-layout="3"] .hero-bg::after{
+    background:linear-gradient(to bottom,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0.9) 42%,rgba(255,255,255,0.96) 100%) !important;
+  }
+}
+html[data-layout="3"] .hero-title{ color:#111 !important; text-shadow:none !important; }
+html[data-layout="3"] .hero-title em{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .hero-title strong{ color:#111 !important; }
+html[data-layout="3"] .hero-sub{ color:#4a4a4a !important; }
+html[data-layout="3"] .hero-scroll span{ color:#5c5c5c !important; }
+html[data-layout="3"] .hero-stat{ background:#ffffff !important; border-left:1px solid var(--hairline) !important; }
+html[data-layout="3"] .hero-stat-num{ color:#5e4614 !important; }
+html[data-layout="3"] .hero-stat-label{ color:#333333 !important; }
+html[data-layout="3"] .btn-primary{ background:var(--gold-ink) !important; border-color:var(--gold-ink) !important; color:#ffffff !important; }
+html[data-layout="3"] .btn-ghost{ background:transparent !important; color:#111 !important; border-color:#111 !important; }
+html[data-layout="3"] .btn-ghost:hover{ background:#111 !important; color:#ffffff !important; }
+
+/* Marquee + search band */
+html[data-layout="3"] .marquee-band{ background:#ffffff !important; border-top:1px solid var(--hairline) !important; border-bottom:1px solid var(--hairline) !important; }
+html[data-layout="3"] .marquee-item{ color:#333333 !important; }
+html[data-layout="3"] .marquee-sep{ color:var(--gold-ink) !important; opacity:1 !important; }
+html[data-layout="3"] .search-label{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .search-field{ background:#ffffff !important; color:#111111 !important; border-color:#bdbdbd !important; }
+html[data-layout="3"] .search-field::placeholder{ color:#6b6b6b !important; opacity:1 !important; }
+
+/* About */
+html[data-layout="3"] .about-badge{ background:var(--gold-ink) !important; }
+html[data-layout="3"] .about-badge-num,
+html[data-layout="3"] .about-badge-text{ color:#ffffff !important; }
+html[data-layout="3"] .btn-outline{ background:#ffffff !important; color:var(--gold-ink) !important; border-color:var(--gold-ink) !important; }
+html[data-layout="3"] .engage-btn{ background:#ffffff !important; color:#333333 !important; border-color:#cfcfcf !important; }
+html[data-layout="3"] .engage-count{ color:#333333 !important; }
+html[data-layout="3"] #cartCount{ background:#111111 !important; color:#ffffff !important; }
+
+/* Collection */
+html[data-layout="3"] .gallery-title span{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .gallery-count{ color:#5c5c5c !important; }
+html[data-layout="3"] .art-desc,
+html[data-layout="3"] .art-dims{ color:#5c5c5c !important; }
+html[data-layout="3"] .badge-available{ background:#17703a !important; animation:none !important; }
+html[data-layout="3"] .badge-sold{ background:#b3261e !important; animation:none !important; }
+html[data-layout="3"] .badge-featured{ background:#1d4ed8 !important; animation:none !important; }
+
+/* Studio */
+html[data-layout="3"] .studio-tab{ background:#ffffff !important; color:#333333 !important; border-color:#bdbdbd !important; }
+html[data-layout="3"] .studio-tab.sel{ background:#111111 !important; border-color:#111111 !important; color:#ffffff !important; }
+
+/* Services */
+html[data-layout="3"] .svc-stat{ background:#ffffff !important; border-color:var(--hairline) !important; }
+html[data-layout="3"] .svc-stat-num{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .svc-stat-label{ color:#5c5c5c !important; }
+html[data-layout="3"] .svc-card{ background:#ffffff !important; border-color:var(--hairline) !important; box-shadow:none !important; }
+html[data-layout="3"] .svc-card::before{ display:none !important; }
+html[data-layout="3"] .svc-card:hover{ border-color:var(--gold-ink) !important; box-shadow:var(--card-hover) !important; }
+html[data-layout="3"] .svc-card--featured{ background:#ffffff !important; border:1.5px solid var(--gold) !important; }
+html[data-layout="3"] .svc-card h3{ color:#111111 !important; }
+html[data-layout="3"] .svc-card p{ color:#4a4a4a !important; }
+html[data-layout="3"] .svc-features li{ color:#333333 !important; }
+html[data-layout="3"] .svc-features li::before{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .svc-cta{ color:var(--gold-ink) !important; border-top-color:var(--hairline) !important; }
+html[data-layout="3"] .svc-process-title{ color:#111111 !important; }
+html[data-layout="3"] .svc-step-num{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .svc-step:hover .svc-step-num{ color:#111111 !important; }
+html[data-layout="3"] .svc-step h4{ color:#111111 !important; }
+html[data-layout="3"] .svc-step p{ color:#4a4a4a !important; }
+html[data-layout="3"] .svc-step-arrow{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .svc-cta-band{ background:#ffffff !important; border-color:var(--hairline) !important; }
+html[data-layout="3"] .svc-cta-text h3{ color:#111111 !important; }
+html[data-layout="3"] .svc-cta-text p{ color:#4a4a4a !important; }
+html[data-layout="3"] .svc-cta-btn--secondary{ background:#ffffff !important; color:#111111 !important; border:1px solid #111111 !important; }
+
+/* Social band — white, like the rest of the wall */
+html[data-layout="3"] .social-section{ background:#ffffff !important; border-top:1px solid var(--hairline) !important; }
+html[data-layout="3"] .social-section h3{ color:#111111 !important; }
+html[data-layout="3"] .social-section p{ color:#4a4a4a !important; }
+html[data-layout="3"] .social-link{ background:#ffffff !important; color:#111111 !important; border-color:#9a9a9a !important; }
+html[data-layout="3"] .social-link:hover{ background:#111111 !important; color:#ffffff !important; border-color:#111111 !important; }
+
+/* Footer */
+html[data-layout="3"] footer{ background:#ffffff !important; color:#4a4a4a !important; border-top:1px solid var(--hairline) !important; }
+html[data-layout="3"] footer .footer-credit{ color:#5c5c5c !important; }
+
+/* Overlays on the white wall: gold text and gold/green buttons darkened for legibility */
+html[data-layout="3"] .about-title em,
+html[data-layout="3"] .story-chapter h4,
+html[data-layout="3"] .story-eyebrow,
+html[data-layout="3"] .story-box h2 span,
+html[data-layout="3"] #adminForgotToggle button,
+html[data-layout="3"] .comment-submit{ color:var(--gold-ink) !important; }
+html[data-layout="3"] .comment-submit{ background:#ffffff !important; border:1px solid var(--gold-ink) !important; }
+html[data-layout="3"] .btn-send.btn-wa{ background:#13753a !important; color:#ffffff !important; }
+html[data-layout="3"] #policyYesBtn{ background:#13753a !important; color:#ffffff !important; }
+html[data-layout="3"] #policyNoBtn{ color:#b3261e !important; border-color:#b3261e !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
    ██  LAYOUT 4 — MATRIX
@@ -1106,11 +1207,6 @@ html[data-layout="5"] .cc-card{
   background:rgba(129,140,248,0.05) !important;
   border-color:rgba(129,140,248,0.12) !important;
 }
-html[data-layout="5"] #splashSkip{
-  background:rgba(129,140,248,0.1) !important;
-  border:1px solid rgba(129,140,248,0.25) !important;
-  color:#e8e0f8 !important;
-}
 
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1329,11 +1425,6 @@ html[data-layout="6"] .adm-overlay{ background:rgba(4,4,4,0.99) !important; }
 html[data-layout="6"] .adm-nav-item{ color:#666 !important; }
 html[data-layout="6"] .adm-nav-item.active,
 html[data-layout="6"] .adm-nav-item:hover{ color:#f0f0f0 !important; background:rgba(255,255,255,0.06) !important; }
-html[data-layout="6"] #splashSkip{
-  background:rgba(255,255,255,0.08) !important;
-  border:1px solid rgba(255,255,255,0.2) !important;
-  color:#f0f0f0 !important;
-}
 
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1556,11 +1647,6 @@ html[data-layout="7"] .cc-input,
 html[data-layout="7"] .adm-input{
   background:#f4f6f9 !important;
   border-color:rgba(0,0,0,0.12) !important;
-  color:#1a1c20 !important;
-}
-html[data-layout="7"] #splashSkip{
-  background:#fff !important;
-  border:1px solid rgba(0,0,0,0.15) !important;
   color:#1a1c20 !important;
 }
 
