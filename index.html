@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-layout="3">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -25,7 +25,7 @@
 
 <!-- PWA / APP -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta name="theme-color" content="#1a1a1a">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -38,7 +38,7 @@
 <noscript><style>#splash{display:none!important}</style></noscript>
 
 <!-- Pre-paint dark background so there's no flash of white before CSS loads -->
-<style>html,body{background:#0a0908!important}</style>
+<style>html,body{background:#ffffff!important}</style>
 
 <!-- SAFETY HELPERS (escaping + URL validation) — must load before app code -->
 <script src="js/sanitize.js"></script>
@@ -63,34 +63,11 @@
 
 <body>
 
-<!-- ════════ LAUNCH / SPLASH SEQUENCE ════════ -->
+<!-- ════════ WELCOME BANNER (shows for 1.5 s on opening) ════════ -->
 <div id="splash" class="splash" aria-hidden="true">
-  <div class="splash-aurora"></div>
-  <div class="splash-stage">
-    <div class="splash-pebble-wrap" id="splashPebbleWrap">
-      <div class="splash-pebble" id="splashPebble"></div>
-    </div>
-    <div class="splash-mark" id="splashMark" style="opacity:0">
-      <img id="splashLogoImg" src="" alt="" style="display:none;width:88px;height:88px;border-radius:50%;object-fit:cover;">
-      <svg id="splashLogoSvg" viewBox="0 0 120 120" width="88" height="88" aria-hidden="true">
-        <circle class="splash-ring" cx="60" cy="60" r="46" fill="none" stroke="url(#sg)" stroke-width="2.5"/>
-        <circle class="splash-dot" cx="60" cy="60" r="9" fill="url(#sg)"/>
-        <defs>
-          <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#e8d48b"/>
-            <stop offset="1" stop-color="#c9a84c"/>
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
-    <div class="splash-brand" id="splashBrand" style="opacity:0">
-      <span class="splash-line1">LEES.MOBILE</span>
-      <span class="splash-line2">The digital art arm of Art Is Life Foundation.</span>
-    </div>
-    <div class="splash-remark" id="splashRemark"></div>
-  </div>
+  <p class="splash-welcome">Welcome to a world of art</p>
 </div>
-<!-- ════════ END SPLASH ════════ -->
+<!-- ════════ END WELCOME BANNER ════════ -->
 
 <!-- HAMBURGER MENU (TOP LEFT) -->
 
