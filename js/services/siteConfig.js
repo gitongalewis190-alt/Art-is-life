@@ -21,13 +21,13 @@ const DEFAULTS = {
   theme: {
     gold:       "#c9a84c",
     accent:     "#1aa34a",
-    ink:        "#2c2c2c",
-    cream:      "#faf8f3",
+    ink:        "#111111",
+    cream:      "#ffffff",
     radius:     "4px",
     glassAlpha: 0.72,
     optics:     true
   },
-  layout: "1",
+  layout: "3",
   content: {
     foundationName: "LEES.mobile",
     footerText:     "© 2026 LEES.MOBILE — Lewis Gitonga. All rights reserved.",
@@ -106,13 +106,13 @@ const SiteConfig = {
       theme: {
         gold:       safeCss(t.gold, "#c9a84c", CSS_COLOUR),
         accent:     safeCss(t.accent, "#1aa34a", CSS_COLOUR),
-        ink:        safeCss(t.ink, "#2c2c2c", CSS_COLOUR),
-        cream:      safeCss(t.cream, "#faf8f3", CSS_COLOUR),
+        ink:        safeCss(t.ink, "#111111", CSS_COLOUR),
+        cream:      safeCss(t.cream, "#ffffff", CSS_COLOUR),
         radius:     safeCss(t.radius, "4px", CSS_LENGTH),
         glassAlpha: Number.isFinite(alpha) ? Math.min(1, Math.max(0, alpha)) : 0.72,
         optics:     !!t.optics
       },
-      layout:     ["1", "2", "3", "4", "5", "6", "7"].includes(String(src.layout)) ? String(src.layout) : "1",
+      layout:     ["1", "2", "3", "4", "5", "6", "7"].includes(String(src.layout)) ? String(src.layout) : "3",
       content: {
         foundationName: text(c.foundationName, 80),
         footerText:     text(c.footerText, 200),
@@ -151,15 +151,15 @@ const SiteConfig = {
     // Theme -> CSS custom properties (main.css/glass.css read these)
     root.style.setProperty("--gold", safeCss(t.gold, "#c9a84c", CSS_COLOUR));
     root.style.setProperty("--green", safeCss(t.accent, "#1aa34a", CSS_COLOUR)); // accent maps to action colour
-    root.style.setProperty("--ink", safeCss(t.ink, "#2c2c2c", CSS_COLOUR));
-    root.style.setProperty("--cream", safeCss(t.cream, "#faf8f3", CSS_COLOUR));
+    root.style.setProperty("--ink", safeCss(t.ink, "#111111", CSS_COLOUR));
+    root.style.setProperty("--cream", safeCss(t.cream, "#ffffff", CSS_COLOUR));
     root.style.setProperty("--radius", safeCss(t.radius, "4px", CSS_LENGTH));
     const alpha = Number(t.glassAlpha);
     root.style.setProperty("--glass-alpha", String(Number.isFinite(alpha) ? Math.min(1, Math.max(0, alpha)) : 0.72));
     root.dataset.optics = t.optics ? "on" : "off";
 
     // Layout preset
-    root.dataset.layout = ["1", "2", "3", "4", "5", "6", "7"].includes(String(safe.layout)) ? String(safe.layout) : "1";
+    root.dataset.layout = ["1", "2", "3", "4", "5", "6", "7"].includes(String(safe.layout)) ? String(safe.layout) : "3";
 
     // Content -> any element tagged data-cfg="key" (text) or data-cfg-href
     const c = cfg.content || {};
