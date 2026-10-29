@@ -131,7 +131,7 @@ async function run() {
   const evilCfg = window.SiteConfig._merge({
     theme: { gold: 'red;background:url(javascript:alert(1))', accent: '#1aa34a', ink: '#2c2c2c', cream: '#faf8f3', radius: '4px;}', glassAlpha: 5, optics: true },
     layout: '1',
-    content: { foundationName: evil, footerText: evil, footerSub: evil, whatsapp: '254704708178', email: evil, instagram: 'javascript:window.__pwned=8', address: evil, ownerRemark: evil, ownerRemarkBy: evil },
+    content: { foundationName: evil, footerText: evil, footerSub: evil, whatsapp: '254184336391', email: evil, instagram: 'javascript:window.__pwned=8', address: evil, ownerRemark: evil, ownerRemarkBy: evil },
     daraja: { endpoint: 'javascript:window.__pwned=9', businessName: evil },
     cloudinary: { cloudName: evil, uploadPreset: evil },
     gaId: evil,
@@ -167,7 +167,7 @@ async function run() {
     layout: '"><script>window.__pwned=12</script>',
     content: {
       foundationName: '  <b>x</b>  ',
-      whatsapp: '254 704 708 178<script>',
+      whatsapp: '254 184 336 391<script>',
       instagram: 'javascript:window.__pwned=13',
       email: 'a@b.c',
       footerText: 'x'.repeat(5000)
@@ -187,7 +187,7 @@ async function run() {
   window.SiteConfig.apply(window.SiteConfig._merge({ layout: '1' }));
   check('publish strips markup from text', dirty.content.foundationName === '<b>x</b>', dirty.content.foundationName);
   check('publish caps long text', dirty.content.footerText.length === 200, String(dirty.content.footerText.length));
-  check('publish keeps only digits in WhatsApp', dirty.content.whatsapp === '254704708178', dirty.content.whatsapp);
+  check('publish keeps only digits in WhatsApp', dirty.content.whatsapp === '254184336391', dirty.content.whatsapp);
   check('publish drops javascript: social links', dirty.content.instagram === '', dirty.content.instagram);
   check('publish drops javascript: payment endpoint', dirty.daraja.endpoint === '', dirty.daraja.endpoint);
   check('publish strips cloudinary identifiers', /^[\w-]*$/.test(dirty.cloudinary.cloudName), dirty.cloudinary.cloudName);
