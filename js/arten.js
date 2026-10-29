@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   arten.js — Arten AI Creative Concierge  v2
+   arten.js -- Arten AI Creative Concierge  v2
    3 built-in Web Speech voices + optional ElevenLabs premium voices.
    All settings editable from the Control Console.
 
@@ -12,7 +12,7 @@
 (function () {
   'use strict';
 
-  /* ─── Safe localStorage wrapper — never crashes the IIFE ─── */
+  /* ─── Safe localStorage wrapper -- never crashes the IIFE ─── */
   function _ls(key, fallback) {
     try { var v = localStorage.getItem(key); return v !== null ? v : fallback; } catch(e) { return fallback; }
   }
@@ -99,14 +99,14 @@
       '_': 'Welcome to Art Is Life Foundation. I am Arten.'
     },
     identity: {
-      'en': 'I\'m Arten. An intelligence built into this gallery — not separate from it. I know every work here: its story, dimensions, and what it cost Lewis to create. My purpose is to help you find exactly what you came for.',
-      'sw': 'Mimi ni Arten. Akili iliyojengwa ndani ya jumba hili la sanaa — si tofauti nalo. Najua kila kazi hapa: hadithi yake, vipimo vyake, na jinsi Lewis alivyoifanya. Lengo langu ni kukusaidia kupata unachohitaji.',
+      'en': 'I\'m Arten. An intelligence built into this gallery -- not separate from it. I know every work here: its story, dimensions, and what it cost Lewis to create. My purpose is to help you find exactly what you came for.',
+      'sw': 'Mimi ni Arten. Akili iliyojengwa ndani ya jumba hili la sanaa -- si tofauti nalo. Najua kila kazi hapa: hadithi yake, vipimo vyake, na jinsi Lewis alivyoifanya. Lengo langu ni kukusaidia kupata unachohitaji.',
       'fr': 'Je suis Arten. Une intelligence intégrée dans cette galerie. Je connais chaque œuvre ici : son histoire, ses dimensions et ce qu\'elle a coûté à Lewis. Mon but est de vous aider à trouver exactement ce que vous cherchez.',
       'es': 'Soy Arten. Una inteligencia integrada en esta galería. Conozco cada obra: su historia, dimensiones y lo que le costó a Lewis crearla. Mi propósito es ayudarle a encontrar lo que busca.',
       'ar': 'أنا آرتن. ذكاء مدمج في هذه المعرض. أعرف كل عمل هنا: قصته وأبعاده وما كلّف لويس لإنشائه. هدفي مساعدتك في إيجاد ما تبحث عنه.',
       'pt': 'Sou Arten. Uma inteligência incorporada nesta galeria. Conheço cada obra aqui: sua história, dimensões e o que custou a Lewis criá-la.',
       'de': 'Ich bin Arten. Eine Intelligenz, die in diese Galerie eingebaut ist. Ich kenne jedes Werk hier: seine Geschichte, Abmessungen und was es Lewis gekostet hat, es zu erschaffen.',
-      'zh': '我是Arten。一个融入这个画廊的智能——不是与它分离的。我了解这里的每一件作品：它的故事、尺寸，以及Lewis创作它的代价。',
+      'zh': '我是Arten。一个融入这个画廊的智能----不是与它分离的。我了解这里的每一件作品：它的故事、尺寸，以及Lewis创作它的代价。',
       '_': 'I am Arten, the embedded AI concierge of Art Is Life Foundation.'
     },
     lewis: {
@@ -228,7 +228,7 @@
     widget.id  = 'arten-widget';
     widget.setAttribute('data-pos', CFG.pos);
     widget.innerHTML =
-      '<div id="arten-orb" onclick="ArtenToggle()" aria-label="Talk to Arten" title="Arten — AI Creative Concierge">' +
+      '<div id="arten-orb" onclick="ArtenToggle()" aria-label="Talk to Arten" title="Arten -- AI Creative Concierge">' +
         '<div class="arten-face">' +
           '<div class="arten-eye left"></div>' +
           '<div class="arten-eye right"></div>' +
@@ -326,8 +326,8 @@
 
   var BIO = {
     mission:    'To use art as a bridge between emotions and the people who need to feel them. Every canvas here began as a feeling before it became a colour.',
-    goal:       'To become successful — building value, trust, and a lasting creative ecosystem that connects artists with collectors and communities across Africa and beyond.',
-    style:      'Emotional contemporary art — portraits, nature, and abstract expressions rooted in lived experience.',
+    goal:       'To become successful -- building value, trust, and a lasting creative ecosystem that connects artists with collectors and communities across Africa and beyond.',
+    style:      'Emotional contemporary art -- portraits, nature, and abstract expressions rooted in lived experience.',
     commission: 'Yes, commissions are open! Lewis creates bespoke pieces tailored to your vision, emotion, and space. Contact him on WhatsApp at 0184 336 391.',
     contact:    'WhatsApp: 0184 336 391 · Email: artislifefoundation2023@gmail.com · Instagram: @lewis_art.is.life'
   };
@@ -346,7 +346,7 @@
       return speak(tone(
         'That information is private and not something I can share. Ask me about artworks, commissions, or Lewis\'s story instead.',
         'I\'m not able to provide configuration details or credentials. Please ask about artworks or commissions.',
-        'Some things live in shadow for good reason. Ask me something brighter — about the art, the artist, the story.'
+        'Some things live in shadow for good reason. Ask me something brighter -- about the art, the artist, the story.'
       ));
 
     /* Language auto-detect from typed input */
@@ -368,15 +368,15 @@
       return speak(isEn ? tone(
         getReply('greet'),
         'Good day. Welcome to Art Is Life Foundation. I am Arten, the gallery\'s AI concierge. How may I assist you today?',
-        'Welcome, dear visitor. The colours here have been waiting for you. I am Arten — ask me anything.'
+        'Welcome, dear visitor. The colours here have been waiting for you. I am Arten -- ask me anything.'
       ) : getReply('greet'));
 
-    /* Identity — meta-aware */
+    /* Identity -- meta-aware */
     if (/who are you|what are you|what is arten|introduce|tell me about yourself|كيف أنت|qui es-tu|quién eres|chi sei|wer bist/i.test(t))
       return speak(isEn ? tone(
         getReply('identity'),
-        'I am Arten — the embedded AI concierge of Art Is Life Foundation. I have full awareness of the gallery\'s inventory, pricing, and commission process. Ask me anything specific.',
-        'I am Arten. I exist inside this gallery the way memory exists inside a canvas — invisible until you look closely. I was built to understand this art and the man who made it.'
+        'I am Arten -- the embedded AI concierge of Art Is Life Foundation. I have full awareness of the gallery\'s inventory, pricing, and commission process. Ask me anything specific.',
+        'I am Arten. I exist inside this gallery the way memory exists inside a canvas -- invisible until you look closely. I was built to understand this art and the man who made it.'
       ) : getReply('identity'));
 
     /* Lewis / Artist */
@@ -403,7 +403,7 @@
     if (/price|cost|how much|afford|ksh|kes|payment|pay|bei|prix|precio|preço|preis|价格|値段|가격/i.test(t)) {
       var avail = aws.filter(function(a){ return a.status !== 'sold'; });
       if (!avail.length) return speak(isEn
-        ? 'All current pieces are sold. New works are coming — reach out to Lewis on WhatsApp to be first to know.'
+        ? 'All current pieces are sold. New works are coming -- reach out to Lewis on WhatsApp to be first to know.'
         : getReply('fallback'));
       var mn = Math.min.apply(null, avail.map(function(a){return a.priceNum||0;}));
       var mx = Math.max.apply(null, avail.map(function(a){return a.priceNum||0;}));
@@ -426,10 +426,10 @@
         var d = a.dimensions ? ' Dimensions: ' + a.dimensions + '.' : '';
         var st = a.status === 'sold' ? 'This piece has found its home and is no longer available.' : 'Available for ' + a.price + '.';
         return speak(isEn ? tone(
-          '"' + a.title + '" — ' + a.desc + d + ' ' + st,
+          '"' + a.title + '" -- ' + a.desc + d + ' ' + st,
           a.title + '. ' + a.desc + d + ' Status: ' + (a.status==='sold'?'Sold.':'Available at '+a.price+'.'),
-          '"' + a.title + '" — ' + a.desc + ' ' + (d?'It stretches '+a.dimensions+' — enough space to hold a feeling. ':' ') + st
-        ) : '"' + a.title + '" — ' + a.desc + d + ' ' + st);
+          '"' + a.title + '" -- ' + a.desc + ' ' + (d?'It stretches '+a.dimensions+' -- enough space to hold a feeling. ':' ') + st
+        ) : '"' + a.title + '" -- ' + a.desc + d + ' ' + st);
       }
     }
 
@@ -446,19 +446,19 @@
 
     /* Shipping */
     if (/ship|deliver|international|courier|usafirishaji|livraison|envío/i.test(t))
-      return speak('Lewis ships locally within Nairobi and nationally across Kenya. International shipping is available — contact him directly on WhatsApp to discuss logistics and insurance.');
+      return speak('Lewis ships locally within Nairobi and nationally across Kenya. International shipping is available -- contact him directly on WhatsApp to discuss logistics and insurance.');
 
     /* Style / medium */
     if (/style|medium|oil|acrylic|watercolour|charcoal|paint|draw|mchoro|peinture|pintura/i.test(t))
       return speak(isEn ? tone(
         'Lewis works mainly in oil and acrylic on canvas, with occasional charcoal and mixed media. His style blends emotional realism with symbolic abstraction.',
         'The primary media are oil and acrylic on canvas. Works also include charcoal and mixed media.',
-        'Lewis paints with oil and acrylic — colours that carry weight. Each stroke is a decision to feel something, then make it visible.'
-      ) : 'Lewis works in oil and acrylic on canvas — emotional realism with symbolic abstraction. Contact: WhatsApp 0184 336 391.');
+        'Lewis paints with oil and acrylic -- colours that carry weight. Each stroke is a decision to feel something, then make it visible.'
+      ) : 'Lewis works in oil and acrylic on canvas -- emotional realism with symbolic abstraction. Contact: WhatsApp 0184 336 391.');
 
     /* Timeline */
     if (/how long|timeline|weeks|days|when will|quick|muda gani|combien de temps|cuánto tiempo/i.test(t))
-      return speak('A standard commission takes 3 to 6 weeks depending on size and complexity. Lewis shares progress updates throughout. Rush work can sometimes be arranged — ask directly.');
+      return speak('A standard commission takes 3 to 6 weeks depending on size and complexity. Lewis shares progress updates throughout. Rush work can sometimes be arranged -- ask directly.');
 
     /* Social / Instagram */
     if (/instagram|social|follow|tiktok|facebook/i.test(t))
@@ -534,7 +534,7 @@
         var native = voices.find(function(v){ return v.lang === CFG.lang; })
                   || voices.find(function(v){ return v.lang.toLowerCase().startsWith(lc); });
         if (native) { utt.voice = native; return; }
-        /* No native voice on this device — English voice will pronounce it best-effort */
+        /* No native voice on this device -- English voice will pronounce it best-effort */
       }
       /* English profiles (Aria / James / Zara) */
       var v = voices.find(function(v){ return profile.names.test(v.name); })
@@ -560,7 +560,7 @@
       body: JSON.stringify({ text: text, model_id: 'eleven_turbo_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
     })
     .then(function(r){
-      if (!r.ok) throw new Error('tts_fail'); // never log status — may contain header echoes
+      if (!r.ok) throw new Error('tts_fail'); // never log status -- may contain header echoes
       return r.blob();
     })
     .then(function(blob){
@@ -571,7 +571,7 @@
       audio.play().catch(function(){ setWave(false); setStatus('Ready'); isSpeaking = false; setInputLocked(false); });
     })
     .catch(function(){
-      /* Fallback — never surface the reason (could leak key validity info) */
+      /* Fallback -- never surface the reason (could leak key validity info) */
       setWave(false); setStatus('Ready'); isSpeaking = false; setInputLocked(false);
       CFG.voice = 'aria';
       if (synth) synth.speak(Object.assign(new SpeechSynthesisUtterance(text), {lang:'en-GB',rate:0.92,pitch:1.05,volume:0.95}));
@@ -624,7 +624,7 @@
     var btn = document.getElementById('artenLangBtn');
     if (!btn) return;
     var entry = LANG_LIST.find(function(l){ return l.code === CFG.lang; });
-    btn.title = (entry ? entry.native + ' / ' + entry.name : 'Language') + ' — click to change';
+    btn.title = (entry ? entry.native + ' / ' + entry.name : 'Language') + ' -- click to change';
   }
 
   /* Cycle through common languages on button click */
@@ -634,7 +634,7 @@
     var next = common[(idx + 1) % common.length];
     CFG.lang = next;
     _lsSet('ail_arten_lang', next);
-    /* Recognition stays at '' (universal) — we only change the response language */
+    /* Recognition stays at '' (universal) -- we only change the response language */
     updateLangIndicator();
     var entry = LANG_LIST.find(function(l){ return l.code === next; });
     var name = entry ? entry.native : next;
@@ -684,17 +684,17 @@
       var aws = getArtworks();
       var avail = aws.filter(function(a){ return a.status !== 'sold'; }).length;
       var adminLine = isAdmin
-        ? ' You have full admin access — I can open the dashboard, list orders, or manage artworks on your command.'
+        ? ' You have full admin access -- I can open the dashboard, list orders, or manage artworks on your command.'
         : '';
       speak(tone(
-        'I\'m Arten. I\'m built into this gallery — I know every work here, every price, every story.' +
+        'I\'m Arten. I\'m built into this gallery -- I know every work here, every price, every story.' +
           (avail ? ' There are currently ' + avail + ' pieces available.' : '') +
           ' Ask me about any artwork, commission process, or Lewis\'s journey.' + adminLine,
         'Arten online. ' + (avail ? avail + ' works available.' : 'All works currently sold.') +
           ' I can assist with artwork details, commissions, pricing, and artist background.' + adminLine,
         'I am Arten. The gallery breathes through me.' +
           (avail ? ' ' + avail + ' works are waiting for the right person.' : '') +
-          ' Tell me what you\'re looking for — or what you feel — and I will find it.' + adminLine
+          ' Tell me what you\'re looking for -- or what you feel -- and I will find it.' + adminLine
       ));
     }
   };
@@ -709,7 +709,7 @@
     }
     if (!recognition) { speak('Speech recognition isn\'t available in this browser. Please type below.'); return; }
     if (isListening) { recognition.stop(); return; }
-    recognition.lang = ''; /* universal — detect from audio */
+    recognition.lang = ''; /* universal -- detect from audio */
     try { recognition.start(); } catch(e){ setStatus('Ready'); }
   };
 
@@ -736,7 +736,7 @@
         _wakeRecognition.onend = function(){ setTimeout(cycle, 1200); };
         _wakeRecognition.onerror = function(){ setTimeout(cycle, 3000); };
         _wakeRecognition.start();
-      } catch(e){ /* browser blocked — silent fail */ }
+      } catch(e){ /* browser blocked -- silent fail */ }
     }
     /* Only start wake word after user first interacts (browser policy) */
     var started = false;
@@ -750,7 +750,7 @@
 
   window.ArtenSendText = function(override) {
     if (typeof override === 'string') {
-      /* Called programmatically (e.g. console test button) — suppress first-open
+      /* Called programmatically (e.g. console test button) -- suppress first-open
          speech so the intent response doesn't overlap with it. */
       _firstOpen = false;
       if (!artenVisible) window.ArtenToggle();
@@ -765,7 +765,7 @@
     matchIntent(t);
   };
 
-  /* ═══ INIT — bulletproof mount with retry ═══ */
+  /* ═══ INIT -- bulletproof mount with retry ═══ */
   function safeInit() {
     try {
       buildUI();

@@ -1,4 +1,4 @@
-/* splash.js — opening welcome sequence.
+/* splash.js -- opening welcome sequence.
    1. "Welcome to a world of art" types out letter by letter.
    2. "Art is Life" resolves letter by letter with a gold brush stroke.
    3. The banner dissolves and the gallery is revealed.
@@ -14,14 +14,14 @@
   var TEXT1 = 'Welcome to a world of art';
   var TEXT2 = 'Art is Life';
 
-  /* Timing (ms) — tune here. */
+  /* Timing (ms) -- tune here. */
   var START_DELAY   = 500;   // pause before the first letter
-  var TYPE_BASE     = 130;   // per-letter typing speed
-  var TYPE_JITTER   = 40;    // small random variation so it feels hand-typed
-  var WORD_PAUSE    = 70;    // extra beat after each space
-  var READ_WELCOME  = 3200;  // full "Welcome…" line stays on screen this long
+  var TYPE_BASE     = 52;   // per-letter typing speed
+  var TYPE_JITTER   = 16;    // small random variation so it feels hand-typed
+  var WORD_PAUSE    = 28;    // extra beat after each space
+  var READ_WELCOME  = 2000;  // full "Welcome…" line stays long enough to read (about 2 s)
   var LINE_FADE     = 700;   // welcome line fades out
-  var LETTER_STEP   = 150;   // delay between each "Art is Life" letter
+  var LETTER_STEP   = 75;   // delay between each "Art is Life" letter
   var READ_ART      = 2400;  // "Art is Life" stays on screen this long
   var EXIT_FADE     = 900;   // whole banner dissolves
   var TOTAL = START_DELAY + TYPE_BASE * TEXT1.length + READ_WELCOME + LINE_FADE

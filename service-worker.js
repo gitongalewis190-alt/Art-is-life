@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   service-worker.js — PWA offline + caching  (Phase 5 polish)
+   service-worker.js -- PWA offline + caching  (Phase 5 polish)
    Strategy:
      • navigation (index.html)  -> network-first (always get latest), cache fallback
      • same-origin static assets -> stale-while-revalidate (fast + self-updating)
@@ -7,7 +7,7 @@
      • cross-origin (Firebase, gstatic, YouTube, GA) -> always network
    Bump CACHE on releases to retire old assets.
    ═══════════════════════════════════════════════════════════════════════ */
-const CACHE = "ail-v13";
+const CACHE = "ail-v15";
 const SHELL = [
   "./",
   "./index.html",
@@ -71,7 +71,7 @@ self.addEventListener("fetch", (event) => {
   // Never intercept cross-origin (Firebase/Firestore, gstatic SDK, YouTube, GA).
   if (url.origin !== self.location.origin) return;
 
-  // Never intercept server endpoints — a cached 503 health check or payment
+  // Never intercept server endpoints -- a cached 503 health check or payment
   // response would be actively harmful.
   if (url.pathname.startsWith("/api/")) return;
 

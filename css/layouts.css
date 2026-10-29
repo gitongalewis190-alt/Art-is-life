@@ -1,16 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   layouts.css — 7 Structural & Visual Presets  (Phase 6 — Total Rebuild)
+   layouts.css -- 7 Structural & Visual Presets  (Phase 6 -- Total Rebuild)
    Switched live from Control Console via  <html data-layout="1..7">.
-   Default: Layout 3 — MUSEUM (pure white gallery walls).
+   Default: Layout 3 -- MUSEUM (pure white gallery walls).
    ═══════════════════════════════════════════════════════════════════════
 
-   1. OBSIDIAN   — deep void, iOS 26 liquid glass, chromatic orbs
-   2. LINEN      — warm editorial, terracotta accent, serif-led typography
-   3. MUSEUM     — pure white gallery walls, generous space, art is the star (DEFAULT)
-   4. MATRIX     — deep navy collector grid, electric-blue tech aesthetic
-   5. AURORA     — nebula dark, violet+ice+rose chromatic glass
-   6. CINEMATIC  — near-zero-gap film strip, full-bleed image cards
-   7. SPECTRUM   — light cool-gray, rainbow accent bars, energetic
+   1. OBSIDIAN   -- deep void, iOS 26 liquid glass, chromatic orbs
+   2. LINEN      -- warm editorial, terracotta accent, serif-led typography
+   3. MUSEUM     -- pure white gallery walls, generous space, art is the star (DEFAULT)
+   4. MATRIX     -- deep navy collector grid, electric-blue tech aesthetic
+   5. AURORA     -- nebula dark, violet+ice+rose chromatic glass
+   6. CINEMATIC  -- near-zero-gap film strip, full-bleed image cards
+   7. SPECTRUM   -- light cool-gray, rainbow accent bars, energetic
 
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -21,7 +21,7 @@ html[data-optics="off"] body::before{ display:none !important; }
 .glass-panel{ background:rgba(255,254,249,var(--glass-alpha,0.72)) !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 1 — OBSIDIAN  (DEFAULT)
+   ██  LAYOUT 1 -- OBSIDIAN  (DEFAULT)
    ██  Art floating in pure obsidian void. iOS 26 liquid glass.
    ██  Gold + electric violet chromatic field. Maximum depth.
    ══════════════════════════════════════════════════════════════════════ */
@@ -361,7 +361,7 @@ html[data-layout="1"] .adm-table td{
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 2 — LINEN
+   ██  LAYOUT 2 -- LINEN
    ██  Warm editorial light. Terracotta accent. Serif-led.
    ██  Like a premium art magazine printed on handmade paper.
    ══════════════════════════════════════════════════════════════════════ */
@@ -526,9 +526,9 @@ html[data-layout="2"] .marquee-band{
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 3 — MUSEUM
+   ██  LAYOUT 3 -- MUSEUM
    ██  Pure white gallery walls. Generous space. Art is the only star.
-   ██  Ultra-minimal: no backgrounds, no effects — just art and type.
+   ██  Ultra-minimal: no backgrounds, no effects -- just art and type.
    ══════════════════════════════════════════════════════════════════════ */
 html[data-layout="3"]{
   --cream:#ffffff;
@@ -703,7 +703,7 @@ html[data-layout="3"] .fab-donate{
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 3 — MUSEUM · WHITE CONTRAST PASS
+   ██  LAYOUT 3 -- MUSEUM · WHITE CONTRAST PASS
    ██  The shared base styles were written for the dark theme. Every public
    ██  text colour on the white walls is set here explicitly so nothing
    ██  inherits a light-on-dark value. Selectors are scoped to public-page
@@ -711,7 +711,7 @@ html[data-layout="3"] .fab-donate{
    ══════════════════════════════════════════════════════════════════════ */
 html[data-layout="3"]{ --gold-ink:#7a5c1a; --hairline:#e6e6e6; }
 
-/* Hero — the photo sits behind a white wash so the dark headline reads clearly */
+/* Hero -- the photo sits behind a white wash so the dark headline reads clearly */
 html[data-layout="3"] .hero-bg::after{
   background:linear-gradient(to right,rgba(255,255,255,0.97) 0%,rgba(255,255,255,0.9) 40%,rgba(255,255,255,0.35) 75%,rgba(255,255,255,0) 100%) !important;
 }
@@ -787,7 +787,7 @@ html[data-layout="3"] .svc-cta-text h3{ color:#111111 !important; }
 html[data-layout="3"] .svc-cta-text p{ color:#4a4a4a !important; }
 html[data-layout="3"] .svc-cta-btn--secondary{ background:#ffffff !important; color:#111111 !important; border:1px solid #111111 !important; }
 
-/* Social band — white, like the rest of the wall */
+/* Social band -- white, like the rest of the wall */
 html[data-layout="3"] .social-section{ background:#ffffff !important; border-top:1px solid var(--hairline) !important; }
 html[data-layout="3"] .social-section h3{ color:#111111 !important; }
 html[data-layout="3"] .social-section p{ color:#4a4a4a !important; }
@@ -811,7 +811,7 @@ html[data-layout="3"] #policyYesBtn{ background:#13753a !important; color:#fffff
 html[data-layout="3"] #policyNoBtn{ color:#b3261e !important; border-color:#b3261e !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 4 — MATRIX
+   ██  LAYOUT 4 -- MATRIX
    ██  Deep navy void. Dense collector grid. Electric-blue tech.
    ██  Data-driven, cold, architectural. Like a Bloomberg terminal
    ██  for art collectors.
@@ -1007,7 +1007,7 @@ html[data-layout="4"] .adm-nav-item:hover{ color:var(--ice) !important; backgrou
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 5 — AURORA
+   ██  LAYOUT 5 -- AURORA
    ██  Nebula dark. Violet + ice + rose chromatic glass.
    ██  Like viewing art through a telescope pointed at a nebula.
    ══════════════════════════════════════════════════════════════════════ */
@@ -1210,7 +1210,7 @@ html[data-layout="5"] .cc-card{
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 6 — CINEMATIC
+   ██  LAYOUT 6 -- CINEMATIC
    ██  Near-zero gap film strip. Full-bleed image cards. Near-black.
    ██  Hover reveals all info. Art fills every pixel. No clutter.
    ══════════════════════════════════════════════════════════════════════ */
@@ -1428,7 +1428,7 @@ html[data-layout="6"] .adm-nav-item:hover{ color:#f0f0f0 !important; background:
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   ██  LAYOUT 7 — SPECTRUM
+   ██  LAYOUT 7 -- SPECTRUM
    ██  Light cool-gray base. Rainbow top-border accent bars per card.
    ██  Energetic. Design-portfolio meets gallery. Bold type.
    ══════════════════════════════════════════════════════════════════════ */
@@ -1663,4 +1663,4 @@ html[data-layout="7"] .adm-input{
 
 /* Backward compat: Layout 5 class kept as alias so any old Firestore
    doc that still has layout:"5" loads the AURORA preset rather than
-   a blank. The old "Gallery Void" feel is now Layout 1 — OBSIDIAN. */
+   a blank. The old "Gallery Void" feel is now Layout 1 -- OBSIDIAN. */

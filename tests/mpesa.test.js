@@ -140,7 +140,7 @@ test("PUT is rejected with 405 and an Allow header", async () => {
 test("STK push rejects an invalid phone before touching the network", async () => {
   const res = mockRes();
   await handler({ method: "POST", headers: {}, body: { phone: "123", amount: 100 } }, res);
-  // 503 (credentials missing) or 400 (validation) — never a 2xx/500.
+  // 503 (credentials missing) or 400 (validation) -- never a 2xx/500.
   assert.ok([400, 503].includes(res.statusCode), "unexpected status " + res.statusCode);
   assert.equal(typeof res.body.error, "string");
 });

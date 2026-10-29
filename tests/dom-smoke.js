@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   tests/dom-smoke.js — end-to-end DOM smoke test (optional; needs jsdom)
+   tests/dom-smoke.js -- end-to-end DOM smoke test (optional; needs jsdom)
 
      npm i --no-save jsdom
      node tests/dom-smoke.js

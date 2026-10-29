@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   console.js — Control Console (Developer Hub)  (Phase 3)
+   console.js -- Control Console (Developer Hub)  (Phase 3)
    Neural-network canvas background + Cloudinary image upload
    ═══════════════════════════════════════════════════════════════════════ */
 (function () {
@@ -233,7 +233,7 @@
           color("Cream / surface", "cc_cream", t.cream || "#faf8f3") +
           '<label class="cc-label">Corner radius</label>' +
           '<input class="cc-input" id="cc_radius" type="text" value="' + esc(t.radius || "4px") + '">' +
-          '<label class="cc-label">Glass opacity — <span id="cc_alphaVal">' + (t.glassAlpha != null ? t.glassAlpha : 0.72) + '</span></label>' +
+          '<label class="cc-label">Glass opacity -- <span id="cc_alphaVal">' + (t.glassAlpha != null ? t.glassAlpha : 0.72) + '</span></label>' +
           '<input id="cc_alpha" type="range" min="0.02" max="1" step="0.02" value="' + (t.glassAlpha != null ? t.glassAlpha : 0.72) + '" style="width:100%">' +
           '<label class="cc-check"><input type="checkbox" id="cc_optics" ' + (t.optics !== false ? "checked" : "") + '> Animated background optics</label>' +
         '</section>' +
@@ -245,7 +245,7 @@
               '" data-layout="' + L.id + '"><strong>' + L.id + '</strong>' + esc(L.name) +
               '<span>' + esc(L.desc) + '</span></button>';
           }).join("") +
-        '</div><p class="cc-hint">Slots 6–10 reserved — switcher is ready to expand.</p></section>' +
+        '</div><p class="cc-hint">Slots 6–10 reserved -- switcher is ready to expand.</p></section>' +
 
         // CONTENT / CMS
         '<section class="cc-card"><h4>📝 Content</h4>' +
@@ -260,7 +260,7 @@
           field("Remark attribution", "cc_remarkBy", c.ownerRemarkBy) +
         '</section>' +
 
-        // IMAGE UPLOAD — Cloudinary
+        // IMAGE UPLOAD -- Cloudinary
         '<section class="cc-card"><h4>🖼 Image Upload (Cloudinary)</h4>' +
           '<p class="cc-hint">Free Cloudinary account → Dashboard → Cloud name + create an <em>unsigned</em> upload preset. Paste below. Your images go to the <code>art-is-life/artworks</code> folder.</p>' +
           field("Cloud Name", "cc_cld_name", cl.cloudName, "text", "your-cloud-name") +
@@ -269,7 +269,7 @@
             '<input type="file" id="cc_fileinput" multiple accept="image/*">' +
             '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:6px"><path d="M12 16V8m0 0-3 3m3-3 3 3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>' +
             '<div>Drop images here or <strong>click to browse</strong></div>' +
-            '<div style="font-size:.7rem;margin-top:4px;opacity:.6">JPG, PNG, WEBP — any size</div>' +
+            '<div style="font-size:.7rem;margin-top:4px;opacity:.6">JPG, PNG, WEBP -- any size</div>' +
           '</div>' +
           '<div id="cc_upprog" class="cc-upload-progress"></div>' +
           '<div id="cc_thumbgrid" class="cc-upload-thumb-grid"></div>' +
@@ -278,7 +278,7 @@
 
         // DARAJA (non-secret)
         '<section class="cc-card"><h4>💳 M-Pesa / Daraja</h4>' +
-          '<p class="cc-hint">Only the PUBLIC endpoint URL goes here. Secret keys live on the server — never in this panel.</p>' +
+          '<p class="cc-hint">Only the PUBLIC endpoint URL goes here. Secret keys live on the server -- never in this panel.</p>' +
           field("Business name", "cc_dbiz", d.businessName, "text") +
           field("Secure STK-push endpoint URL", "cc_dep", d.endpoint, "url", "https://your-domain.vercel.app/api/mpesa") +
           '<button class="cc-btn" id="cc-mpesa-test" type="button" style="margin-top:4px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399">🔌 Test Connection</button>' +
@@ -293,7 +293,7 @@
             var evts = (window.dataLayer || []).filter(function(e){ return typeof e[0]==="string" && e[0]==="event"; });
             var ok = typeof window.gtag === "function";
             return '<div class="cc-keystatus ' + (ok?"ok":"warn") + '" style="margin-top:10px">' +
-              (ok ? "✓ gtag active — " + evts.length + " event(s) fired this session." : "⚠ gtag not responding — may be blocked by an ad-blocker. Real visitors still tracked.") +
+              (ok ? "✓ gtag active -- " + evts.length + " event(s) fired this session." : "⚠ gtag not responding -- may be blocked by an ad-blocker. Real visitors still tracked.") +
               '</div>' +
               '<div style="margin-top:10px;max-height:80px;overflow-y:auto;font-family:monospace;font-size:.69rem;background:rgba(0,0,0,0.04);border-radius:6px;padding:7px 9px;color:var(--muted);line-height:1.65">' +
               (evts.slice(-5).map(function(e){return esc(String(e[1]||"event"))+(e[2]?" · "+esc(JSON.stringify(e[2]).slice(0,38)):"");}).join("<br>")||"No events yet this session.") +
@@ -309,7 +309,7 @@
             var auth = window._auth;
             var role = window._currentRole || "none";
             var email = (auth && auth.currentUser && auth.currentUser.email) || "Not signed in";
-            var uid = (auth && auth.currentUser && auth.currentUser.uid) || "—";
+            var uid = (auth && auth.currentUser && auth.currentUser.uid) || "--";
             var pid = (db && db.app && db.app.options && db.app.options.projectId) || "artislife-44968";
             return '<div style="display:grid;gap:7px">' +
               '<div class="cc-keystatus ' + (db?"ok":"warn") + '">' + (db?"✓ Firestore connected · project: "+pid:"⚠ Firestore offline") + '</div>' +
@@ -355,7 +355,7 @@
             '<label class="cc-label">Voice</label>' +
             '<div class="cc-voice-grid">' +
               ['aria','james','zara','elevenlabs'].map(function(v){
-                var labels = {aria:'Aria — British Female',james:'James — American Male',zara:'Zara — Australian Female',elevenlabs:'ElevenLabs Premium'};
+                var labels = {aria:'Aria -- British Female',james:'James -- American Male',zara:'Zara -- Australian Female',elevenlabs:'ElevenLabs Premium'};
                 return '<label class="cc-voice-opt' + (a.voice===v?' sel':'') + '">' +
                   '<input type="radio" name="arten_voice" value="'+v+'"' + (a.voice===v?' checked':'') + '>' +
                   labels[v] + '</label>';
@@ -421,7 +421,7 @@
             '</select>' +
             '<p class="cc-hint">Arten auto-detects language from typed text. Set this to match your voice input language.</p>' +
 
-            '<p class="cc-hint" style="margin-top:6px;color:rgba(52,211,153,0.9)">⚡ Orb colour, eye colour, position, personality &amp; language preview live — save locks in voice &amp; ElevenLabs credentials.</p>' +
+            '<p class="cc-hint" style="margin-top:6px;color:rgba(52,211,153,0.9)">⚡ Orb colour, eye colour, position, personality &amp; language preview live -- save locks in voice &amp; ElevenLabs credentials.</p>' +
             '<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">' +
               '<button class="cc-btn" id="cc-arten-save" style="flex:2;background:linear-gradient(135deg,#5040cc,#818cf8)">💾 Save All Arten Settings</button>' +
               '<button class="cc-btn" id="cc-arten-test" style="flex:1;background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.3);color:#00e5ff">Test Voice</button>' +
@@ -502,10 +502,10 @@
     var isStale = /\/(api\/)?stkpush\/?$/i.test(trimmed);
     box.className = "cc-keystatus " + (isStale ? "warn" : "ok");
     box.textContent = isStale
-      ? "⚠ This points to the retired /stkpush path — donations auto-fall back to /api/mpesa for now, but update this field to .../api/mpesa to keep it accurate."
+      ? "⚠ This points to the retired /stkpush path -- donations auto-fall back to /api/mpesa for now, but update this field to .../api/mpesa to keep it accurate."
       : trimmed
-        ? "✓ Endpoint set — donations will trigger a live STK push."
-        : "✓ Left blank — donations automatically use the built-in /api/mpesa endpoint.";
+        ? "✓ Endpoint set -- donations will trigger a live STK push."
+        : "✓ Left blank -- donations automatically use the built-in /api/mpesa endpoint.";
   }
 
   function wire() {
@@ -539,18 +539,18 @@
           box.className = "cc-keystatus " + (data.ok ? "ok" : "warn");
           box.textContent = data.ok
             ? "✓ " + data.message
-            : "⚠ " + (data.error || "Test failed — check the endpoint URL.");
+            : "⚠ " + (data.error || "Test failed -- check the endpoint URL.");
         })
         .catch(function () {
           mpesaTest.disabled = false;
-          if (box) { box.className = "cc-keystatus warn"; box.textContent = "⚠ Could not reach " + endpoint + " — check the URL and that it's deployed."; }
+          if (box) { box.className = "cc-keystatus warn"; box.textContent = "⚠ Could not reach " + endpoint + " -- check the URL and that it's deployed."; }
         });
     });
 
     // Arten panel wiring
     document.querySelectorAll('input[name="arten_voice"]').forEach(function(r){
       r.addEventListener("change", function(){
-        /* Only deselect siblings inside the voice grid — not position/personality opts */
+        /* Only deselect siblings inside the voice grid -- not position/personality opts */
         var vg = document.querySelector('.cc-voice-grid');
         (vg || document).querySelectorAll('.cc-voice-opt').forEach(function(l){ l.classList.remove('sel'); });
         r.parentElement.classList.add('sel');
@@ -603,7 +603,7 @@
     var artenTest = document.getElementById('cc-arten-test');
     if (artenTest) artenTest.addEventListener('click', function(){
       if (typeof window.ArtenSendText === 'function') window.ArtenSendText('introduce yourself');
-      else if (window.showToast) window.showToast('Arten not loaded yet — refresh and try again.');
+      else if (window.showToast) window.showToast('Arten not loaded yet -- refresh and try again.');
     });
 
     /* ── Real-time live preview: ALL content / config text inputs debounced 300ms ── */
@@ -614,7 +614,7 @@
       var n = document.getElementById(id); if (n) n.addEventListener('input', _dp);
     });
 
-    /* ── Arten: live-apply appearance instantly — no save button required ── */
+    /* ── Arten: live-apply appearance instantly -- no save button required ── */
     var _orbPick = document.getElementById('cc-arten-orb');
     if (_orbPick) _orbPick.addEventListener('input', function(){
       if (typeof window.ArtenApplySettings === 'function') window.ArtenApplySettings({ orbColor: _orbPick.value });

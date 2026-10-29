@@ -6,7 +6,7 @@ a Studio/Exhibition wing, and an M-Pesa donation flow.
 
 Contact: 0184336391 — Lewis Gitonga · Nairobi, Kenya
 
----
+—
 
 ## Architecture
 
@@ -53,7 +53,7 @@ tests/                      # node:test suite (no dependencies)
 original inline version. `js/sanitize.js` is loaded synchronously in `<head>`
 so escaping helpers exist before any app code runs.
 
----
+—
 
 ## Features
 
@@ -67,17 +67,17 @@ so escaping helpers exist before any app code runs.
 - **Studio / Exhibition wing** — Process Studio (YouTube-embedded behind-the-scenes films with title/tags/description/timestamp) + Archive (non-sale masters). Managed from the **Studio Manager** admin tab.
 - **Donate via M-Pesa** — button beside Commission; STK push through the Daraja endpoint.
 - All original commerce intact: gallery, cart, likes, comments, orders (WhatsApp/Email/SMS), commissions, admin dashboard.
-- **Accessibility** — labelled form controls, `role="dialog"`/`aria-modal` overlays whose `aria-hidden` tracks their open state, keyboard-operable cards and admin trigger, a live-region toast, and visible keyboard escapes (Esc closes every overlay).
+- **Accessibility** — labelled form controls, `role=“dialog”`/`aria-modal` overlays whose `aria-hidden` tracks their open state, keyboard-operable cards and admin trigger, a live-region toast, and visible keyboard escapes (Esc closes every overlay).
 - **Installable PWA** — real PNG icons (192/512 + maskable), a standalone manifest and a versioned service worker that never caches `/api/*`.
 
----
+—
 
 ## Security model
 
 The browser is treated as untrusted. Every privilege is enforced server-side.
 
 | Concern | Control |
-| --- | --- |
+| — | — |
 | Admin access | Verified Firebase email/password session **plus** `users/{uid}.role` = `admin`/`crown`. The UI mirrors the role; `firestore.rules` enforces it. |
 | Local console PIN | Optional **screen-lock only**. It never grants access, can be cleared by anyone, and protects no data. |
 | Stored XSS | All remote/CMS data is escaped at render time (`js/sanitize.js`), IDs are escaped for inline handlers, and URLs are scheme-checked (`javascript:`, `data:` blocked). |
@@ -87,7 +87,7 @@ The browser is treated as untrusted. Every privilege is enforced server-side.
 | Stored state | Cart/likes read from `localStorage` are treated as untrusted: rebuilt field-by-field with type coercion and length caps before rendering. |
 | CMS writes | `SiteConfig.publish()` sanitises every string, re-validates colours/radius/layout/GA id and strips `__proto__` keys, so the world-readable config can never hold a payload or pollute a prototype. |
 | Secrets | Daraja key/secret/passkey live only in server env vars. The ElevenLabs key is deliberately **not** storable in the browser. |
-| Payment abuse | Server-side amount cap, phone validation, per-IP/per-phone throttling, origin allow-list, and callback re-verification via Daraja's `stkpushquery`. |
+| Payment abuse | Server-side amount cap, phone validation, per-IP/per-phone throttling, origin allow-list, and callback re-verification via Daraja’s `stkpushquery`. |
 | Transport | CSP, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, HSTS (see `firebase.json`). |
 | CSV export | Formula-injection neutralised (`=`, `+`, `-`, `@` are prefixed). |
 
@@ -104,11 +104,11 @@ The Control Console and Studio Manager appear once the role check passes. The
 dashboard is unopenable without it, and — more importantly — the database
 rejects writes without it.
 
----
+—
 
 ## Running locally
 
-It's static — open `index.html`, or serve the folder:
+It’s static — open `index.html`, or serve the folder:
 
 ```bash
 npx serve .        # or: python3 -m http.server
@@ -118,14 +118,14 @@ Firebase features use the config already present in `js/services/firebase.js`.
 Add `localhost` to Firebase Console → Authentication → Settings → Authorized
 domains if sign-in misbehaves locally.
 
----
+—
 
 ## Tests
 
 No dependencies, no build step:
 
 ```bash
-node --test "tests/*.test.js"
+node —test “tests/*.test.js”
 ```
 
 Optional end-to-end DOM smoke test (renders the real page in jsdom and feeds it
@@ -133,20 +133,20 @@ hostile Firestore/CMS/storage payloads — XSS, `javascript:` URLs, CSS break-ou
 prototype pollution, poisoned cart, admin-gate bypass):
 
 ```bash
-npm i --no-save --no-package-lock jsdom
+npm i —no-save —no-package-lock jsdom
 node tests/dom-smoke.js
 ```
 
----
+—
 
 ## Deploying
 
 ```bash
 npm install -g firebase-tools
 firebase login
-firebase use --add                 # select your Firebase project
+firebase use —add                 # select your Firebase project
 
-firebase deploy --only firestore:rules,storage,hosting
+firebase deploy —only firestore:rules,storage,hosting
 ```
 
 Deploy the rules **before** (or together with) the new front-end: the client
@@ -166,7 +166,7 @@ DARAJA_CONSUMER_KEY
 DARAJA_CONSUMER_SECRET
 DARAJA_PASSKEY
 DARAJA_SHORTCODE      # 174379 (sandbox) or your PayBill number (live)
-DARAJA_ENV            # "sandbox" or "production"
+DARAJA_ENV            # “sandbox” or “production”
 
 # optional
 ALLOWED_ORIGINS       # comma-separated origins allowed to call /api/mpesa
@@ -174,12 +174,12 @@ DARAJA_CALLBACK_URL   # explicit public callback URL (defaults to the Vercel URL
 ```
 
 Server-side safeguards: KES 1–200,000 per donation, 5 attempts per IP and 3 per
-phone per 10 minutes, and callbacks are re-checked with Daraja's
+phone per 10 minutes, and callbacks are re-checked with Daraja’s
 `stkpushquery` instead of being trusted.
 
-Verify it's wired up from Admin → **Control Console → M-Pesa** → **Test
+Verify it’s wired up from Admin → **Control Console → M-Pesa** → **Test
 Connection** — it checks the env vars and does a real OAuth handshake with
-Safaricom without sending an STK push. If the Console's endpoint field is
+Safaricom without sending an STK push. If the Console’s endpoint field is
 ever left blank or still points at the retired `/stkpush` path, the Donate
 button automatically falls back to `/api/mpesa` so donations keep working.
 
@@ -190,13 +190,13 @@ button automatically falls back to `/api/mpesa` so donations keep working.
 cd functions && npm install && cd ..
 
 firebase functions:config:set \
-  daraja.consumer_key="YOUR_KEY" \
-  daraja.consumer_secret="YOUR_SECRET" \
-  daraja.passkey="YOUR_PASSKEY" \
-  daraja.shortcode="174379" \
-  daraja.env="sandbox"             # "production" when live
+  daraja.consumer_key=“YOUR_KEY” \
+  daraja.consumer_secret=“YOUR_SECRET” \
+  daraja.passkey=“YOUR_PASSKEY” \
+  daraja.shortcode=“174379” \
+  daraja.env=“sandbox”             # “production” when live
 
-firebase deploy --only functions
+firebase deploy —only functions
 ```
 
 Paste the deployed `/stkpush` URL into Control Console → M-Pesa to use this

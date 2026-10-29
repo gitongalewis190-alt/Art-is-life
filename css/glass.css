@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   GLASS.CSS — Spatial design layer (Phase 1)
+   GLASS.CSS -- Spatial design layer (Phase 1)
    Additive only. Loads AFTER main.css so it can refine, never
    rewrite. Uses the existing :root tokens from main.css.
    ═══════════════════════════════════════════════════════════ */
@@ -55,7 +55,7 @@ body::before{
   backdrop-filter:blur(6px) brightness(0.7);
 }
 
-/* ═══════════════ FAB — DONATE BUTTON ═══════════════ */
+/* ═══════════════ FAB -- DONATE BUTTON ═══════════════ */
 .fab-wrap{ display:flex; gap:10px; flex-wrap:wrap; }
 .fab-donate{
   background:linear-gradient(160deg, rgba(232,212,139,0.95), var(--gold)) !important;
@@ -120,7 +120,7 @@ body::before{
 .donate-note.ok{ color:var(--green); }
 
 /* ═══════════════════════════════════════════════════════════
-   WELCOME SEQUENCE — typewriter line, then "Art is Life" letters
+   WELCOME SEQUENCE -- typewriter line, then "Art is Life" letters
    (timed in js/splash.js; tap anywhere to skip)
    ═══════════════════════════════════════════════════════════ */
 .splash{
@@ -163,7 +163,7 @@ body::before{
   background:linear-gradient(90deg,transparent,var(--gold,#c9a84c) 20%,#e0bf6a 60%,transparent);
   border-radius:2px; transform:scaleX(0); transform-origin:left center;
 }
-.splash-art.is-on::after{ animation:splashBrush 1.1s cubic-bezier(.6,0,.2,1) 1.4s forwards; }
+.splash-art.is-on::after{ animation:splashBrush .6s cubic-bezier(.6,0,.2,1) .8s forwards; }
 @keyframes splashBrush{ to{ transform:scaleX(1); } }
 
 .splash-letter{
@@ -173,7 +173,7 @@ body::before{
   transform-origin:50% 100%;
 }
 .splash-art.is-on .splash-letter{
-  animation:splashLetter .9s cubic-bezier(.2,.8,.2,1) forwards;
+  animation:splashLetter .45s cubic-bezier(.2,.8,.2,1) forwards;
 }
 @keyframes splashLetter{
   0%  { opacity:0; filter:blur(10px); transform:translateY(0.35em) rotate(-7deg) scale(1.35); }
@@ -330,21 +330,21 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 
 /* ═══════════════ PREMIUM GLASS REFINEMENTS ═══════════════ */
 
-/* Hero stats — glass shelf */
+/* Hero stats -- glass shelf */
 .hero-stat{
   -webkit-backdrop-filter:blur(20px) saturate(1.5) !important;
   backdrop-filter:blur(20px) saturate(1.5) !important;
   border-left:1px solid rgba(255,255,255,0.09) !important;
 }
 
-/* Search band — refined glass */
+/* Search band -- refined glass */
 .search-field{
   -webkit-backdrop-filter:blur(8px);
   backdrop-filter:blur(8px);
   background:rgba(255,255,255,0.82) !important;
 }
 
-/* Comment items — micro glass */
+/* Comment items -- micro glass */
 .comment-item{
   background:rgba(250,248,243,0.85) !important;
   border:1px solid rgba(255,255,255,0.4) !important;
@@ -360,7 +360,7 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   border-bottom:1px solid rgba(201,168,76,0.1) !important;
 }
 
-/* Admin UID box — clean tech styling */
+/* Admin UID box -- clean tech styling */
 .admin-uid-box{
   background:rgba(240,248,255,0.9) !important;
   border:1px solid rgba(147,197,253,0.5) !important;
@@ -368,7 +368,7 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   backdrop-filter:blur(8px);
 }
 
-/* Hamburger menu dropdown — premium glass */
+/* Hamburger menu dropdown -- premium glass */
 .hamburger-menu{
   background:rgba(255,254,249,0.94) !important;
   -webkit-backdrop-filter:blur(28px) saturate(1.5) !important;
@@ -378,21 +378,21 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   box-shadow:0 16px 48px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.7) !important;
 }
 
-/* Story blockquote — warm glass accent */
+/* Story blockquote -- warm glass accent */
 .story-blockquote{
   background:rgba(250,248,243,0.88) !important;
   -webkit-backdrop-filter:blur(10px);
   backdrop-filter:blur(10px);
 }
 
-/* Filter chips — glass pills */
+/* Filter chips -- glass pills */
 .filter-chip{
   -webkit-backdrop-filter:blur(8px);
   backdrop-filter:blur(8px);
   background:rgba(255,255,255,0.75) !important;
 }
 
-/* Studio cards — glass */
+/* Studio cards -- glass */
 .studio-card{
   -webkit-backdrop-filter:blur(16px) saturate(1.3) !important;
   backdrop-filter:blur(16px) saturate(1.3) !important;
@@ -411,23 +411,23 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 
 /* ═══════════════════════════════════════════════════════════
-   ARTEN — AI Companion Orb
+   ARTEN -- AI Companion Orb
    Bright, soft violet orb with cyan pill eyes and glow.
    ═══════════════════════════════════════════════════════════ */
 
-/* 1. Outer ring wrapper — soft bright border frame */
+/* 1. Outer ring wrapper -- soft bright border frame */
 .arten-ring{
   box-shadow: 0 0 0 3px rgba(129,140,248,0.4), 0 0 40px rgba(129,140,248,0.25);
 }
 
-/* 2. Orb body — lighter violet radial gradient */
+/* 2. Orb body -- lighter violet radial gradient */
 #arten-orb{
   background: radial-gradient(circle at 35% 30%, #9080ff, #5040cc 45%, #1e1066);
   border: 2px solid rgba(129,140,248,0.45);
   box-shadow: 0 0 0 4px rgba(129,140,248,0.12), 0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(129,140,248,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
-/* 5. Highlight shimmer spot — top-left white sheen via ::before */
+/* 5. Highlight shimmer spot -- top-left white sheen via ::before */
 .arten-face{
   position: relative;
 }
@@ -440,7 +440,7 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   background:radial-gradient(circle, rgba(255,255,255,0.5), transparent 70%);
 }
 
-/* 3. Eyes — cyan pill shapes with strong glow (not dot circles) */
+/* 3. Eyes -- cyan pill shapes with strong glow (not dot circles) */
 .arten-eye{
   position:absolute;
   width:11px; height:5px;
@@ -453,7 +453,7 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 .arten-eye.left{ left:2px; }
 .arten-eye.right{ right:2px; }
 
-/* 4. Mouth — subtle cyan line, not an arc */
+/* 4. Mouth -- subtle cyan line, not an arc */
 .arten-mouth{
   position:absolute; bottom:1px; left:50%; transform:translateX(-50%);
   width:10px; height:2px;
@@ -477,7 +477,7 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   text-transform: uppercase;
 }
 
-/* ══════ ARTEN AI ASSISTANT — WIDGET & PANEL ══════ */
+/* ══════ ARTEN AI ASSISTANT -- WIDGET & PANEL ══════ */
 #arten-widget{
   position:fixed !important;
   bottom:24px !important; left:24px !important;
@@ -926,7 +926,7 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LIKE BUTTON — X-style: heart pops, then a ring of dots bursts out
+   LIKE BUTTON -- X-style: heart pops, then a ring of dots bursts out
    (triggered by triggerHeartBounce() in js/app.js)
    ═══════════════════════════════════════════════════════════ */
 .like-btn{ position:relative; }
@@ -950,4 +950,17 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
   0%  { opacity:1; transform:rotate(var(--a)) translateY(0) scale(.4); }
   55% { opacity:1; }
   100%{ opacity:0; transform:rotate(var(--a)) translateY(-26px) scale(1); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ARTWORK FRAME -- one border around each work (image, title, price,
+   description and actions), the same in every layout preset.
+   ═══════════════════════════════════════════════════════════ */
+.art-card,
+html[data-layout] .art-card{
+  border:1px solid rgba(201,168,76,0.55) !important;
+  outline:1px solid rgba(255,255,255,0.6);
+  outline-offset:-4px;
+  border-radius:10px !important;
+  overflow:hidden;
 }

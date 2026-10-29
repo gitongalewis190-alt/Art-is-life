@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   siteConfig.js — Global CMS / theme / layout engine  (Phase 2)
+   siteConfig.js -- Global CMS / theme / layout engine  (Phase 2)
    ───────────────────────────────────────────────────────────────────────
    Stores ONE Firestore document  ->  siteConfig/main
    - Public READ  : every visitor gets live theme + content (onSnapshot)
@@ -9,7 +9,7 @@
    IMPORTANT (security): this document is world-readable, so it must only
    ever hold NON-secret values (colours, text, social links, the public
    Daraja *endpoint URL*). Real secrets (Daraja keys/passkey) live only on
-   the server — never here. The Console enforces this.
+   the server -- never here. The Console enforces this.
    ═══════════════════════════════════════════════════════════════════════ */
 import {
   doc, getDoc, setDoc, onSnapshot, serverTimestamp
@@ -30,7 +30,7 @@ const DEFAULTS = {
   layout: "3",
   content: {
     foundationName: "LEES.mobile",
-    footerText:     "© 2026 LEES.MOBILE — Lewis Gitonga. All rights reserved.",
+    footerText:     "© 2026 LEES.MOBILE -- Lewis Gitonga. All rights reserved.",
     footerSub:      "Original, one-off artworks. Nairobi, Kenya.",
     whatsapp:       "254184336391",
     email:          "",
@@ -45,7 +45,7 @@ const DEFAULTS = {
   logoUrl:    ""
 };
 
-/* structuredClone() is missing on older browsers — fall back to JSON so a
+/* structuredClone() is missing on older browsers -- fall back to JSON so a
    single missing API can never stop the whole site from booting. */
 function clone(value) {
   if (typeof structuredClone === "function") {
@@ -125,7 +125,7 @@ const SiteConfig = {
         ownerRemarkBy:  text(c.ownerRemarkBy, 80)
       },
       daraja: {
-        // Public endpoint only — never a key. Relative paths or https URLs.
+        // Public endpoint only -- never a key. Relative paths or https URLs.
         endpoint:     (() => {
           const raw = text(d.endpoint, 300);
           return (/^\/(?!\/)/.test(raw) || /^https:\/\//i.test(raw)) ? raw : "";
@@ -188,7 +188,7 @@ const SiteConfig = {
   },
 
   _setHref(sel, val) {
-    // Only http(s)/mailto/tel/sms/relative URLs — blocks javascript: links
+    // Only http(s)/mailto/tel/sms/relative URLs -- blocks javascript: links
     // planted in world-readable CMS content.
     const safe = window.safeUrl ? window.safeUrl(val) : "";
     if (!safe) return;
@@ -213,7 +213,7 @@ const SiteConfig = {
     } catch (_) {/* keep defaults */}
   },
 
-  /** Publish (admin/crown only — Firestore rules enforce the real gate). */
+  /** Publish (admin/crown only -- Firestore rules enforce the real gate). */
   async publish(partial) {
     // Firestore rules are the real gate; this just gives a clear message.
     if (!window._firebaseAdmin || window._currentRole !== "crown") {
@@ -230,7 +230,7 @@ const SiteConfig = {
       return true;
     } catch (err) {
       console.error("Config publish failed:", err && err.message);
-      if (typeof window.showToast === "function") window.showToast("❌ Publish failed — check your connection and crown role.");
+      if (typeof window.showToast === "function") window.showToast("❌ Publish failed -- check your connection and crown role.");
       return false;
     }
   },

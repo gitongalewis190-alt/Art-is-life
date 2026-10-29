@@ -30,7 +30,7 @@ const LOCAL_ARTWORKS = [
 
 ];
 
-// Active artworks — populated from Firestore or fallback
+// Active artworks -- populated from Firestore or fallback
 
 let artworks = [...LOCAL_ARTWORKS];
 
@@ -130,7 +130,7 @@ window.addEventListener('artworks_updated', () => {
 
   const firestoreArts = window._firestoreArtworks || [];
 
-  console.log(`🔄 artworks_updated fired — Firestore items: ${firestoreArts.length}`);
+  console.log(`🔄 artworks_updated fired -- Firestore items: ${firestoreArts.length}`);
 
   if (firestoreArts.length > 0) {
 
@@ -156,13 +156,13 @@ window.addEventListener('artworks_updated', () => {
 
   document.getElementById('aboutBadgeNum').textContent = count;
 
-  console.log(`🔄 Gallery updated — total ${count} artworks`);
+  console.log(`🔄 Gallery updated -- total ${count} artworks`);
 
 });
 
 window.addEventListener('likes_updated', () => {
 
-  // ⚡ PERFORMANCE FIX: only update like-count nodes per card — no full gallery re-render
+  // ⚡ PERFORMANCE FIX: only update like-count nodes per card -- no full gallery re-render
   const counts = window._firestoreLikeCounts || {};
 
   document.querySelectorAll('.art-card').forEach(card => {
@@ -326,7 +326,7 @@ function resolveImage(image) {
   if (!trimmed) return fallback;
   if (/^https?:\/\//i.test(trimmed)) return safeImageUrl(trimmed) || fallback;
   if (trimmed.startsWith('assets/')) return trimmed;
-  // Legacy bare filename from Firestore — assume it's an artwork
+  // Legacy bare filename from Firestore -- assume it's an artwork
   if (trimmed.startsWith('images/')) return safeImageUrl('assets/artworks/' + trimmed.substring(7)) || fallback;
   return safeImageUrl('assets/artworks/' + trimmed.replace(/^\/+/, '')) || fallback;
 }
@@ -347,7 +347,7 @@ function getLikeCount(id) {
 
 function renderGallery(filter) {
 
-  console.log(`🖼️ renderGallery called — artworks: ${artworks.length}, filter: "${filter||''}"`);
+  console.log(`🖼️ renderGallery called -- artworks: ${artworks.length}, filter: "${filter||''}"`);
 
   const grid = document.getElementById('gallery');
 
@@ -578,7 +578,7 @@ async function toggleLike(id) {
 
   store.set('ail_likes', JSON.stringify(likes));
 
-  // Update ONLY the like button — no full gallery re-render (prevents page shake/reflow)
+  // Update ONLY the like button -- no full gallery re-render (prevents page shake/reflow)
 
   const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(sid)}'"]`);
 
@@ -670,7 +670,7 @@ function toggleStoryLike() {
 
 function openStoryComments() {
 
-  currentCommentTarget = { id: 'story', title: 'The Untold Canvas — My Origin' };
+  currentCommentTarget = { id: 'story', title: 'The Untold Canvas -- My Origin' };
 
   openCommentModal();
 
@@ -795,7 +795,7 @@ async function submitComment() {
 
     if (!ok) {
 
-      // Give the text back — losing what someone typed is unforgivable.
+      // Give the text back -- losing what someone typed is unforgivable.
       if (!input.value) input.value = text;
 
       showToast('❌ Could not post comment');
@@ -938,7 +938,7 @@ function renderCartDrawer() {
 
   document.getElementById('cartItemCount').textContent = cart.length;
 
-  document.getElementById('cartTotal').textContent = total > 0 ? `${total.toLocaleString()} KES` : '—';
+  document.getElementById('cartTotal').textContent = total > 0 ? `${total.toLocaleString()} KES` : '--';
 
   footer.style.display = 'block';
 
@@ -990,7 +990,7 @@ function openOrder(id) {
 
   currentOrderIndex = String(id);
 
-  document.getElementById('orderArtworkName').textContent = `🖼️ ${art.title} — ${art.price}`;
+  document.getElementById('orderArtworkName').textContent = `🖼️ ${art.title} -- ${art.price}`;
 
   ['orderName','orderAddress','orderPhone'].forEach(f => document.getElementById(f).value = '');
 
@@ -1076,13 +1076,13 @@ function sendOrder() {
 
     if (!art) { showToast('⚠️ That artwork is no longer available'); return; }
 
-    artworkLine = `🖼️ ${art.title} — ${art.price}`;
+    artworkLine = `🖼️ ${art.title} -- ${art.price}`;
 
     totalPrice = Number(art.priceNum) || 0;
 
   } else {
 
-    artworkLine = cart.map(c => `🖼️ ${c.title} — ${c.price} × ${c.qty||1}`).join('\n');
+    artworkLine = cart.map(c => `🖼️ ${c.title} -- ${c.price} × ${c.qty||1}`).join('\n');
 
     totalPrice = cart.reduce((s,c) => s + ((c.priceNum||0)*(c.qty||1)), 0);
 
@@ -1100,7 +1100,7 @@ function sendOrder() {
 
     const art = currentOrderIndex !== null ? artworks.find(a=>String(a.id)===String(currentOrderIndex)) : null;
 
-    const subj = art ? `Art Order — ${art.title}` : `Art Order — ${cart.length} items`;
+    const subj = art ? `Art Order -- ${art.title}` : `Art Order -- ${cart.length} items`;
 
     window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent(subj)}&body=${enc}`, '_blank', 'noopener,noreferrer');
 
@@ -1217,14 +1217,14 @@ function sendCommission() {
 
   if(!name||!desc){showToast('⚠️ Please fill in your name and describe your vision');return;}
 
-  const msg=`🎨 COMMISSION REQUEST — ART IS LIFE FOUNDATION\n\nHello Levis!\n\nI hope this message finds you well. I'm reaching out because I'm very interested in commissioning a beautiful custom artwork from you.\n\n═══════════════════════════════════════\nMY VISION & DETAILS:\n═══════════════════════════════════════\n\nName: ${name}\n${phone?`Contact: ${phone}\n`:''}\n${address?`Address: ${address}\n`:''}\nDescription of Vision:\n${desc}\n\nStyle & Mood: ${mood||'Open to artist suggestions'}\nPreferred Size: ${size||'To be discussed'}\nColor Preferences: ${colors||"I'm open to your artistic direction"}\n\n═══════════════════════════════════════\n\nI'm excited to collaborate with you on this project and would love to discuss timeline, pricing, and any specific details. Please feel free to reach out at your earliest convenience.\n\nThank you for considering my commission request. I look forward to creating something special together!\n\nWarm regards,\n${name}`;
+  const msg=`🎨 COMMISSION REQUEST -- ART IS LIFE FOUNDATION\n\nHello Levis!\n\nI hope this message finds you well. I'm reaching out because I'm very interested in commissioning a beautiful custom artwork from you.\n\n═══════════════════════════════════════\nMY VISION & DETAILS:\n═══════════════════════════════════════\n\nName: ${name}\n${phone?`Contact: ${phone}\n`:''}\n${address?`Address: ${address}\n`:''}\nDescription of Vision:\n${desc}\n\nStyle & Mood: ${mood||'Open to artist suggestions'}\nPreferred Size: ${size||'To be discussed'}\nColor Preferences: ${colors||"I'm open to your artistic direction"}\n\n═══════════════════════════════════════\n\nI'm excited to collaborate with you on this project and would love to discuss timeline, pricing, and any specific details. Please feel free to reach out at your earliest convenience.\n\nThank you for considering my commission request. I look forward to creating something special together!\n\nWarm regards,\n${name}`;
 
 
   const enc=encodeURIComponent(msg);
 
   if(selectedCommissionChannel==='wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`,'_blank','noopener,noreferrer');
 
-  else if(selectedCommissionChannel==='email') window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent('Commission Request — '+name)}&body=${enc}`,'_blank','noopener,noreferrer');
+  else if(selectedCommissionChannel==='email') window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent('Commission Request -- '+name)}&body=${enc}`,'_blank','noopener,noreferrer');
 
   else window.open(`sms:${CONTACT.phone}?body=${enc}`,'_blank','noopener,noreferrer');
 
@@ -1272,7 +1272,7 @@ function closeAccessDenied() {
 
 }
 
-/* ══ DEVICE PIN — an optional local screen-lock, NEVER a privilege ═══════
+/* ══ DEVICE PIN -- an optional local screen-lock, NEVER a privilege ═══════
    Admin rights come exclusively from a verified Firebase session whose
    users/{uid}.role is admin/crown (enforced by firestore.rules). This PIN
    only stops a passer-by using an already-signed-in browser, so clearing it
@@ -1353,11 +1353,11 @@ async function saveAdminPassword() {
 
   document.getElementById('admNewPw').value = '';
   document.getElementById('admNewPw2').value = '';
-  say('✓ PIN set — the console now locks on this device.', 'var(--adm-emerald,#34d399)');
+  say('✓ PIN set -- the console now locks on this device.', 'var(--adm-emerald,#34d399)');
 
   const lockBtn = document.getElementById('admLockBtn');
   if (lockBtn) { lockBtn.textContent = '🔒 Console Locked'; lockBtn.style.background = 'rgba(251,113,133,0.15)'; }
-  showToast('🔑 PIN set — console locked on this device');
+  showToast('🔑 PIN set -- console locked on this device');
 }
 
 /** Remove the local screen-lock. Does NOT sign out or grant any access. */
@@ -1369,10 +1369,10 @@ function clearDeviceLock() {
 }
 
 function resetAdminLock() {
-  if (!confirm('Remove the console PIN from this device?\n\nThis only clears the local screen-lock — you will still need to sign in with your admin account.')) return;
+  if (!confirm('Remove the console PIN from this device?\n\nThis only clears the local screen-lock -- you will still need to sign in with your admin account.')) return;
   clearDeviceLock();
   closeAdminLogin();
-  showToast('🔓 Device PIN cleared — sign in with your admin account.');
+  showToast('🔓 Device PIN cleared -- sign in with your admin account.');
   openAdminLogin();
 }
 
@@ -1470,7 +1470,7 @@ async function sendAdminPasswordReset() {
   const errEl = document.getElementById('adminError');
   const email = emailEl ? emailEl.value.trim() : '';
   if (!email) {
-    if (errEl) errEl.textContent = 'Type your admin email above, then tap “Forgot password?” again.';
+    if (errEl) errEl.textContent = 'Type your admin email above, then tap "Forgot password?" again.';
     return;
   }
   if (typeof window.firebaseResetPassword !== 'function') {
@@ -1480,7 +1480,7 @@ async function sendAdminPasswordReset() {
   const res = await window.firebaseResetPassword(email);
   if (res.success) {
     if (errEl) errEl.textContent = '';
-    showToast('📧 Reset link sent to ' + email + ' — check your inbox and spam.');
+    showToast('📧 Reset link sent to ' + email + ' -- check your inbox and spam.');
   } else if (errEl) {
     errEl.textContent = res.error || 'Could not send the reset email.';
   }
@@ -1590,7 +1590,7 @@ function openAdminDashboard() {
 
   pip.textContent = role; pip.className = 'adm-role-pip ' + (role === 'crown' ? 'crown' : 'admin');
 
-  document.getElementById('admWelcome').textContent = `Welcome back, ${email.split('@')[0]} — ${new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+  document.getElementById('admWelcome').textContent = `Welcome back, ${email.split('@')[0]} -- ${new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
 
   if (role === 'crown') { const cs = document.getElementById('crownSection'); cs.style.display = ''; cs.classList.add('is-visible'); }
 
@@ -1669,6 +1669,7 @@ function admTab(name, btn) {
   if (name === 'console' && window.renderConsole) window.renderConsole();
 
   if (name === 'studio' && window.renderStudioManager) window.renderStudioManager();
+  if (name === 'transfer' && window.renderTransferTab) window.renderTransferTab();
 
 }
 
@@ -1688,7 +1689,7 @@ async function loadDashboardStats() {
 
   document.getElementById('stat-earned').textContent   = stats.revenue > 0 ? `${stats.revenue.toLocaleString()} KES` : '0 KES';
 
-  document.getElementById('stat-revenue').textContent   = stats.revenue > 0 ? `${stats.revenue.toLocaleString()} KES` : '—';
+  document.getElementById('stat-revenue').textContent   = stats.revenue > 0 ? `${stats.revenue.toLocaleString()} KES` : '--';
 
   if (stats.pending > 0) {
 
@@ -1738,7 +1739,7 @@ async function renderArtworksTable() {
 
   });
 
-  if (titleEl) titleEl.textContent = `All Artworks (${sorted.length}) — sorted by likes`;
+  if (titleEl) titleEl.textContent = `All Artworks (${sorted.length}) -- sorted by likes`;
 
   tbody.innerHTML = sorted.map((a, i) => {
 
@@ -1771,7 +1772,7 @@ async function renderArtworksTable() {
 
       </td>
 
-      <td style="font-size:0.78rem;color:var(--adm-muted);">${escapeHtml(a.dimensions || '—')}</td>
+      <td style="font-size:0.78rem;color:var(--adm-muted);">${escapeHtml(a.dimensions || '--')}</td>
 
       <td>
 
@@ -1864,7 +1865,7 @@ function confirmRemoveArtwork(id, title) {
 
   if (window.adminDeleteArtwork) window.adminDeleteArtwork(String(id));
 
-  showToast(`🗑️ "${title}" soft-deleted — recoverable`);
+  showToast(`🗑️ "${title}" soft-deleted -- recoverable`);
 
   renderArtworksTable();
 
@@ -1945,7 +1946,7 @@ function handleImageUpload(input) {
   if (bar) bar.style.width = '0%';
 
   // Only stores the URL. Publishing happens once, when the admin presses
-  // "Add to Collection" — uploading must never create a second document.
+  // "Add to Collection" -- uploading must never create a second document.
   window.uploadArtworkImage(file,
 
     pct => { if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%'; },
@@ -1953,7 +1954,7 @@ function handleImageUpload(input) {
     url => {
       uploadedImageUrl = url;
       const label = document.getElementById('uploadedUrl');
-      if (label) label.textContent = '✅ Uploaded — press “Add to Collection” to publish.';
+      if (label) label.textContent = '✅ Uploaded -- press "Add to Collection" to publish.';
       if (prog) prog.style.display = 'none';
       showToast('📷 Image uploaded');
     },
@@ -2039,7 +2040,7 @@ async function loadOrders() {
   if (_ordersUnsubscribe) { _ordersUnsubscribe(); _ordersUnsubscribe = null; }
 
     // All Firestore access goes through the bridge exposed by
-  // js/services/firebase.js — this file never touches the SDK directly.
+  // js/services/firebase.js -- this file never touches the SDK directly.
 
   if (!window._ordersSnapFn) {
 
@@ -2089,15 +2090,15 @@ function renderOrdersTable(orders) {
 
       const ts = o.createdAt?.toDate?.();
 
-      const date = ts ? ts.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'}) : '—';
+      const date = ts ? ts.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'}) : '--';
 
       const time = ts ? ts.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
 
             const name  = String(o.customerInfo?.name || o.buyer_name || 'Unknown').slice(0, 80);
-      const phone = String(o.customerInfo?.phone || o.phone || '—').slice(0, 24);
-      const items = (Array.isArray(o.items) ? o.items : []).map(i => String((i && i.title) || i || '')).join(', ').slice(0, 300) || '—';
-      const total = Number.isFinite(Number(o.totalPrice)) && Number(o.totalPrice) > 0 ? `${Number(o.totalPrice).toLocaleString()} KES` : '—';
-      const method = String(o.channel || o.purchase_method || '—').slice(0, 24);
+      const phone = String(o.customerInfo?.phone || o.phone || '--').slice(0, 24);
+      const items = (Array.isArray(o.items) ? o.items : []).map(i => String((i && i.title) || i || '')).join(', ').slice(0, 300) || '--';
+      const total = Number.isFinite(Number(o.totalPrice)) && Number(o.totalPrice) > 0 ? `${Number(o.totalPrice).toLocaleString()} KES` : '--';
+      const method = String(o.channel || o.purchase_method || '--').slice(0, 24);
       const st    = ['pending', 'completed', 'cancelled'].includes(o.status) ? o.status : 'pending';
 
       return `<tr>
@@ -2513,7 +2514,7 @@ document.addEventListener('keydown', e => {
 
     closeZoom();
 
-    // closeImageModal removed — closeZoom() handles this
+    // closeImageModal removed -- closeZoom() handles this
 
     closeStory();
 
