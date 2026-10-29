@@ -469,6 +469,16 @@ window.sbSiteConfigSave = async function (obj) {
   return !error;
 };
 
+/* ── password Show / Hide (used by the password boxes on the page) ───── */
+window.togglePwVisibility = function (btn) {
+  const input = btn.parentElement && btn.parentElement.querySelector("input");
+  if (!input) return;
+  const reveal = input.type === "password";
+  input.type = reveal ? "text" : "password";
+  btn.textContent = reveal ? "Hide" : "Show";
+  btn.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+};
+
 /* ── start the public live feeds ─────────────────────────────────────── */
 window.startArtworksSync();
 window.startLikesSync();

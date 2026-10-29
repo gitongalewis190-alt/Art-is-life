@@ -26,7 +26,7 @@
 <div class="card">
   <h2>1. Sign in to Supabase as admin</h2>
   <input id="sbEmail" type="email" placeholder="Supabase admin email" autocomplete="username" autocapitalize="none">
-  <input id="sbPass" type="password" placeholder="Supabase password" autocomplete="current-password">
+  <div style="position:relative;margin-bottom:8px;"><input id="sbPass" type="password" placeholder="Supabase password" autocomplete="current-password" style="margin-bottom:0;padding-right:64px;"><button type="button" onclick="togglePwVisibility(this)" aria-label="Show password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:#8a6d1f;font-size:.85rem;font-weight:600;padding:6px 8px;width:auto;cursor:pointer;">Show</button></div>
   <button id="sbLogin">Sign in to Supabase</button>
 </div>
 
@@ -49,6 +49,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref as storageRef, getBytes } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
+
+window.togglePwVisibility = function (btn) {
+  const input = btn.parentElement && btn.parentElement.querySelector("input");
+  if (!input) return;
+  const reveal = input.type === "password";
+  input.type = reveal ? "text" : "password";
+  btn.textContent = reveal ? "Hide" : "Show";
+  btn.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+};
 
 /* Public Firebase project settings (these identify the project; they grant nothing). */
 const fb = initializeApp({

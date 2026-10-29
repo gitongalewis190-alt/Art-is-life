@@ -1405,8 +1405,8 @@ function showAdminLoginModal() {
   if (!modal) return;
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
+  // Keep the typed password while the sign-in window is open (cleared only after a successful sign-in).
   const pw = document.getElementById('adminPassword');
-  if (pw) pw.value = '';
   const email = document.getElementById('adminEmail');
   if (email && window._currentUser && window._currentUser.email) email.value = window._currentUser.email;
   const errEl = document.getElementById('adminError');
@@ -1549,7 +1549,7 @@ async function handleAdminLogin() {
       _loginGuard.failures = 0;
       _loginGuard.blockedUntil = Date.now() + 60_000;
     }
-    if (pwEl) pwEl.value = '';
+    // A failed attempt keeps the typed password so it can be corrected.
     fail(message || 'Sign-in failed.');
     return;
   }
