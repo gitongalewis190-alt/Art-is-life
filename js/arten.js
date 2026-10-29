@@ -119,26 +119,26 @@
       '_': 'Lewis Gitonga is the Founder of Art Is Life Foundation, Nairobi, Kenya.'
     },
     commission: {
-      'en': 'Commissions are open. Lewis creates bespoke pieces tailored to your vision, emotion, and space. Contact him on WhatsApp at 0704 708 178.',
-      'sw': 'Ndio, tunachukua maagizo ya sanaa. Lewis anaunda vipande vya kipekee kulingana na maono yako, hisia zako, na nafasi yako. Wasiliana naye kwa WhatsApp: 0704 708 178.',
-      'fr': 'Les commissions sont ouvertes. Lewis crée des pièces sur mesure selon votre vision. Contactez-le sur WhatsApp : 0704 708 178.',
-      'es': 'Las comisiones están abiertas. Lewis crea piezas a medida según su visión. Contáctelo en WhatsApp: 0704 708 178.',
-      'ar': 'التكليفات متاحة. يقوم لويس بإنشاء أعمال مخصصة وفق رؤيتك. تواصل معه على واتساب: 0704 708 178.',
-      'pt': 'Comissões estão abertas. Contacte Lewis no WhatsApp: 0704 708 178.',
-      'de': 'Auftragsarbeiten sind möglich. Kontaktieren Sie Lewis auf WhatsApp: 0704 708 178.',
-      'zh': '接受定制委托。请通过WhatsApp联系Lewis：0704 708 178。',
-      'hi': 'कमीशन खुले हैं। Lewis से WhatsApp पर संपर्क करें: 0704 708 178।',
-      'ja': 'コミッションは受け付けています。WhatsAppでLewisに連絡してください: 0704 708 178。',
-      '_': 'Commissions open. WhatsApp: 0704 708 178.'
+      'en': 'Commissions are open. Lewis creates bespoke pieces tailored to your vision, emotion, and space. Contact him on WhatsApp at 0184 336 391.',
+      'sw': 'Ndio, tunachukua maagizo ya sanaa. Lewis anaunda vipande vya kipekee kulingana na maono yako, hisia zako, na nafasi yako. Wasiliana naye kwa WhatsApp: 0184 336 391.',
+      'fr': 'Les commissions sont ouvertes. Lewis crée des pièces sur mesure selon votre vision. Contactez-le sur WhatsApp : 0184 336 391.',
+      'es': 'Las comisiones están abiertas. Lewis crea piezas a medida según su visión. Contáctelo en WhatsApp: 0184 336 391.',
+      'ar': 'التكليفات متاحة. يقوم لويس بإنشاء أعمال مخصصة وفق رؤيتك. تواصل معه على واتساب: 0184 336 391.',
+      'pt': 'Comissões estão abertas. Contacte Lewis no WhatsApp: 0184 336 391.',
+      'de': 'Auftragsarbeiten sind möglich. Kontaktieren Sie Lewis auf WhatsApp: 0184 336 391.',
+      'zh': '接受定制委托。请通过WhatsApp联系Lewis：0184 336 391。',
+      'hi': 'कमीशन खुले हैं। Lewis से WhatsApp पर संपर्क करें: 0184 336 391।',
+      'ja': 'コミッションは受け付けています。WhatsAppでLewisに連絡してください: 0184 336 391。',
+      '_': 'Commissions open. WhatsApp: 0184 336 391.'
     },
     contact: {
-      'en': 'Reach Lewis on WhatsApp at 0704 708 178, email artislifefoundation2023@gmail.com, or Instagram @lewis_art.is.life. Based in Nairobi, Kenya.',
-      'sw': 'Wasiliana na Lewis: WhatsApp 0704 708 178 · barua pepe artislifefoundation2023@gmail.com · Instagram @lewis_art.is.life. Nairobi, Kenya.',
-      'fr': 'Contactez Lewis sur WhatsApp : 0704 708 178, email : artislifefoundation2023@gmail.com, Instagram : @lewis_art.is.life.',
-      'es': 'Contacte a Lewis: WhatsApp 0704 708 178 · artislifefoundation2023@gmail.com · @lewis_art.is.life.',
-      'ar': 'تواصل مع لويس: واتساب 0704 708 178 · البريد الإلكتروني artislifefoundation2023@gmail.com · إنستغرام @lewis_art.is.life.',
-      'pt': 'Contacte Lewis: WhatsApp 0704 708 178 · artislifefoundation2023@gmail.com · @lewis_art.is.life.',
-      '_': 'WhatsApp: 0704 708 178 · artislifefoundation2023@gmail.com'
+      'en': 'Reach Lewis on WhatsApp at 0184 336 391, email artislifefoundation2023@gmail.com, or Instagram @lewis_art.is.life. Based in Nairobi, Kenya.',
+      'sw': 'Wasiliana na Lewis: WhatsApp 0184 336 391 · barua pepe artislifefoundation2023@gmail.com · Instagram @lewis_art.is.life. Nairobi, Kenya.',
+      'fr': 'Contactez Lewis sur WhatsApp : 0184 336 391, email : artislifefoundation2023@gmail.com, Instagram : @lewis_art.is.life.',
+      'es': 'Contacte a Lewis: WhatsApp 0184 336 391 · artislifefoundation2023@gmail.com · @lewis_art.is.life.',
+      'ar': 'تواصل مع لويس: واتساب 0184 336 391 · البريد الإلكتروني artislifefoundation2023@gmail.com · إنستغرام @lewis_art.is.life.',
+      'pt': 'Contacte Lewis: WhatsApp 0184 336 391 · artislifefoundation2023@gmail.com · @lewis_art.is.life.',
+      '_': 'WhatsApp: 0184 336 391 · artislifefoundation2023@gmail.com'
     },
     thanks: {
       'en': 'You\'re welcome! Is there anything else I can help you with?',
@@ -154,17 +154,17 @@
       '_': 'You\'re welcome!'
     },
     fallback: {
-      'en': 'For detailed specifics, I\'d recommend reaching out to Lewis directly on WhatsApp at 0704 708 178.',
-      'sw': 'Kwa maelezo zaidi, napendekeza uwasiliane na Lewis moja kwa moja kwa WhatsApp: 0704 708 178.',
-      'fr': 'Pour plus de détails, contactez Lewis directement sur WhatsApp : 0704 708 178.',
-      'es': 'Para más detalles, contacte a Lewis en WhatsApp: 0704 708 178.',
-      'ar': 'للمزيد من التفاصيل، تواصل مع لويس على واتساب: 0704 708 178.',
-      'pt': 'Para mais detalhes, contacte Lewis no WhatsApp: 0704 708 178.',
-      'de': 'Für weitere Details kontaktieren Sie Lewis auf WhatsApp: 0704 708 178.',
-      'zh': '如需详细信息，请通过WhatsApp联系Lewis：0704 708 178。',
-      'hi': 'अधिक जानकारी के लिए, Lewis से WhatsApp पर संपर्क करें: 0704 708 178।',
-      'ja': '詳細については、WhatsAppでLewisに直接ご連絡ください: 0704 708 178。',
-      '_': 'Contact Lewis: WhatsApp 0704 708 178.'
+      'en': 'For detailed specifics, I\'d recommend reaching out to Lewis directly on WhatsApp at 0184 336 391.',
+      'sw': 'Kwa maelezo zaidi, napendekeza uwasiliane na Lewis moja kwa moja kwa WhatsApp: 0184 336 391.',
+      'fr': 'Pour plus de détails, contactez Lewis directement sur WhatsApp : 0184 336 391.',
+      'es': 'Para más detalles, contacte a Lewis en WhatsApp: 0184 336 391.',
+      'ar': 'للمزيد من التفاصيل، تواصل مع لويس على واتساب: 0184 336 391.',
+      'pt': 'Para mais detalhes, contacte Lewis no WhatsApp: 0184 336 391.',
+      'de': 'Für weitere Details kontaktieren Sie Lewis auf WhatsApp: 0184 336 391.',
+      'zh': '如需详细信息，请通过WhatsApp联系Lewis：0184 336 391。',
+      'hi': 'अधिक जानकारी के लिए, Lewis से WhatsApp पर संपर्क करें: 0184 336 391।',
+      'ja': '詳細については、WhatsAppでLewisに直接ご連絡ください: 0184 336 391。',
+      '_': 'Contact Lewis: WhatsApp 0184 336 391.'
     }
   };
 
@@ -328,8 +328,8 @@
     mission:    'To use art as a bridge between emotions and the people who need to feel them. Every canvas here began as a feeling before it became a colour.',
     goal:       'To become successful — building value, trust, and a lasting creative ecosystem that connects artists with collectors and communities across Africa and beyond.',
     style:      'Emotional contemporary art — portraits, nature, and abstract expressions rooted in lived experience.',
-    commission: 'Yes, commissions are open! Lewis creates bespoke pieces tailored to your vision, emotion, and space. Contact him on WhatsApp at 0704 708 178.',
-    contact:    'WhatsApp: 0704 708 178 · Email: artislifefoundation2023@gmail.com · Instagram: @lewis_art.is.life'
+    commission: 'Yes, commissions are open! Lewis creates bespoke pieces tailored to your vision, emotion, and space. Contact him on WhatsApp at 0184 336 391.',
+    contact:    'WhatsApp: 0184 336 391 · Email: artislifefoundation2023@gmail.com · Instagram: @lewis_art.is.life'
   };
 
   /* ═══ PERSONALITY TONE ═══ */
@@ -395,7 +395,7 @@
     if (/commission|custom|bespoke|portrait|personalised|maagizo|personalizado|personnalisé/i.test(t))
       return speak(isEn ? tone(
         getReply('commission') + ' Lewis will work closely with you to understand your vision.',
-        'Commissions are available. Lewis Gitonga creates bespoke artworks to specification. Contact via WhatsApp at 0704 708 178 to begin.',
+        'Commissions are available. Lewis Gitonga creates bespoke artworks to specification. Contact via WhatsApp at 0184 336 391 to begin.',
         'A commission is an invitation to Lewis\'s soul. ' + BIO.commission + ' The result will carry your story in every stroke.'
       ) : getReply('commission'));
 
@@ -454,7 +454,7 @@
         'Lewis works mainly in oil and acrylic on canvas, with occasional charcoal and mixed media. His style blends emotional realism with symbolic abstraction.',
         'The primary media are oil and acrylic on canvas. Works also include charcoal and mixed media.',
         'Lewis paints with oil and acrylic — colours that carry weight. Each stroke is a decision to feel something, then make it visible.'
-      ) : 'Lewis works in oil and acrylic on canvas — emotional realism with symbolic abstraction. Contact: WhatsApp 0704 708 178.');
+      ) : 'Lewis works in oil and acrylic on canvas — emotional realism with symbolic abstraction. Contact: WhatsApp 0184 336 391.');
 
     /* Timeline */
     if (/how long|timeline|weeks|days|when will|quick|muda gani|combien de temps|cuánto tiempo/i.test(t))
@@ -492,9 +492,9 @@
 
     /* Fallback */
     return speak(isEn ? tone(
-      'For detailed specifics, I\'d recommend reaching out to Lewis directly on WhatsApp at 0704 708 178.',
-      'I don\'t have specific information on that. Please contact Lewis Gitonga on WhatsApp at 0704 708 178.',
-      'Some questions deserve a human answer. Lewis is at 0704 708 178 on WhatsApp. He will know.'
+      'For detailed specifics, I\'d recommend reaching out to Lewis directly on WhatsApp at 0184 336 391.',
+      'I don\'t have specific information on that. Please contact Lewis Gitonga on WhatsApp at 0184 336 391.',
+      'Some questions deserve a human answer. Lewis is at 0184 336 391 on WhatsApp. He will know.'
     ) : getReply('fallback'));
   }
 
