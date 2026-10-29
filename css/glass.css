@@ -120,34 +120,68 @@ body::before{
 .donate-note.ok{ color:var(--green); }
 
 /* ═══════════════════════════════════════════════════════════
-   WELCOME BANNER — 1.5 s on opening, then the site appears
+   WELCOME SEQUENCE — typewriter line, then "Art is Life" letters
+   (timed in js/splash.js; tap anywhere to skip)
    ═══════════════════════════════════════════════════════════ */
 .splash{
   position:fixed; inset:0; z-index:9999;
-  display:flex; align-items:center; justify-content:center;
-  background:#ffffff;
-  pointer-events:none;
-  /* Fade in, hold, fade out — total 1.5 s. Runs even without JavaScript. */
-  animation:welcomeBanner 1.5s ease forwards;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:clamp(14px,3vh,28px);
+  background:radial-gradient(ellipse at center,#fffdf8 0%,#f7f1e3 100%);
+  cursor:pointer;
+  transition:opacity .9s ease, transform .9s cubic-bezier(.4,0,.2,1), filter .9s ease;
 }
-/* The global reduced-motion rule would collapse this timing; keep the banner's 1.5 s. */
-.splash{ animation-duration:1.5s !important; animation-iteration-count:1 !important; }
+.splash.is-leaving{ opacity:0; transform:scale(1.03); filter:blur(6px); pointer-events:none; }
 .splash.is-gone{ display:none; }
-@keyframes welcomeBanner{
-  0%  { opacity:0; visibility:visible; }
-  20% { opacity:1; }
-  80% { opacity:1; }
-  100%{ opacity:0; visibility:hidden; }
-}
+
 .splash-welcome{
-  margin:0; padding:0 24px; text-align:center;
+  margin:0; padding:0 24px; text-align:center; min-height:1.3em;
   font-family:'Cormorant Garamond',Georgia,serif;
-  font-size:clamp(1.5rem,6.2vw,3.4rem); font-weight:300; font-style:italic;
-  letter-spacing:0.03em; line-height:1.25;
-  color:#111111; text-wrap:balance;
+  font-size:clamp(1.5rem,6.2vw,3.2rem); font-weight:300; font-style:italic;
+  letter-spacing:0.03em; line-height:1.25; color:#111111; text-wrap:balance;
+  transition:opacity .6s ease, filter .6s ease, transform .6s ease;
+}
+.splash-welcome.is-out{ opacity:0; filter:blur(5px); transform:translateY(-6px); }
+
+.splash-caret{
+  display:inline-block; width:2px; height:0.95em; margin-left:3px;
+  vertical-align:-0.12em; background:var(--gold,#c9a84c);
+  animation:splashCaret .9s steps(1) infinite;
+}
+@keyframes splashCaret{ 0%,50%{opacity:1} 51%,100%{opacity:0} }
+
+.splash-art{
+  position:relative; margin:0; min-height:1.2em;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-size:clamp(2.6rem,12vw,6rem); font-weight:500; letter-spacing:0.02em;
+  color:#111111; text-align:center; line-height:1.1;
+  display:flex; justify-content:center; flex-wrap:wrap;
+}
+.splash-art::after{
+  /* gold brush stroke that paints itself under the words */
+  content:""; position:absolute; left:8%; right:8%; bottom:-0.12em; height:0.12em;
+  background:linear-gradient(90deg,transparent,var(--gold,#c9a84c) 20%,#e0bf6a 60%,transparent);
+  border-radius:2px; transform:scaleX(0); transform-origin:left center;
+}
+.splash-art.is-on::after{ animation:splashBrush 1.1s cubic-bezier(.6,0,.2,1) 1.4s forwards; }
+@keyframes splashBrush{ to{ transform:scaleX(1); } }
+
+.splash-letter{
+  display:inline-block; opacity:0;
+  filter:blur(10px);
+  transform:translateY(0.35em) rotate(-7deg) scale(1.35);
+  transform-origin:50% 100%;
+}
+.splash-art.is-on .splash-letter{
+  animation:splashLetter .9s cubic-bezier(.2,.8,.2,1) forwards;
+}
+@keyframes splashLetter{
+  0%  { opacity:0; filter:blur(10px); transform:translateY(0.35em) rotate(-7deg) scale(1.35); }
+  60% { opacity:1; filter:blur(0);    transform:translateY(-0.06em) rotate(1.5deg) scale(1.04); }
+  100%{ opacity:1; filter:blur(0);    transform:none; }
 }
 
-/* Lock scroll while the banner is up */
+/* Lock scroll while the sequence is up */
 body.splash-active{ overflow:hidden; }
 
 /* ═══════════════ CONTROL CONSOLE NEURAL CANVAS ═══════════════ */
@@ -889,4 +923,31 @@ textarea.cc-input{ resize:vertical; font-family:inherit; }
 .forgot-msg{
   font-size:0.78rem; min-height:20px; line-height:1.5;
   padding:6px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIKE BUTTON — X-style: heart pops, then a ring of dots bursts out
+   (triggered by triggerHeartBounce() in js/app.js)
+   ═══════════════════════════════════════════════════════════ */
+.like-btn{ position:relative; }
+.like-btn.x-pop svg{ animation:xHeartPop .42s cubic-bezier(.17,.89,.32,1.49); }
+@keyframes xHeartPop{
+  0%  { transform:scale(.77); }
+  45% { transform:scale(1.25); }
+  100%{ transform:scale(1); }
+}
+.x-burst{
+  position:fixed; left:0; top:0; width:0; height:0;
+  pointer-events:none; z-index:2;
+}
+.x-burst i{
+  position:absolute; left:-3px; top:-3px; width:6px; height:6px; border-radius:50%;
+  background:var(--c,#e05252); opacity:0;
+  transform:rotate(var(--a)) translateY(0) scale(.4);
+  animation:xDot .7s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes xDot{
+  0%  { opacity:1; transform:rotate(var(--a)) translateY(0) scale(.4); }
+  55% { opacity:1; }
+  100%{ opacity:0; transform:rotate(var(--a)) translateY(-26px) scale(1); }
 }
