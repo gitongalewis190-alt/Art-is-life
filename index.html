@@ -196,29 +196,29 @@ LEES<span>.MOBILE</span>
 
   <div class="marquee-track">
 
-<span class="marquee-item">Original</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Original</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">Emotional</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Emotional</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">One of a Kind</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">One of a Kind</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">Nairobi, Kenya</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Nairobi, Kenya</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">LEES.mobile</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">LEES.mobile</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">Lewis Gitonga</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Lewis Gitonga</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">Original</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Original</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">Emotional</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Emotional</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">One of a Kind</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">One of a Kind</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">Nairobi, Kenya</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Nairobi, Kenya</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">LEES.mobile</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">LEES.mobile</span><span class="marquee-sep" aria-hidden="true">·</span>
 
-<span class="marquee-item">Lewis Gitonga</span><span class="marquee-sep">✦</span>
+<span class="marquee-item">Lewis Gitonga</span><span class="marquee-sep" aria-hidden="true">·</span>
 
   </div>
 
@@ -248,7 +248,7 @@ LEES<span>.MOBILE</span>
 
 <div class="about-cta-row">
 
-<button class="btn-outline" onclick="openStory()">✦ Explore the Full Journey</button>
+<button class="btn-outline" onclick="openStory()">Explore the Full Journey</button>
 
   <button class="engage-btn" id="storyLikeBtn" onclick="toggleStoryLike()" title="Like this story">
 
@@ -586,7 +586,7 @@ WhatsApp
 
 </div>
 
-<footer><span data-cfg="footerText">© 2026 LEES.MOBILE — Lewis Gitonga. All rights reserved.</span><br><span data-cfg="footerSub">Each artwork is an original, one-time creation. Nairobi, Kenya.</span><br><span class="footer-credit">The digital art arm of Art Is Life Foundation.</span></footer>
+<footer><span data-cfg="footerText">© 2026 LEES.MOBILE — Lewis Gitonga. All rights reserved.</span><br><span data-cfg="footerSub">Original, one-off artworks. Nairobi, Kenya.</span></footer>
 
 <!-- CART DRAWER -->
 
@@ -931,9 +931,8 @@ Admin Access
 
   <div class="admin-error" id="adminError" role="alert"></div>
 
-  <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;" id="adminForgotToggle">
+  <div style="text-align:right;margin-bottom:12px;" id="adminForgotToggle">
     <button type="button" onclick="sendAdminPasswordReset()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Forgot password?</button>
-    <button type="button" onclick="toggleForgotPassword()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Forgot PIN?</button>
   </div>
   <div id="adminForgotPanel" class="forgot-panel" style="display:none;">
     <div class="forgot-panel-header">
@@ -1178,7 +1177,6 @@ LEES.MOBILE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div class="adm-page-sub" id="admWelcome">Welcome back</div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
-    <button id="admLockBtn" onclick="toggleAdminLock()" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(52,211,153,0.12);color:#e0e0e0;font-size:0.75rem;cursor:pointer;font-family:'Inter',sans-serif;">🔓 Console Unlocked</button>
     <button id="admSetPwBtn" onclick="toggleSetPasswordPanel()" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(201,168,76,0.12);color:#e0e0e0;font-size:0.75rem;cursor:pointer;font-family:'Inter',sans-serif;">🔑 Set Password</button>
   </div>
   <div id="admSetPwPanel" style="display:none;margin-top:10px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);max-width:320px;">
@@ -1342,7 +1340,7 @@ LEES.MOBILE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
 
   <div style="display:flex;gap:10px;margin-top:6px;">
 
-<button class="adm-btn-sm primary" onclick="submitAddArtwork()" style="padding:10px 24px;font-size:0.82rem;">✦ Save Artwork</button>
+<button class="adm-btn-sm primary" onclick="submitAddArtwork()" style="padding:10px 24px;font-size:0.82rem;">Save Artwork</button>
 
 <button class="adm-btn-sm" onclick="clearAddForm()">Clear</button>
 
