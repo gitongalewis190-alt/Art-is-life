@@ -252,7 +252,7 @@
           field("Foundation name", "cc_name", c.foundationName) +
           field("Footer line", "cc_footer", c.footerText, "textarea") +
           field("Footer sub-line", "cc_footerSub", c.footerSub, "textarea") +
-          field("WhatsApp number (2547…)", "cc_wa", c.whatsapp, "text", "254704708178") +
+          field("WhatsApp number (2547…)", "cc_wa", c.whatsapp, "text", "254184336391") +
           field("Email", "cc_email", c.email, "email") +
           field("Instagram URL", "cc_ig", c.instagram, "url") +
           field("Address", "cc_addr", c.address) +
