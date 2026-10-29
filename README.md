@@ -4,7 +4,7 @@ Original Kenyan contemporary artworks by **Lewis Gitonga**. A mobile-first,
 installable (PWA) art e-gallery with a built-in developer Control Console,
 a Studio/Exhibition wing, and an M-Pesa donation flow.
 
-Contact: 0704708178 — Lewis Gitonga · Nairobi, Kenya
+Contact: 0184336391 — Lewis Gitonga · Nairobi, Kenya
 
 ---
 
@@ -18,12 +18,12 @@ opens directly on a phone.
 index.html                  # Lean markup shell only
 manifest.webmanifest        # PWA install metadata
 css/
-  main.css                  # Original styles (extracted verbatim)
+  main.css                  # Base styles
   glass.css                 # Spatial/glassmorphism layer + splash + console/studio
   layouts.css               # 7 switchable structural layout presets
 js/
   sanitize.js               # Output escaping + URL validation (loaded first)
-  app.js                    # Original app logic (extracted verbatim)
+  app.js                    # App logic
   splash.js                 # 4-phase launch sequence
   console.js                # Control Console UI (theme/layout/CMS)
   studio.js                 # Studio wing (YouTube videos + archive) [module]
