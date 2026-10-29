@@ -13,22 +13,22 @@ test("module exports an async HTTP handler", () => {
 });
 
 test("normalizePhone produces the 2547/2541 MSISDN Daraja expects", () => {
-  assert.equal(api.normalizePhone("0704708178"), "254704708178");
-  assert.equal(api.normalizePhone("0704 708 178"), "254704708178");
-  assert.equal(api.normalizePhone("+254 704 708 178"), "254704708178");
-  assert.equal(api.normalizePhone("254704708178"), "254704708178");
-  assert.equal(api.normalizePhone("2540704708178"), "254704708178");
+  assert.equal(api.normalizePhone("0184336391"), "254184336391");
+  assert.equal(api.normalizePhone("0184 336 391"), "254184336391");
+  assert.equal(api.normalizePhone("+254 184 336 391"), "254184336391");
+  assert.equal(api.normalizePhone("254184336391"), "254184336391");
+  assert.equal(api.normalizePhone("2540184336391"), "254184336391");
   assert.equal(api.normalizePhone("0112345678"), "254112345678");
   assert.equal(api.normalizePhone(null), "");
   assert.equal(api.normalizePhone("nonsense"), "");
 });
 
 test("isValidPhone only accepts Safaricom prefixes", () => {
-  assert.equal(api.isValidPhone("254704708178"), true);
+  assert.equal(api.isValidPhone("254184336391"), true);
   assert.equal(api.isValidPhone("254112345678"), true);
   assert.equal(api.isValidPhone("254204708178"), false); // not 7xx/1xx
   assert.equal(api.isValidPhone("25470470817"), false);  // too short
-  assert.equal(api.isValidPhone("2547047081789"), false); // too long
+  assert.equal(api.isValidPhone("2541843363919"), false); // too long
   assert.equal(api.isValidPhone("javascript:alert(1)"), false);
 });
 
@@ -45,7 +45,7 @@ test("amount validation enforces integer bounds", () => {
 });
 
 test("maskPhone never logs a full MSISDN", () => {
-  const masked = api.maskPhone("254704708178");
+  const masked = api.maskPhone("254184336391");
   assert.ok(masked.includes("***"));
   assert.ok(!masked.includes("708178"));
   assert.equal(api.maskPhone(""), "***");
@@ -60,7 +60,7 @@ test("darajaTimestamp is 14 digits in local YYYYMMDDHHmmss order", () => {
 test("callback detection requires Body.stkCallback", () => {
   assert.equal(api.isSafaricomCallback({ Body: { stkCallback: {} } }), true);
   assert.equal(api.isSafaricomCallback({ Body: {} }), false);
-  assert.equal(api.isSafaricomCallback({ phone: "0704708178", amount: 10 }), false);
+  assert.equal(api.isSafaricomCallback({ phone: "0184336391", amount: 10 }), false);
   assert.equal(api.isSafaricomCallback(null), false);
   assert.equal(api.isSafaricomCallback("string"), false);
 });
@@ -147,7 +147,7 @@ test("STK push rejects an invalid phone before touching the network", async () =
 
 test("STK push rejects an out-of-range amount", async () => {
   const res = mockRes();
-  await handler({ method: "POST", headers: {}, body: { phone: "0704708178", amount: 10_000_000 } }, res);
+  await handler({ method: "POST", headers: {}, body: { phone: "0184336391", amount: 10_000_000 } }, res);
   assert.ok([400, 503].includes(res.statusCode));
   assert.ok(!JSON.stringify(res.body).includes("10,000,000 KES"));
 });
