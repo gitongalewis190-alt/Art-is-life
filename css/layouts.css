@@ -617,7 +617,7 @@ html[data-layout="3"] .art-card:hover{ box-shadow:var(--card-hover) !important; 
 html[data-layout="3"] .art-card img{
   border-radius:0 !important;
   aspect-ratio:4/5 !important;
-  object-fit:cover !important;
+  object-fit:contain !important;
   width:100% !important;
 }
 html[data-layout="3"] .art-info{
@@ -1307,7 +1307,7 @@ html[data-layout="6"] .art-card img{
   inset:0 !important;
   width:100% !important;
   height:100% !important;
-  object-fit:cover !important;
+  object-fit:contain !important;
   border-radius:0 !important;
   transition:transform 0.6s cubic-bezier(0.2,0.8,0.2,1) !important;
 }
