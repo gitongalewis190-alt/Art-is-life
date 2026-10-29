@@ -1,15 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   studio.js — Studio / Exhibition wing  (Phase 3)
+   studio.js -- Studio / Exhibition wing  (Phase 3)
    Two sections, YouTube-backed "video infrastructure":
      • Process Studio : behind-the-scenes clips (YouTube embeds + metadata)
      • Archive        : non-sale master paintings
    Metadata (title, tags, description, timestamp, youtube id / image) lives
-   in Firestore so the owner manages it from the Studio Manager — no code.
+   in Firestore so the owner manages it from the Studio Manager -- no code.
    Public read is live (onSnapshot); writes are admin-gated.
    ═══════════════════════════════════════════════════════════════════════ */
-import {
-  collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/* Data goes through js/services/supabase.js (sbStudioSubscribe / sbStudioAdd / sbStudioDelete). */
 
 /* Escaping helpers from js/sanitize.js, with real (not identity) fallbacks. */
 const esc = (s) => (window.escapeHtml
@@ -125,17 +123,14 @@ window.closeVideo = function (e) {
 
 /* ── Live Firestore sync (public read) ───────────────────────────────── */
 async function startSync() {
-  const db = await waitForDb();
-  if (!db) { renderVideos(); renderArchive(); return; }
+  if (typeof window.sbStudioSubscribe !== "function") { renderVideos(); renderArchive(); return; }
   try {
-    onSnapshot(query(collection(db, "studioVideos"), orderBy("createdAt", "desc")), (s) => {
-      VIDEOS = s.docs.map((d) => ({ id: d.id, ...d.data() }));
-      renderVideos(); if (window._studioMgrOpen) window.renderStudioManager();
-    }, () => renderVideos());
-    onSnapshot(query(collection(db, "studioArchive"), orderBy("createdAt", "desc")), (s) => {
-      ARCHIVE = s.docs.map((d) => ({ id: d.id, ...d.data() }));
-      renderArchive(); if (window._studioMgrOpen) window.renderStudioManager();
-    }, () => renderArchive());
+    window.sbStudioSubscribe(({ videos, archive }) => {
+      VIDEOS = videos;
+      ARCHIVE = archive;
+      renderVideos(); renderArchive();
+      if (window._studioMgrOpen) window.renderStudioManager();
+    });
   } catch (_) { renderVideos(); renderArchive(); }
 }
 
@@ -199,7 +194,7 @@ window.studioDelete = async function (kind, id) {
   if (!window._firebaseAdmin) return;
   const db = window._db; if (!db) return;
   try {
-    await deleteDoc(doc(db, kind === "video" ? "studioVideos" : "studioArchive", id));
+    if (!(await window.sbStudioDelete(kind, id))) throw new Error("delete failed");
     if (window.showToast) window.showToast("Removed.");
   } catch (_) { if (window.showToast) window.showToast("Delete failed."); }
 };
@@ -214,14 +209,13 @@ function wireManager() {
     if (!window._firebaseAdmin) { st.textContent = "✕ Admin only"; st.className = "cc-status err"; return; }
     st.textContent = "Publishing…"; st.className = "cc-status";
     try {
-      await addDoc(collection(window._db, "studioVideos"), {
+      await window.sbStudioAdd("video", {
         youtube: id,
         title: cleanText(document.getElementById("sv_title").value, 140) || "Untitled",
         description: cleanText(document.getElementById("sv_desc").value, 1000),
         tags: document.getElementById("sv_tags").value.split(",")
           .map((t) => cleanText(t, 24)).filter(Boolean).slice(0, 12),
         timestamp: cleanText(document.getElementById("sv_time").value, 60),
-        createdAt: serverTimestamp()
       });
       st.textContent = "✓ Published"; st.className = "cc-status ok";
       if (window.showToast) window.showToast("Video published 🎬");
@@ -238,12 +232,11 @@ function wireManager() {
     try {
       const safeImg = imgUrl(img);
       if (!safeImg) { st.textContent = "✕ Use an https:// or relative image URL"; st.className = "cc-status err"; return; }
-      await addDoc(collection(window._db, "studioArchive"), {
+      await window.sbStudioAdd("archive", {
         image: safeImg,
         title: cleanText(document.getElementById("sa_title").value, 140) || "Untitled",
         year: cleanText(document.getElementById("sa_year").value, 12),
         medium: cleanText(document.getElementById("sa_medium").value, 60),
-        createdAt: serverTimestamp()
       });
       st.textContent = "✓ Added"; st.className = "cc-status ok";
       if (window.showToast) window.showToast("Archive piece added 🖼");

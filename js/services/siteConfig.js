@@ -11,9 +11,7 @@
    Daraja *endpoint URL*). Real secrets (Daraja keys/passkey) live only on
    the server -- never here. The Console enforces this.
    ═══════════════════════════════════════════════════════════════════════ */
-import {
-  doc, getDoc, setDoc, onSnapshot, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/* Reads and saves go through js/services/supabase.js (sbSiteConfigSubscribe / sbSiteConfigSave). */
 
 /* Defaults mirror the site's existing real content so nothing ever blanks
    out before an admin has published anything. These are the live values. */
@@ -204,12 +202,10 @@ const SiteConfig = {
     this._started = true;
     this.apply(this.current); // paint defaults immediately
 
-    const db = await this._waitForDb();
-    if (!db) return; // offline / firebase blocked -> defaults stand
+    const ready = await this._waitForDb();
+    if (!ready || typeof window.sbSiteConfigSubscribe !== "function") return; // offline -> defaults stand
     try {
-      onSnapshot(doc(db, "siteConfig", "main"), (snap) => {
-        this.apply(this._merge(snap.exists() ? snap.data() : null));
-      }, () => {/* read denied/offline -> keep current */});
+      window.sbSiteConfigSubscribe((data) => this.apply(this._merge(data)));
     } catch (_) {/* keep defaults */}
   },
 
@@ -225,9 +221,8 @@ const SiteConfig = {
     const merged = this._merge({ ...this.current, ...partial });
     const next = this._sanitise(merged);
     try {
-      await setDoc(doc(db, "siteConfig", "main"),
-        { ...next, updatedAt: serverTimestamp() }, { merge: true });
-      return true;
+      const saved = await window.sbSiteConfigSave(next);
+      return !!saved;
     } catch (err) {
       console.error("Config publish failed:", err && err.message);
       if (typeof window.showToast === "function") window.showToast("❌ Publish failed -- check your connection and crown role.");
