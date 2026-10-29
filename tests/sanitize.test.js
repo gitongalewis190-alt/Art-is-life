@@ -58,7 +58,7 @@ test("safeUrl allows web, contact and relative URLs", () => {
   assert.equal(safeUrl("https://example.com/a?b=1"), "https://example.com/a?b=1");
   assert.equal(safeUrl("http://example.com"), "http://example.com");
   assert.equal(safeUrl("mailto:a@b.co"), "mailto:a@b.co");
-  assert.equal(safeUrl("tel:+254704708178"), "tel:+254704708178");
+  assert.equal(safeUrl("tel:+254184336391"), "tel:+254184336391");
   assert.equal(safeUrl("/api/mpesa"), "/api/mpesa");
   assert.equal(safeUrl("assets/artworks/x.jpg"), "assets/artworks/x.jpg");
   assert.equal(safeUrl("#section"), "#section");
