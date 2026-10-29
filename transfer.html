@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Transfer to Supabase</title>
+<style>
+  body{margin:0;padding:20px 16px 40px;font-family:-apple-system,system-ui,Helvetica,Arial,sans-serif;background:#f7f4ec;color:#1b1a17;line-height:1.4}
+  h1{font-size:1.3rem;margin:0 0 6px}
+  p.sub{margin:0 0 18px;color:#5b5750;font-size:.9rem}
+  .card{background:#fff;border:1px solid #e5dfd0;border-radius:10px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:.98rem;margin:0 0 8px}
+  input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfc7b4;border-radius:8px;font-size:1rem;margin-bottom:8px}
+  button{width:100%;padding:12px;border:0;border-radius:8px;background:#c9a84c;color:#1b1a17;font-size:1rem;font-weight:600}
+  button[disabled]{opacity:.45}
+  #status{font-size:.9rem;min-height:1.2em;margin:6px 0 12px}
+  #log{font-family:ui-monospace,Menlo,monospace;font-size:.78rem;background:#15130f;color:#e8e4d8;border-radius:8px;padding:12px;min-height:140px;max-height:360px;overflow:auto;white-space:pre-wrap}
+  .ok{color:#34d399}.warn{color:#f5c26b}.err{color:#f87171}
+</style>
+</head>
+<body>
+<h1>Transfer to Supabase</h1>
+<p class="sub">Copies artworks, their pictures, studio films and archive, and site settings from Firebase into Supabase. Firebase is only read. It runs without signing in to Firebase.</p>
+
+<div class="card">
+  <h2>1. Sign in to Supabase as admin</h2>
+  <input id="sbEmail" type="email" placeholder="Supabase admin email" autocomplete="username" autocapitalize="none">
+  <input id="sbPass" type="password" placeholder="Supabase password" autocomplete="current-password">
+  <button id="sbLogin">Sign in to Supabase</button>
+</div>
+
+<div class="card">
+  <h2>2. Count what will move</h2>
+  <button id="count" disabled>Count Firebase data</button>
+</div>
+
+<div class="card">
+  <h2>3. Copy everything</h2>
+  <div style="font-size:.8rem;color:#5b5750;margin-bottom:8px">Safe to run again. Items keep their Firebase IDs, so nothing is duplicated.</div>
+  <button id="run" disabled>Start transfer</button>
+</div>
+
+<div id="status"></div>
+<div id="log"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref as storageRef, getBytes } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
+
+/* Public Firebase project settings (these identify the project; they grant nothing). */
+const fb = initializeApp({
+  apiKey: "AIzaSyD3EHTs5MJO1614T6VfDZF31CANhAMzQbw",
+  authDomain: "artislife-44968.firebaseapp.com",
+  projectId: "artislife-44968",
+  storageBucket: "artislife-44968.firebasestorage.app",
+  messagingSenderId: "634431592292",
+  appId: "1:634431592292:web:7e88d54be7291310f74c71"
+}, "transfer");
+const db = getFirestore(fb);
+const storage = getStorage(fb);
+
+const SUPABASE_URL  = "https://idudctscwjyckkzhnthh.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkdWRjdHNjd2p5Y2tremhudGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNTcwMDMsImV4cCI6MjEwODgzMzAwM30.OOVZLG-BNncsyfeHHP_H21bdA3hZOBASOXGDmKYlsCU";
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: true } });
+let sbRole = null, busy = false;
+
+const $ = (id) => document.getElementById(id);
+function log(msg, cls) {
+  const d = document.createElement("div");
+  d.textContent = msg;
+  if (cls) d.className = cls;
+  $("log").appendChild(d);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+function status(msg, cls) { $("status").textContent = msg; $("status").className = cls || ""; }
+
+// Firebase error codes that mean "not allowed to read this" (for example, orders).
+const denied = (e) => e && (e.code === "permission-denied" || /permission/i.test(e.message || ""));
+
+const iso = (v) => (v && typeof v.toDate === "function" ? v.toDate().toISOString() : new Date().toISOString());
+const clip = (v, n) => String(v == null ? "" : v).slice(0, n);
+async function uuidFrom(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  const h = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0,8)}-${h.slice(8,12)}-5${h.slice(13,16)}-8${h.slice(17,20)}-${h.slice(20,32)}`;
+}
+function guessType(p) {
+  if (/\.png$/i.test(p)) return "image/png";
+  if (/\.webp$/i.test(p)) return "image/webp";
+  if (/\.gif$/i.test(p)) return "image/gif";
+  return "image/jpeg";
+}
+
+// Firebase picture → Supabase bucket. Site images kept in the repo (assets/...) stay as they are.
+async function moveImage(url, key) {
+  if (!url || !/^https?:\/\//.test(url)) return url || "";
+  const m = url.match(/\/o\/([^?]+)/);
+  if (!m) { log("  picture kept as-is (unknown link): " + url.slice(0, 60), "warn"); return url; }
+  const path = decodeURIComponent(m[1]);
+  const bytes = await getBytes(storageRef(storage, path));
+  const type = guessType(path);
+  const name = ("migrated/" + key + "-" + path.split("/").pop()).replace(/[^\w.\-\/]/g, "_");
+  const { error } = await sb.storage.from("artworks").upload(name, new Blob([bytes], { type }), { upsert: true, contentType: type });
+  if (error) throw new Error("picture upload: " + error.message);
+  return sb.storage.from("artworks").getPublicUrl(name).data.publicUrl;
+}
+
+/* ── 1. Supabase sign-in ─────────────────────────────────────────── */
+$("sbLogin").addEventListener("click", async () => {
+  const email = $("sbEmail").value.trim(), password = $("sbPass").value;
+  if (!email || !password) return status("Enter your Supabase admin email and password.", "err");
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return status("Supabase sign-in failed: " + error.message, "err");
+  const { data: prof } = await sb.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
+  sbRole = prof ? prof.role : null;
+  if (sbRole !== "admin" && sbRole !== "crown") {
+    return status("Signed in, but this account has no admin role in Supabase. Run the last step of schema.sql for this email.", "err");
+  }
+  status("Signed in to Supabase as " + data.user.email + " (" + sbRole + ").", "ok");
+  $("count").disabled = false;
+  $("run").disabled = false;
+});
+
+/* ── 2. Count ────────────────────────────────────────────────────── */
+$("count").addEventListener("click", async () => {
+  status("Counting…");
+  $("log").textContent = "";
+  for (const name of ["artworks", "studioVideos", "studioArchive"]) {
+    const snap = await getDocs(collection(db, name));
+    log(`${name}: ${snap.size}`);
+  }
+  const cfg = await getDoc(doc(db, "siteConfig", "main"));
+  log("siteConfig: " + (cfg.exists() ? 1 : 0));
+  try {
+    const o = await getDocs(collection(db, "orders"));
+    log("orders: " + o.size);
+  } catch (e) {
+    log("orders: cannot read without Firebase admin access (see note at the bottom)", "warn");
+  }
+  log("likes and comments: not copied (linked to old Firebase sign-ins)", "warn");
+  status("Counted.");
+});
+
+/* ── 3. Transfer ─────────────────────────────────────────────────── */
+$("run").addEventListener("click", async () => {
+  if (busy) return;
+  if (!sbRole) return status("Sign in to Supabase first.", "err");
+  if (!confirm("Copy everything from Firebase into Supabase now?")) return;
+  busy = true; $("run").disabled = true; $("log").textContent = "";
+  const t = { artworks: 0, pictures: 0, studioVideos: 0, studioArchive: 0, siteConfig: 0, orders: 0, failed: 0, ordersSkipped: false };
+
+  try {
+    log("Copying artworks…");
+    for (const d of (await getDocs(collection(db, "artworks"))).docs) {
+      try {
+        const x = d.data();
+        const image = await moveImage(x.image, d.id);
+        if (image !== x.image && /^https?:\/\//.test(x.image || "")) t.pictures++;
+        const { error } = await sb.from("artworks").upsert({
+          id: d.id,
+          title: clip(x.title, 140) || "Untitled",
+          price_kes: Math.max(0, Math.floor(Number(x.priceNum) || 0)),
+          description: clip(x.desc, 2000),
+          image_url: image,
+          dimensions: clip(x.dimensions, 80),
+          status: ["available", "featured", "sold"].includes(x.status) ? x.status : "available",
+          deleted_at: x.deleted === true ? iso(x.deletedAt || x.createdAt) : null,
+          created_at: iso(x.createdAt),
+          updated_at: iso(x.createdAt),
+        }, { onConflict: "id" });
+        if (error) throw new Error(error.message);
+        t.artworks++; log("  ✓ " + clip(x.title, 40), "ok");
+      } catch (e) { t.failed++; log("  ✗ artwork " + d.id + ": " + e.message, "err"); }
+    }
+
+    log("Copying studio films…");
+    for (const d of (await getDocs(collection(db, "studioVideos"))).docs) {
+      try {
+        const x = d.data();
+        const { error } = await sb.from("studio_videos").upsert({
+          id: await uuidFrom("video:" + d.id),
+          youtube_id: clip(x.youtube, 32),
+          title: clip(x.title, 140),
+          description: clip(x.description, 2000),
+          tags: Array.isArray(x.tags) ? x.tags.map((s) => clip(s, 40)).filter(Boolean) : [],
+          timestamp_label: clip(x.timestamp ?? x.time, 80),
+          created_at: iso(x.createdAt),
+        }, { onConflict: "id" });
+        if (error) throw new Error(error.message);
+        t.studioVideos++;
+      } catch (e) { t.failed++; log("  ✗ film " + d.id + ": " + e.message, "err"); }
+    }
+
+    log("Copying studio archive…");
+    for (const d of (await getDocs(collection(db, "studioArchive"))).docs) {
+      try {
+        const x = d.data();
+        const image = await moveImage(x.image, "archive-" + d.id);
+        const { error } = await sb.from("studio_archive").upsert({
+          id: await uuidFrom("archive:" + d.id),
+          title: clip(x.title, 140) || "Untitled",
+          medium: clip(x.medium, 80),
+          description: clip(x.description || x.year, 2000),
+          image_url: image,
+          created_at: iso(x.createdAt),
+        }, { onConflict: "id" });
+        if (error) throw new Error(error.message);
+        t.studioArchive++;
+      } catch (e) { t.failed++; log("  ✗ archive " + d.id + ": " + e.message, "err"); }
+    }
+
+    log("Copying site settings…");
+    const cfg = await getDoc(doc(db, "siteConfig", "main"));
+    if (cfg.exists()) {
+      const data = JSON.parse(JSON.stringify(cfg.data(), (k, v) =>
+        v && typeof v === "object" && typeof v.toDate === "function" ? v.toDate().toISOString() : v));
+      const { error } = await sb.from("site_config").upsert({ id: "main", data, updated_at: new Date().toISOString() }, { onConflict: "id" });
+      if (error) throw new Error(error.message);
+      t.siteConfig = 1;
+    }
+
+    log("Copying orders…");
+    try {
+      for (const d of (await getDocs(collection(db, "orders"))).docs) {
+        try {
+          const x = d.data(), c = x.customerInfo || {};
+          const { error } = await sb.from("orders").upsert({
+            id: await uuidFrom("order:" + d.id),
+            kind: x.type === "commission" ? "commission" : "purchase",
+            name: clip(c.name, 80) || "Customer",
+            phone: clip(c.phone, 24),
+            email: clip(x.email || c.email, 120),
+            address: clip(c.address, 240),
+            items: Array.isArray(x.items) ? x.items : [],
+            total_kes: Math.max(0, Math.floor(Number(x.totalPrice) || 0)),
+            status: ["pending", "paid", "completed", "cancelled"].includes(x.status) ? x.status : "pending",
+            channel: clip(x.channel, 20),
+            notes: "Moved from Firebase order " + d.id,
+            created_at: iso(x.createdAt),
+            updated_at: iso(x.createdAt),
+          }, { onConflict: "id" });
+          if (error) throw new Error(error.message);
+          t.orders++;
+        } catch (e) { t.failed++; log("  ✗ order " + d.id + ": " + e.message, "err"); }
+      }
+    } catch (e) {
+      t.ordersSkipped = true;
+      log("Orders not copied: Firebase only lets an admin read them. See the note below.", "warn");
+    }
+
+    log("");
+    log("DONE", "ok");
+    log(`artworks ${t.artworks} · pictures moved ${t.pictures} · films ${t.studioVideos} · archive ${t.studioArchive} · settings ${t.siteConfig} · orders ${t.orders}${t.ordersSkipped ? " (skipped)" : ""} · failed ${t.failed}`);
+    log("Likes and comments were not copied.", "warn");
+    status(t.failed ? "Finished with " + t.failed + " problem(s). Check the log, then run again." : "Transfer complete.", t.failed ? "warn" : "ok");
+  } catch (e) {
+    log("Stopped: " + e.message, "err");
+    status("Stopped. Fix the problem and run again; finished items are kept.", "err");
+  } finally {
+    busy = false; $("run").disabled = false;
+  }
+});
+</script>
+</body>
+</html>
