@@ -15,18 +15,18 @@ window.App = window.App || {};
 
 const LOCAL_ARTWORKS = [
 
-  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"assets/artworks/resonant.jpg",       desc:"Emotional frequency and the language of nature — a piece that vibrates with feeling.",status:"available",dimensions:"30×40 cm"},
-  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"assets/artworks/giant.jpg",           desc:"Wisdom and strength emerging from the first light. A meditation on quiet power.",status:"available",dimensions:"60×80 cm"},
-  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"assets/artworks/sovereign.jpg",       desc:"Identity found in stillness. The dignity of being fully, quietly oneself.",status:"available",dimensions:"45×60 cm"},
-  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"assets/artworks/canopy.jpg",          desc:"Nature's belonging — the way trees hold one another without ever touching.",status:"available",dimensions:"50×70 cm"},
-  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"assets/artworks/solace.jpg",          desc:"Emotional refuge in the spaces between certainty. Rest for the searching soul.",status:"available",dimensions:"40×50 cm"},
-  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"assets/artworks/resilience.jpg",      desc:"Strength carved through pain. The beauty of something that refused to break.",status:"available",dimensions:"35×50 cm"},
-  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"assets/artworks/kingship.jpg",        desc:"Leadership with empathy — the crown that feels heaviest when worn with care.",status:"available",dimensions:"60×90 cm"},
-  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"assets/artworks/chic_shadow.jpg",     desc:"Identity duality — the light and dark that both belong to one extraordinary person.",status:"available",dimensions:"50×70 cm"},
-  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"assets/artworks/neck_to_neck.jpg",    desc:"Emotional balance between two forces — competition, love, and the space between.",status:"available",dimensions:"40×60 cm"},
-  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"assets/artworks/joyful_blooms.jpg",   desc:"Growth and renewal in full colour. The moment a seed decides to become its destiny.",status:"available",dimensions:"50×60 cm"},
-  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"assets/artworks/sunset_nomad.jpg",    desc:"Endings and beginnings in the same breath. The freedom of always moving forward.",status:"available",dimensions:"60×80 cm"},
-  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"assets/artworks/color_of_light.jpg",  desc:"Hope rendered visible. Clarity arriving like morning through a dusty window.",status:"available",dimensions:"45×60 cm"}
+  {id:'0',  title:"Resonant Rhythms",         price:"800 KES",  priceNum:800,  image:"assets/artworks/resonant.jpg",       desc:"",status:"available",dimensions:""},
+  {id:'1',  title:"Dawn of the Gentle Giant", price:"700 KES",  priceNum:700,  image:"assets/artworks/giant.jpg",           desc:"",status:"available",dimensions:""},
+  {id:'2',  title:"The Sovereign Silence",    price:"650 KES",  priceNum:650,  image:"assets/artworks/sovereign.jpg",       desc:"",status:"available",dimensions:""},
+  {id:'3',  title:"Kinship of the Canopy",    price:"600 KES",  priceNum:600,  image:"assets/artworks/canopy.jpg",          desc:"",status:"available",dimensions:""},
+  {id:'4',  title:"Solace in Grey",           price:"1000 KES", priceNum:1000, image:"assets/artworks/solace.jpg",          desc:"",status:"available",dimensions:""},
+  {id:'5',  title:"Resilience",               price:"900 KES",  priceNum:900,  image:"assets/artworks/resilience.jpg",      desc:"",status:"available",dimensions:""},
+  {id:'6',  title:"Kingship & Kindness",      price:"1500 KES", priceNum:1500, image:"assets/artworks/kingship.jpg",        desc:"",status:"available",dimensions:""},
+  {id:'7',  title:"Chic & Shadow",            price:"1200 KES", priceNum:1200, image:"assets/artworks/chic_shadow.jpg",     desc:"",status:"available",dimensions:""},
+  {id:'8',  title:"Neck to Neck",             price:"1100 KES", priceNum:1100, image:"assets/artworks/neck_to_neck.jpg",    desc:"",status:"available",dimensions:""},
+  {id:'9',  title:"Joyful Blooms",            price:"1000 KES", priceNum:1000, image:"assets/artworks/joyful_blooms.jpg",   desc:"",status:"available",dimensions:""},
+  {id:'10', title:"Sunset Nomad",             price:"1300 KES", priceNum:1300, image:"assets/artworks/sunset_nomad.jpg",    desc:"",status:"available",dimensions:""},
+  {id:'11', title:"Color of Light",           price:"1400 KES", priceNum:1400, image:"assets/artworks/color_of_light.jpg",  desc:"",status:"available",dimensions:""}
 
 ];
 
@@ -34,7 +34,7 @@ const LOCAL_ARTWORKS = [
 
 let artworks = [...LOCAL_ARTWORKS];
 
-const CONTACT = { waNum:'254704708178', phone:'0704708178', email:'artislifefoundation2023@gmail.com' };
+const CONTACT = { waNum:'254184336391', phone:'0184336391', email:'artislifefoundation2023@gmail.com' };
 
 /* ── Safe storage + escaping ────────────────────────────────────────────
    localStorage throws in private mode / when quota is exhausted, and a
@@ -525,31 +525,31 @@ function cssAttrValue(value) {
 }
 
 function triggerHeartBounce(id) {
-
   const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(id)}'"]`);
-
   if (!btn) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+
+  // Heart pop (scale 0.77 → 1.25 → 1), then a ring of coloured dots bursting outward.
+  btn.classList.remove('x-pop');
+  void btn.offsetWidth;            // restart the CSS animation on repeat likes
+  btn.classList.add('x-pop');
+  setTimeout(() => btn.classList.remove('x-pop'), 450);
 
   const rect = btn.getBoundingClientRect();
-
-  const cx = rect.left + rect.width / 2;
-
-  const cy = rect.top + rect.height / 2;
-
-  const el = document.createElement('div');
-
-  el.className = 'heart-bounce-overlay';
-
-  el.textContent = '❤';
-
-  el.style.left = cx + 'px';
-
-  el.style.top = cy + 'px';
-
-  document.body.appendChild(el);
-
-  setTimeout(() => el.remove(), 1500);
-
+  const burst = document.createElement('span');
+  burst.className = 'x-burst';
+  burst.style.left = (rect.left + rect.width / 2) + 'px';
+  burst.style.top = (rect.top + rect.height / 2) + 'px';
+  const colours = ['#e05252', '#c9a84c', '#2a9d8f', '#e76f51'];
+  for (let k = 0; k < 8; k++) {
+    const dot = document.createElement('i');
+    dot.style.setProperty('--a', (k * 45) + 'deg');
+    dot.style.setProperty('--c', colours[k % colours.length]);
+    burst.appendChild(dot);
+  }
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 800);
 }
 
 async function toggleLike(id) {
@@ -601,10 +601,6 @@ async function toggleLike(id) {
     btn.title = nowLiked ? 'Unlike' : 'Like';
 
     btn.setAttribute('aria-label', nowLiked ? 'Unlike' : 'Like');
-
-    btn.style.transform = 'scale(1.35)';
-
-    setTimeout(() => { btn.style.transform = ''; }, 200);
 
   }
 
@@ -1236,7 +1232,7 @@ function sendCommission() {
 
   closeCommission();
 
-  // 🔧 COMMISSION FORM RESET START
+  // COMMISSION FORM RESET START
   setTimeout(() => {
     // Clear all form fields
     const fields = ['cName', 'cPhone', 'cDesc', 'cMood', 'cSize', 'cSizeCustom', 'cColors', 'cAddress'];
@@ -1254,7 +1250,7 @@ function sendCommission() {
     sessionStorage.removeItem('ail_commission_agreed');
     showToast('🎨 Commission sent! Lewis will respond soon.');
   }, 300);
-  // 🔧 COMMISSION FORM RESET END
+  // COMMISSION FORM RESET END
 
 }
 
@@ -1312,8 +1308,9 @@ async function verifyAdminPassword(password) {
   return constantTimeEqual(await hashAdminPassword(password, salt), hash);
 }
 
+/* Device PIN lock is switched off for now (to be set up later). Sign-in goes straight to the dashboard. */
 function deviceLockArmed() {
-  return store.get('ail_require_login', '0') === '1' && !!store.get('ail_admin_pw_hash', null);
+  return false;
 }
 
 function deviceUnlocked() {
@@ -1467,6 +1464,28 @@ function closeAdminLogin() {
   document.body.style.overflow = '';
 }
 
+/* Sends a Firebase password-reset email to the admin address typed above. */
+async function sendAdminPasswordReset() {
+  const emailEl = document.getElementById('adminEmail');
+  const errEl = document.getElementById('adminError');
+  const email = emailEl ? emailEl.value.trim() : '';
+  if (!email) {
+    if (errEl) errEl.textContent = 'Type your admin email above, then tap “Forgot password?” again.';
+    return;
+  }
+  if (typeof window.firebaseResetPassword !== 'function') {
+    if (errEl) errEl.textContent = 'Sign-in service is unavailable. Check your connection and reload.';
+    return;
+  }
+  const res = await window.firebaseResetPassword(email);
+  if (res.success) {
+    if (errEl) errEl.textContent = '';
+    showToast('📧 Reset link sent to ' + email + ' — check your inbox and spam.');
+  } else if (errEl) {
+    errEl.textContent = res.error || 'Could not send the reset email.';
+  }
+}
+
 function toggleForgotPassword() {
   const panel = document.getElementById('adminForgotPanel');
   if (!panel) return;
@@ -1495,7 +1514,7 @@ async function handleAdminLogin() {
     return;
   }
 
-  const pinStep = !!window._firebaseAdmin;
+  const pinStep = false;
 
   if (!password) { fail(pinStep ? 'Enter your console PIN.' : 'Enter your password.'); return; }
   if (!pinStep && !email) { fail('Enter your admin email and password.'); return; }
@@ -1594,6 +1613,8 @@ function openAdminDashboard() {
 }
 
 function toggleAdminLock() {
+  showToast('🔓 Console lock is off for now.');
+  return;
   if (!window._firebaseAdmin) {
     showToast('⛔ Sign in with your admin account first.');
     return;
@@ -2583,8 +2604,6 @@ function init() {
   }
 
   track('page_view');
-
-  console.log('✅ LEES.mobile — init complete');
 
 }
 
