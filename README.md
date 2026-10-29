@@ -50,6 +50,7 @@ tests/                      # node:test suite (no dependencies)
 ```
 
 **Load order is preserved** so the extracted logic behaves identically to the
+
 original inline version. `js/sanitize.js` is loaded synchronously in `<head>`
 so escaping helpers exist before any app code runs.
 
