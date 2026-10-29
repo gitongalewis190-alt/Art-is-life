@@ -31,13 +31,13 @@ const DEFAULTS = {
   content: {
     foundationName: "LEES.mobile",
     footerText:     "© 2026 LEES.MOBILE — Lewis Gitonga. All rights reserved.",
-    footerSub:      "Each artwork is an original, one-time creation. Nairobi, Kenya.",
-    whatsapp:       "254704708178",
+    footerSub:      "Original, one-off artworks. Nairobi, Kenya.",
+    whatsapp:       "254184336391",
     email:          "",
     instagram:      "https://instagram.com/lewis_art.is.life",
     address:        "Nairobi, Kenya",
-    ownerRemark:    "Every canvas here began as a feeling before it became a colour. Thank you for walking through this gallery with open eyes.",
-    ownerRemarkBy:  "Lewis Gitonga — Founder"
+    ownerRemark:    "",
+    ownerRemarkBy:  ""
   },
   daraja:     { endpoint: "", businessName: "Art is Life Foundation" },
   cloudinary: { cloudName: "", uploadPreset: "" },
