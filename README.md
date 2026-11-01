@@ -82,7 +82,7 @@ The browser is treated as untrusted. Every privilege is enforced server-side.
 | Concern | Control |
 | — | — |
 | Admin access | Verified Firebase email/password session **plus** `users/{uid}.role` = `admin`/`crown`. The UI mirrors the role; `firestore.rules` enforces it. |
-| Console lock | Optional, off by default. When an admin turns it on, the console asks for that admin’s **Supabase password** (checked by Supabase, never stored in the browser) before it opens on that device. It never grants access. |
+| Console access | Open to the signed-in admin. The former local console lock was removed; admin rights are checked by Supabase (role on the user record) and the Firestore/Supabase rules. |
 | Stored XSS | All remote/CMS data is escaped at render time (`js/sanitize.js`), IDs are escaped for inline handlers, and URLs are scheme-checked (`javascript:`, `data:` blocked). |
 | Write forgery | Rules pin document shape, required fields, server timestamps and allowed status/role values. Visitors cannot mark their own order paid or promote themselves. |
 | Likes | Signed-in only, one document per `{uid}_{artworkId}`; anonymous clients cannot write. |
