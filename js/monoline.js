@@ -479,14 +479,8 @@
     var el = document.createElement('div');
     el.className = 'ml-cue';
     el.setAttribute('aria-hidden', 'true');
-    /* one pointing index finger; the other fingers are curled into the fist */
-    el.innerHTML = '<svg class="ml-cue-hand" viewBox="0 0 64 64" focusable="false"><g fill="currentColor">' +
-      '<rect x="22" y="2" width="14" height="36" rx="7"/>' +
-      '<rect x="12" y="26" width="36" height="34" rx="15"/>' +
-      '<rect x="40" y="30" width="12" height="8" rx="4"/>' +
-      '<rect x="40" y="38" width="11" height="8" rx="4"/>' +
-      '<rect x="40" y="46" width="9" height="8" rx="4"/>' +
-      '<rect x="3" y="34" width="14" height="10" rx="5"/></g></svg>';
+    /* the open hand from the reference, turned to face the other side (img/hand-cue.png) */
+    el.innerHTML = '<span class="ml-cue-hand"></span>';
     host.appendChild(el);
     return el;
   }

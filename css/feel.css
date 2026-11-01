@@ -112,7 +112,13 @@ html[data-layout] .art-card .art-price::before{
   filter:drop-shadow(0 8px 18px rgba(201,168,76,.28));
   will-change:transform,opacity;
 }
-.ml-cue-hand{ display:block; width:100%; height:100%; overflow:visible; color:#1d1b17; opacity:.9; }
+.ml-cue-hand{
+  display:block; width:100%; height:100%;
+  background:#1d1b17;
+  opacity:.9;
+  -webkit-mask:url(../img/hand-cue.png) center / contain no-repeat;
+          mask:url(../img/hand-cue.png) center / contain no-repeat;
+}
 
 /* ═════════ the like: a 1.5 s heart, a ring, and the "Thank you" with its emojis ═════════ */
 .like-btn.x-love svg,

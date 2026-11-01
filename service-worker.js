@@ -17,6 +17,7 @@ const SHELL = [
   "./css/layouts.css",
   "./css/monoline.css",
   "./css/feel.css",
+  "./img/hand-cue.png",
   "./js/sanitize.js",
   "./js/app.js",
   "./js/splash.js",

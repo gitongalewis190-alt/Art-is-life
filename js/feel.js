@@ -202,6 +202,7 @@
     touchCarry += Math.abs(y - touchY);
     touchY = y;
     while (touchCarry >= DETENT_PX) { touchCarry -= DETENT_PX; tick('detent'); }
+    centredCard();                       // a work reaching the middle gives its own halt, under the finger
   }, { passive: true });
   window.addEventListener('touchend', function () { touchY = null; }, { passive: true });
 
