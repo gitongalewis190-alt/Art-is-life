@@ -1,0 +1,114 @@
+/* monoline.css -- the mono-line drawing (js/monoline.js): splash stage, hero, placeholders,
+   plus the refined toasts, the app-safe header offset and the floating-button hide/show. */
+
+:root{
+  --mono-paper:radial-gradient(ellipse at center,#fffdf8 0%,#f7f1e3 100%);   /* = welcome screen */
+  --mono-ink:#111111;
+}
+/* dark layout presets: the line turns light so it never disappears */
+html[data-layout="1"],html[data-layout="4"],html[data-layout="5"],html[data-layout="6"]{ --mono-ink:#efe9da; }
+
+/* ── the drawing itself: no frame, no background ── */
+.ml-svg{ display:block; overflow:visible; background:none; border:0; pointer-events:none; }
+.ml-svg .ml-line{
+  fill:none; stroke:var(--mono-ink,#111); stroke-width:var(--ml-w,2px);
+  stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke;
+}
+.ml-svg .ml-wash{ pointer-events:none; }
+.ml-host{ position:relative; }
+.ml-host > .ml-svg{ width:100%; height:100%; }
+
+/* ── splash stage: one layer above the welcome screen and the page ── */
+.ml-stage{ position:fixed; inset:0; z-index:10000; pointer-events:none; }
+.ml-stage .ml-svg{ position:absolute; left:0; top:0; }
+.ml-stage .ml-line{ stroke:#111111; }
+.ml-curtain{
+  position:fixed; inset:0; z-index:9998; background:radial-gradient(ellipse at center,#fffdf8 0%,#f7f1e3 100%);
+  cursor:pointer;
+}
+body.mono-opening{ overflow:hidden; }
+
+/* welcome text sits lower to leave the top of the screen for the drawing */
+.splash{ padding-top:clamp(240px,46vh,520px); padding-bottom:max(18px,env(safe-area-inset-bottom)); box-sizing:border-box; }
+.splash.is-skipping .splash-welcome,
+.splash.is-skipping .splash-art{ opacity:0; transition:opacity .35s ease; }
+
+/* ── hero: the drawing replaces the photo, on the welcome-screen paper ── */
+.hero.has-mono{ height:auto; min-height:max(88vh,640px); }
+.hero.has-mono .hero-content{ padding-top:clamp(250px,44vh,440px); }
+.hero-mono{
+  position:absolute; left:0; right:0; top:0; height:clamp(250px,44vh,440px); z-index:1;
+  padding:calc(66px + env(safe-area-inset-top)) 4% 0; box-sizing:border-box;
+}
+html:not([data-layout="1"]):not([data-layout="4"]):not([data-layout="5"]):not([data-layout="6"]) .hero.has-mono .hero-bg{
+  background:var(--mono-paper);
+}
+.hero.has-mono .hero-bg img,
+.hero.has-mono .hero-bg::after{ display:none !important; }
+@media (min-width:900px){
+  .hero.has-mono .hero-content{ padding-top:6%; }
+  .hero-mono{ left:auto; width:54%; height:100%; padding:calc(66px + env(safe-area-inset-top)) 3% 24px 0; }
+}
+
+/* ── placeholders ── */
+.mono-ph{ display:block; width:100%; height:100%; min-height:120px; }
+.art-img-wrap.mono-loading{ min-height:270px; background:var(--mono-paper); }
+.art-img-wrap .mono-ph{ position:absolute; inset:0; padding:14px; box-sizing:border-box; z-index:0; }
+.art-img-wrap img{ position:relative; z-index:1; }
+.art-img-wrap.mono-loading > img{ position:absolute; inset:0; opacity:0; }
+.art-img-wrap:not(.mono-loading) .mono-ph{ display:none; }
+.no-results-icon .mono-ph,
+.cart-empty-icon .mono-ph{ width:120px; height:120px; min-height:0; margin:0 auto; }
+.no-results-icon,.cart-empty-icon{ opacity:1 !important; }
+
+@media (prefers-reduced-motion:reduce){
+  .ml-curtain{ display:none; }
+}
+
+/* ═════════ app-safe top: header and menu clear the status bar / notch ═════════ */
+header{ padding-top:env(safe-area-inset-top); height:calc(66px + env(safe-area-inset-top)); box-sizing:border-box; }
+.hamburger-wrap{ top:calc(14px + env(safe-area-inset-top)); }
+html[data-layout] header{ padding-top:env(safe-area-inset-top); }
+
+/* ═════════ floating Commission / Donate: leave at the end of the works, return on scroll up ═════════ */
+.fab-wrap{ transition:transform .45s cubic-bezier(.22,.8,.2,1), opacity .35s ease; will-change:transform,opacity; }
+.fab-wrap.fab-away{ transform:translateY(calc(100% + 40px)); opacity:0; pointer-events:none; }
+
+/* ═════════ toasts: small, calm, icon-free ═════════ */
+#toast{
+  left:50% !important; right:auto !important; bottom:calc(env(safe-area-inset-bottom) + 88px) !important;
+  width:max-content; max-width:min(92vw,380px); box-sizing:border-box;
+  padding:11px 18px !important; border:0 !important; border-radius:999px !important;
+  background:rgba(24,24,27,.92) !important; color:#fafaf9 !important;
+  -webkit-backdrop-filter:blur(14px) saturate(1.4); backdrop-filter:blur(14px) saturate(1.4);
+  box-shadow:0 10px 30px rgba(0,0,0,.22), 0 1px 0 rgba(255,255,255,.08) inset !important;
+  font:500 .84rem/1.35 'Inter',system-ui,sans-serif !important; letter-spacing:.005em; text-align:center;
+  display:flex; align-items:center; gap:10px;
+  transform:translate(-50%,14px) scale(.97) !important; opacity:0;
+  transition:transform .42s cubic-bezier(.22,1,.36,1), opacity .3s ease !important;
+}
+#toast.show{ transform:translate(-50%,0) scale(1) !important; opacity:1; }
+#toast::before{
+  content:""; flex:0 0 auto; width:6px; height:6px; border-radius:50%; background:#c9a84c;
+}
+#toast[data-tone="ok"]::before{ background:#34d399; }
+#toast[data-tone="warn"]::before{ background:#fbbf24; }
+#toast[data-tone="error"]::before{ background:#f87171; }
+#toast .toast-text{ display:block; }
+html[data-layout] #toast{ border:0 !important; }
+
+/* ═════════ likes: X-style count roll ═════════ */
+.art-like-count .x-num{ display:inline-block; font-variant-numeric:tabular-nums; }
+.art-like-count .x-num.x-roll-up{ animation:xRollUp .32s cubic-bezier(.2,.8,.2,1); }
+.art-like-count .x-num.x-roll-down{ animation:xRollDown .32s cubic-bezier(.2,.8,.2,1); }
+@keyframes xRollUp{ from{ transform:translateY(70%); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes xRollDown{ from{ transform:translateY(-70%); opacity:0; } to{ transform:none; opacity:1; } }
+.like-btn{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.like-btn:active{ transform:scale(.88); }
+html[data-layout] #toast{ background:rgba(24,24,27,.92) !important; color:#fafaf9 !important; }
+
+/* admin button: a proper 44px touch target */
+#adminPanelTrigger{ width:44px !important; height:44px !important; touch-action:manipulation; position:relative; z-index:2; }
+.header-right{ position:relative; z-index:2; }
+
+.header-brand-mark{ display:inline-block; width:24px; height:24px; margin-right:2px; vertical-align:middle; object-fit:contain; }

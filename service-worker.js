@@ -7,7 +7,7 @@
      • cross-origin (Firebase, gstatic, YouTube, GA) -> always network
    Bump CACHE on releases to retire old assets.
    ═══════════════════════════════════════════════════════════════════════ */
-const CACHE = "ail-v17";
+const CACHE = "ail-v18";
 const SHELL = [
   "./",
   "./index.html",
@@ -15,9 +15,12 @@ const SHELL = [
   "./css/main.css",
   "./css/glass.css",
   "./css/layouts.css",
+  "./css/monoline.css",
   "./js/sanitize.js",
   "./js/app.js",
   "./js/splash.js",
+  "./js/monoline-art.js",
+  "./js/monoline.js",
   "./js/pwa.js",
   "./js/console.js",
   "./js/services/firebase.js",
@@ -30,7 +33,12 @@ const SHELL = [
   "./assets/brand/icon-512.png",
   "./assets/brand/icon-maskable-512.png",
   "./assets/brand/apple-touch-icon.png",
-  "./assets/brand/admin_icon.png"
+  "./assets/brand/admin_icon.png",
+  "./assets/brand/mono-butterfly.svg",
+  "./assets/brand/mono-wings.webp",
+  "./assets/brand/mono-wings-soft.webp",
+  "./assets/brand/mono-palm.webp",
+  "./assets/brand/mono-fingers.webp"
 ];
 
 self.addEventListener("install", (event) => {

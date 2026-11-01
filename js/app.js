@@ -163,7 +163,8 @@ window.addEventListener('artworks_updated', () => {
 window.addEventListener('likes_updated', () => {
 
   // ⚡ PERFORMANCE FIX: only update like-count nodes per card -- no full gallery re-render
-  const counts = window._firestoreLikeCounts || {};
+  // The shared count has caught up with taps the server confirmed: drop their local +1/-1.
+  Object.keys(likeConfirmed).forEach(id => { if (!likePending[id]) { delete likeAdj[id]; delete likeConfirmed[id]; } });
 
   document.querySelectorAll('.art-card').forEach(card => {
 
@@ -179,7 +180,7 @@ window.addEventListener('likes_updated', () => {
 
     const artId = match[1];
 
-    const lc = counts[String(artId)] || 0;
+    const lc = getLikeCount(artId);
 
     let lcEl = card.querySelector('.art-like-count');
 
@@ -197,7 +198,7 @@ window.addEventListener('likes_updated', () => {
 
       }
 
-      lcEl.innerHTML = `<svg viewBox="0 0 24 24" fill="#e05252" stroke="#e05252" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${lc} like${lc!==1?'s':''}`;
+      lcEl.innerHTML = likeCountHTML(lc);
 
     } else if (lcEl) {
 
@@ -215,17 +216,30 @@ window.addEventListener('likes_updated', () => {
 
 let toastTimer;
 
+/* Toasts are plain, calm and icon-free: any emoji/symbol in a message is dropped and turned
+   into a small coloured dot (green = done, amber = check this, red = problem). */
 function showToast(msg) {
 
   const t = document.getElementById('toast');
+  if (!t) return;
 
-  t.textContent = msg;
+  const raw = String(msg == null ? '' : msg);
+  let tone = '';
+  if (/[❌⛔]|\b(oops|could not|couldn't|can't|cannot|failed|unavailable|no longer)\b/i.test(raw)) tone = 'error';
+  else if (/⚠/.test(raw)) tone = 'warn';
+  else if (/[✅✓]|\b(sent|added|saved|updated|restored|exported|uploaded|copied|welcome)\b/i.test(raw)) tone = 'ok';
 
+  let text = raw;
+  try { text = raw.replace(/[\p{Extended_Pictographic}\uFE0F\u200D\u2713\u2714\u2705]/gu, ''); } catch (_) { /* old engines keep the text */ }
+  text = text.replace(/\s{2,}/g, ' ').trim() || raw.trim();
+
+  t.textContent = text;
+  if (tone) t.setAttribute('data-tone', tone); else t.removeAttribute('data-tone');
   t.classList.add('show');
 
   clearTimeout(toastTimer);
 
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => t.classList.remove('show'), Math.min(4200, 2300 + text.length * 28));
 
 }
 
@@ -333,6 +347,11 @@ function resolveImage(image) {
 
 /* ══ GALLERY RENDER ══ */
 
+/* This device's own taps that the shared count has not caught up with yet (X-style instant feedback). */
+const likeAdj = Object.create(null);
+const likePending = Object.create(null);
+const likeConfirmed = Object.create(null);
+
 function getLikeCount(id) {
 
   const counts = window._firestoreLikeCounts || {};
@@ -341,8 +360,14 @@ function getLikeCount(id) {
   // non-numeric value into an HTML template.
   const n = Number(counts[String(id)]);
 
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  const base = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 
+  return Math.max(0, base + (likeAdj[String(id)] || 0));
+
+}
+
+function likeCountHTML(n) {
+  return `<svg viewBox=\"0 0 24 24\" fill=\"#e05252\" stroke=\"#e05252\" stroke-width=\"1\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z\"/></svg><span class="x-num">${n}</span> <span class="x-word">like${n!==1?'s':''}</span>`;
 }
 
 function renderGallery(filter) {
@@ -367,7 +392,7 @@ function renderGallery(filter) {
 
   if (!filtered.length) {
 
-    grid.innerHTML = `<div class="no-results"><div class="no-results-icon">🖼️</div><h3>No artworks found</h3><p>Try a different search.</p><button onclick="clearSearch()">Show All Works</button></div>`;
+    grid.innerHTML = `<div class="no-results"><div class="no-results-icon"><div class="mono-ph" data-mono="ph"></div></div><h3>No artworks found</h3><p>Try a different search.</p><button onclick="clearSearch()">Show All Works</button></div>`;
 
     return;
 
@@ -399,9 +424,11 @@ function renderGallery(filter) {
 
     <div class="art-card" style="animation-delay:${i*0.06}s">
 
-      <div class="art-img-wrap" onclick="openZoom('${jsArg(imgSrc)}','${jsArg(a.title)}')">
+      <div class="art-img-wrap mono-loading" onclick="openZoom('${jsArg(imgSrc)}','${jsArg(a.title)}')">
 
-        <img src="${escapeHtml(imgSrc)}" alt="${safeTitle}" loading="lazy" onerror="this.src='assets/brand/cover.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
+        <div class="mono-ph" data-mono="ph" aria-hidden="true"></div>
+
+        <img src="${escapeHtml(imgSrc)}" alt="${safeTitle}" loading="lazy" onload="this.parentNode.classList.remove('mono-loading')" onerror="this.parentNode.classList.remove('mono-loading');this.src='assets/brand/cover.jpg';this.style.minHeight='270px';this.alt='Image unavailable'">
 
         <div class="art-img-overlay">
 
@@ -437,7 +464,7 @@ function renderGallery(filter) {
 
         <div class="art-desc">${escapeHtml(a.desc)}</div>
 
-        ${likeCount > 0 ? `<div class="art-like-count"><svg viewBox="0 0 24 24" fill="#e05252" stroke="#e05252" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${likeCount} like${likeCount!==1?'s':''}</div>` : ''}
+        ${likeCount > 0 ? `<div class="art-like-count">${likeCountHTML(likeCount)}</div>` : ''}
 
       </div>
 
@@ -552,17 +579,54 @@ function triggerHeartBounce(id) {
   setTimeout(() => burst.remove(), 800);
 }
 
+/* Likes work the way X does: the heart fills at once, the count moves at once (with a small
+   roll), no toast. The shared count catches up in the background; if the request truly fails
+   the heart and count roll back. */
+function updateLikeCountNode(sid, dir) {
+  const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(sid)}'"]`);
+  const card = btn && btn.closest('.art-card');
+  if (!card) return;
+  const n = getLikeCount(sid);
+  let lcEl = card.querySelector('.art-like-count');
+  if (n > 0 && !lcEl) {
+    lcEl = document.createElement('div');
+    lcEl.className = 'art-like-count';
+    const info = card.querySelector('.art-info');
+    if (info) info.appendChild(lcEl);
+  }
+  if (n <= 0) { if (lcEl) lcEl.remove(); return; }
+  if (!lcEl) return;
+  lcEl.innerHTML = likeCountHTML(n);
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const num = lcEl.querySelector('.x-num');
+  if (num && dir && !reduce) num.classList.add(dir > 0 ? 'x-roll-up' : 'x-roll-down');
+}
+
+function paintLikeButton(sid, nowLiked) {
+  const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(sid)}'"]`);
+  if (!btn) return;
+  btn.classList.toggle('liked', nowLiked);
+  const svg = btn.querySelector('svg');
+  if (svg) {
+    svg.setAttribute('fill', nowLiked ? '#e05252' : 'none');
+    svg.setAttribute('stroke', nowLiked ? '#e05252' : 'currentColor');
+  }
+  btn.title = nowLiked ? 'Unlike' : 'Like';
+  btn.setAttribute('aria-label', nowLiked ? 'Unlike' : 'Like');
+  btn.setAttribute('aria-pressed', nowLiked ? 'true' : 'false');
+}
+
 async function toggleLike(id) {
 
   const sid = String(id);
 
   const wasLiked = likes.includes(sid) || likes.includes(id);
 
+  const delta = wasLiked ? -1 : 1;
+
   if (wasLiked) {
 
     likes = likes.filter(l => l !== sid && l !== id);
-
-    showToast('💔 Removed from favourites');
 
   } else {
 
@@ -570,45 +634,51 @@ async function toggleLike(id) {
 
     triggerHeartBounce(sid);
 
-    showToast('❤️ Added to favourites');
-
     track('like_clicked', {artwork_id: id});
 
   }
 
+  likeAdj[sid] = (likeAdj[sid] || 0) + delta;
+
   store.set('ail_likes', JSON.stringify(likes));
 
-  // Update ONLY the like button -- no full gallery re-render (prevents page shake/reflow)
+  // Update ONLY the like button and its count -- no full gallery re-render (prevents page shake/reflow)
 
-  const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(sid)}'"]`);
+  paintLikeButton(sid, !wasLiked);
 
-  if (btn) {
+  updateLikeCountNode(sid, delta);
 
-    const nowLiked = likes.includes(sid);
-
-    btn.classList.toggle('liked', nowLiked);
-
-    const svg = btn.querySelector('svg');
-
-    if (svg) {
-
-      svg.setAttribute('fill', nowLiked ? '#e05252' : 'none');
-
-      svg.setAttribute('stroke', nowLiked ? '#e05252' : 'currentColor');
-
-    }
-
-    btn.title = nowLiked ? 'Unlike' : 'Like';
-
-    btn.setAttribute('aria-label', nowLiked ? 'Unlike' : 'Like');
-
-  }
-
-  // Sync to Firestore
+  // Sync to the shared database in the background
 
   if (window.toggleLikeFirestore) {
 
-    window.toggleLikeFirestore(sid).catch(e => console.warn('Like sync error:', e));
+    likePending[sid] = (likePending[sid] || 0) + 1;
+
+    window.toggleLikeFirestore(sid).then(r => {
+
+      if (r) likeConfirmed[sid] = true;
+
+    }).catch(e => {
+
+      console.warn('Like sync error:', e);
+
+      // the request failed: put the heart and the count back as they were
+
+      likeAdj[sid] = (likeAdj[sid] || 0) - delta;
+
+      likes = wasLiked ? likes.concat([sid]) : likes.filter(l => l !== sid && l !== id);
+
+      store.set('ail_likes', JSON.stringify(likes));
+
+      paintLikeButton(sid, wasLiked);
+
+      updateLikeCountNode(sid, -delta);
+
+    }).finally(() => {
+
+      likePending[sid] = Math.max(0, (likePending[sid] || 1) - 1);
+
+    });
 
   }
 
@@ -643,8 +713,6 @@ function toggleStoryLike() {
     icon.setAttribute('fill', '#e05252');
 
     icon.setAttribute('stroke', '#e05252');
-
-    showToast('❤️ You liked the story!');
 
     icon.style.animation = 'heartBeat 0.6s ease';
 
@@ -900,7 +968,7 @@ function renderCartDrawer() {
 
   if (!cart.length) {
 
-    wrap.innerHTML = `<div class="cart-empty-state"><div class="cart-empty-icon">🖼️</div><p style="font-weight:600;margin-bottom:6px;">Your cart is empty</p><p style="font-size:0.8rem;color:#bbb;">Browse the collection and add pieces you love.</p></div>`;
+    wrap.innerHTML = `<div class="cart-empty-state"><div class="cart-empty-icon"><div class="mono-ph" data-mono="ph"></div></div><p style="font-weight:600;margin-bottom:6px;">Your cart is empty</p><p style="font-size:0.8rem;color:#bbb;">Browse the collection and add pieces you love.</p></div>`;
 
     footer.style.display = 'none';
 
@@ -1368,6 +1436,10 @@ function clearDeviceLock() {
   try { sessionStorage.removeItem(DEVICE_UNLOCK_KEY); } catch (_) { /* ignore */ }
 }
 
+/* The old console PIN and lock are retired for good: wipe whatever an earlier version left on this
+   device. The PIN/lock functions stay in place for when the lock is set up again. */
+try { clearDeviceLock(); } catch (_) { /* storage blocked -- nothing to clear */ }
+
 function resetAdminLock() {
   if (!confirm('Remove the console PIN from this device?\n\nThis only clears the local screen-lock -- you will still need to sign in with your admin account.')) return;
   clearDeviceLock();
@@ -1427,19 +1499,22 @@ function openAdminLogin() {
   // Firebase restores a persisted session asynchronously on load. Wait for
   // that decision instead of showing the sign-in form to an admin.
   if (window._auth && !window._authReady && !_authWaitExpired) {
+    // Show the sign-in window at once; if the saved session turns out to be an admin one,
+    // the dashboard opens by itself the moment it is confirmed.
     let settled = false;
     const proceed = () => {
       if (settled) return;
       settled = true;
       window.removeEventListener('auth_ready', proceed);
       _authWaitExpired = true;
-      openAdminLogin();
+      if (window._firebaseAdmin) { closeAdminLogin(); openAdminDashboard(); }
     };
     window.addEventListener('auth_ready', proceed);
     setTimeout(proceed, 4000);
+    setLoginMode('signin');
+    showAdminLoginModal();
     return;
   }
-
   // Already verified against Firebase: only the optional device PIN remains.
   if (window._firebaseAdmin) {
     if (deviceLockArmed() && !deviceUnlocked()) {
@@ -2652,3 +2727,33 @@ window.addEventListener('beforeunload', () => {
   }
 });
 
+
+/* ══ FLOATING BUTTONS: Commission / Donate slide away once the end of the artworks is reached
+   and come back as soon as the visitor scrolls up. ══ */
+(function initFabAutoHide() {
+  const wrap = document.querySelector('.fab-wrap');
+  if (!wrap) return;
+  let lastY = window.pageYOffset || 0, away = false, queued = false;
+
+  function setAway(v) {
+    if (v === away) return;
+    away = v;
+    wrap.classList.toggle('fab-away', v);
+    wrap.setAttribute('aria-hidden', v ? 'true' : 'false');
+    if ('inert' in wrap) wrap.inert = v;
+  }
+  function update() {
+    queued = false;
+    const y = window.pageYOffset || 0, dy = y - lastY;
+    const grid = document.getElementById('gallery');
+    const endReached = !!grid && grid.getBoundingClientRect().bottom <= window.innerHeight - 24;
+    if (dy < -4) setAway(false);                        // scrolling up: bring them back
+    else if (dy > 4 && endReached) setAway(true);       // scrolling down past the last work: tuck away
+    else if (!endReached) setAway(false);               // back among the works
+    if (Math.abs(dy) > 4) lastY = y;
+  }
+  window.addEventListener('scroll', () => {
+    if (!queued) { queued = true; requestAnimationFrame(update); }
+  }, { passive: true });
+  window.addEventListener('resize', update);
+})();

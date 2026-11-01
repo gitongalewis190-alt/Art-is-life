@@ -15,6 +15,8 @@ const CLASSIC = [
   "js/sanitize.js",
   "js/app.js",
   "js/splash.js",
+  "js/monoline-art.js",
+  "js/monoline.js",
   "js/pwa.js",
   "js/console.js",
   "js/arten.js",

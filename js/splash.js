@@ -27,6 +27,20 @@
   var TOTAL = START_DELAY + TYPE_BASE * TEXT1.length + READ_WELCOME + LINE_FADE
             + LETTER_STEP * TEXT2.length + 1000 + READ_ART + EXIT_FADE;
 
+  // Same hand-typed rhythm as before, drawn up front so the butterfly knows exactly when the
+  // welcome sequence ends and can leave the screen on that beat.
+  var delays = [], typingMs = 0;
+  (function () {
+    for (var n = 1; n <= TEXT1.length; n++) {
+      var c = TEXT1.charAt(n - 1);
+      var d = TYPE_BASE + ((c === ' ') ? WORD_PAUSE : 0) + Math.round(Math.random() * TYPE_JITTER);
+      delays.push(d);
+      if (n < TEXT1.length) typingMs += d;
+    }
+  })();
+  var CLOSE_AT = START_DELAY + typingMs + READ_WELCOME + LINE_FADE + LETTER_STEP * TEXT2.length + 1000 + READ_ART;
+  var startedAt = Date.now();
+
   document.body.classList.add('splash-active');
 
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -39,6 +53,18 @@
     if (closed) return;
     closed = true;
     timers.forEach(clearTimeout);
+    // The mono-line butterfly (js/monoline.js) owns the exit when it is running: it calls
+    // finish() once it has flown through the wall. Otherwise the banner leaves as before.
+    var M = window.MonoLine, owned = false;
+    if (M && M.handoff) {
+      banner.classList.add('is-skipping');
+      try { owned = M.handoff(finish, { skipped: Date.now() - startedAt < CLOSE_AT - 120 }); } catch (e) { owned = false; }
+    }
+    if (!owned) finish();
+  }
+
+  function finish() {
+    banner.classList.remove('is-skipping');
     banner.classList.add('is-leaving');
     setTimeout(function () {
       banner.classList.add('is-gone');
@@ -87,9 +113,7 @@
     i += 1;
     typed.data = TEXT1.slice(0, i);
     if (i < TEXT1.length) {
-      var ch = TEXT1.charAt(i - 1);
-      var pause = (ch === ' ') ? WORD_PAUSE : 0;
-      later(nextChar, TYPE_BASE + pause + Math.round(Math.random() * TYPE_JITTER));
+      later(nextChar, delays[i - 1]);
     } else {
       finishTyping();
     }
@@ -105,5 +129,8 @@
     later(close, READ_WELCOME + LINE_FADE + LETTER_STEP * TEXT2.length + 1000 + READ_ART);
   }
 
+  if (window.MonoLine && window.MonoLine.beginSplash) {
+    try { window.MonoLine.beginSplash({ closeAt: CLOSE_AT }); } catch (e) { /* text-only splash */ }
+  }
   later(nextChar, START_DELAY);
 })();

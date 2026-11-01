@@ -31,6 +31,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LEES.mobile">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="assets/brand/mono-butterfly.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/brand/icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/brand/apple-touch-icon.png">
 
@@ -59,6 +60,7 @@
 <link rel="stylesheet" href="css/main.css">
 <link rel="stylesheet" href="css/glass.css">
 <link rel="stylesheet" href="css/layouts.css">
+<link rel="stylesheet" href="css/monoline.css">
 </head>
 
 <body>
@@ -108,7 +110,7 @@ Collections
 
   <div class="header-brand">
 
-<div class="header-brand-dot"></div>
+<img class="header-brand-mark" src="assets/brand/mono-butterfly.svg" alt="" width="24" height="24">
 
 LEES<span>.MOBILE</span>
 
@@ -150,13 +152,15 @@ LEES<span>.MOBILE</span>
 
 <!-- HERO -->
 
-<section class="hero">
+<section class="hero has-mono">
 
   <div class="hero-bg">
 
 <img src="assets/brand/cover.jpg" alt="LEES.mobile -- Lewis Gitonga" loading="eager" onerror="this.src='assets/brand/cover.jpg'">
 
   </div>
+
+  <div class="hero-mono" data-mono="hero" aria-hidden="true"></div>
 
   <div class="hero-content">
 
@@ -1598,6 +1602,8 @@ Donate with M-Pesa
 <script src="js/app.js"></script>
 
 <!-- LAUNCH SEQUENCE -->
+<script src="js/monoline-art.js"></script>
+<script src="js/monoline.js"></script>
 <script src="js/splash.js"></script>
 
 <!-- PWA SERVICE WORKER -->
