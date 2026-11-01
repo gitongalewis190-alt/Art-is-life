@@ -468,33 +468,68 @@
     return st;
   }
 
-  /* the scroll cue: a hand that swipes up and down, the page nudging with it, a toast, and a
-     gentle retreat as soon as the visitor touches the page */
+  /* The scroll cue: a pointing hand over the hero, a small nudge of the page, and a toast that stays
+     up. While the visitor has not scrolled it plays again and again. Once they scroll, it waits three
+     seconds from their last scroll and plays again. A touch during a play retreats it at once. */
+  var CUE_LEN = 2000, CUE_OUT = 350, CUE_GAP = 3000, CUE_STEP = 500;
+  var CUE_TEXT = 'Scroll up for contents and more';
+  var cueToastOn = false;
+
   function makeCue(host) {
     var el = document.createElement('div');
     el.className = 'ml-cue';
     el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = '<svg class="ml-cue-hand" viewBox="0 0 64 64" focusable="false">' +
-      '<g fill="currentColor"><rect x="25" y="3" width="11" height="32" rx="5.5"/>' +
-      '<rect x="37" y="14" width="10" height="24" rx="5"/><rect x="17" y="19" width="9" height="20" rx="4.5"/>' +
-      '<rect x="43" y="23" width="8" height="17" rx="4"/><rect x="5" y="31" width="13" height="9" rx="4.5"/>' +
-      '<rect x="14" y="28" width="36" height="28" rx="14"/></g></svg>';
+    /* one pointing index finger; the other fingers are curled into the fist */
+    el.innerHTML = '<svg class="ml-cue-hand" viewBox="0 0 64 64" focusable="false"><g fill="currentColor">' +
+      '<rect x="22" y="2" width="14" height="36" rx="7"/>' +
+      '<rect x="12" y="26" width="36" height="34" rx="15"/>' +
+      '<rect x="40" y="30" width="12" height="8" rx="4"/>' +
+      '<rect x="40" y="38" width="11" height="8" rx="4"/>' +
+      '<rect x="40" y="46" width="9" height="8" rx="4"/>' +
+      '<rect x="3" y="34" width="14" height="10" rx="5"/></g></svg>';
     host.appendChild(el);
     return el;
   }
-  function cueSeen() { try { return sessionStorage.getItem('ail_cue_seen') === '1'; } catch (_) { return false; } }
-  function markCueSeen() { try { sessionStorage.setItem('ail_cue_seen', '1'); } catch (_) { /* private mode */ } }
   function fx(v) { return Math.round(clamp(v, 0, 1) * 1000) / 1000; }
 
-  /* a visitor's touch, wheel, key or press during the cue retreats it */
+  /* the toast: stays on screen while the cue is waiting; any other toast takes its place for a moment */
+  function cueToast(on) {
+    cueToastOn = on;
+    var t = document.getElementById('toast');
+    if (!t) return;
+    if (on) {
+      if (!t.classList.contains('show') || !t.hasAttribute('data-cue')) t.textContent = CUE_TEXT;
+      t.setAttribute('data-cue', '1');
+      t.removeAttribute('data-tone');
+      t.classList.add('show');
+    } else if (t.hasAttribute('data-cue')) {
+      t.removeAttribute('data-cue');
+      t.classList.remove('show');
+    }
+  }
+
+  /* a touch, wheel, key or press during a play retreats it */
   function cutCues() {
-    views.forEach(function (v) {
-      if (v.cue && v.cueStarted && !v.cueDone && v.cutAt < 0) v.cutAt = v.lastMs || 0;
-    });
+    var n = now();
+    views.forEach(function (v) { if (v.cycle && v.cycle.cutAt < 0) v.cycle.cutAt = n; });
   }
   ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (ev) {
     window.addEventListener(ev, cutCues, { passive: true, capture: true });
   });
+
+  /* any scroll the visitor makes (not the cue's own nudge) hides the toast and restarts the wait */
+  function userScrolled() {
+    var n = now();
+    views.forEach(function (v) {
+      if (!v.cue || !v.cueStarted || v.cueDone) return;
+      if (v.cycle) return;                                   // the cue's own nudge, or a touch (cutCues)
+      if (n - v.cueEndedAt < 400) return;                    // the nudge settling after a play
+      v.lastUser = n;
+      v.nextAt = n + CUE_GAP;
+      cueToast(false);
+    });
+  }
+  window.addEventListener('scroll', userScrolled, { passive: true });
 
   function staticState(inst) {
     var st = blankState(0);
@@ -513,7 +548,7 @@
     this.t0 = 0; this.started = false; this.visible = true; this.lastDraw = 0;
     this.flapT = 0; this.lastT = -1; this.lastMs = 0; this.hist = []; this.roam = null;
     this.cue = mode === 'hero' ? makeCue(host) : null; this.cueStarted = false; this.cueDone = false;
-    this.cueK = -1; this.cuePage = 0; this.cueBase = 0; this.cutAt = -1;
+    this.cycle = null; this.nextAt = 0; this.lastUser = 0; this.cueEndedAt = 0; this.cuePage = 0; this.cueBase = 0;
     this.still = reduced();
     var self = this;
     this.measure();
@@ -562,47 +597,57 @@
   View.prototype.cueTick = function (t) {
     var el = this.cue;
     if (!el || this.cueDone) return;
+    var n = now();
     if (!this.cueStarted) {
       if (t < HR.cueIn) return;
       this.cueStarted = true;
-      if (window.scrollY > 4 || cueSeen()) { this.cueDone = true; el.style.opacity = '0'; return; }
-      markCueSeen();
+      if (window.scrollY > 4) { this.cueDone = true; return; }     // already reading: no cue at all
       var rr = this.rig.svg.getBoundingClientRect(), hr = this.host.getBoundingClientRect();
       el.style.left = (rr.left - hr.left + rr.width / 2) + 'px';
       el.style.top = (rr.top - hr.top + rr.height / 2) + 'px';
-      this.cueBase = window.scrollY || 0;
-      document.documentElement.style.scrollBehavior = 'auto';
+      this.nextAt = n;
     }
-    var vis = ssm(seg(t, HR.cueIn, HR.cue0)) * (1 - ssm(seg(t, HR.cueEnd, HR.cueEnd + 350)));
-    if (this.cutAt >= 0) {                                   // the visitor touched the page: retreat
-      var out = 1 - ssm(seg(t, this.cutAt, this.cutAt + 320));
-      el.style.opacity = String(fx(out));
-      el.style.transform = 'translate(-50%,-50%) scale(' + fx(0.84 + 0.16 * out) + ')';
-      if (t >= this.cutAt + 320) this.finishCue();
-      return;
-    }
-    var y = 0, page = 0;
-    if (t >= HR.cue0 && t < HR.cueEnd) {
-      var k = Math.floor((t - HR.cue0) / HR.cueStep), up = k % 2 === 0;
-      var e = eio(seg(t, HR.cue0 + k * HR.cueStep, HR.cue0 + (k + 1) * HR.cueStep));
-      y = up ? lerp(14, -14, e) : lerp(-14, 14, e);
-      page = up ? 64 * e : 64 * (1 - e);
-      if (k !== this.cueK) { this.cueK = k; if (window.Feel) window.Feel.tick('tick'); }
-      if (!this.toasted) {
-        this.toasted = true;
-        if (typeof window.showToast === 'function') window.showToast('Scroll up for contents and more', 2000);
+    var c = this.cycle;
+    if (c) {
+      if (c.cutAt >= 0) {                                          // touched: retreat at once
+        var out = 1 - ssm(seg(n, c.cutAt, c.cutAt + 320));
+        el.style.opacity = String(fx(out));
+        el.style.transform = 'translate(-50%,-50%) scale(' + fx(0.84 + 0.16 * out) + ')';
+        if (n >= c.cutAt + 320) this.endCycle(n, true);
+        return;
       }
+      var e = n - c.start;
+      if (e >= CUE_LEN + CUE_OUT) { this.endCycle(n, false); return; }
+      var vis = ssm(seg(e, 0, 500)) * (1 - ssm(seg(e, CUE_LEN, CUE_LEN + CUE_OUT)));
+      var y = 0, page = 0;
+      if (e < CUE_LEN) {
+        var k = Math.floor(e / CUE_STEP), up = k % 2 === 0;
+        var f = eio(seg(e, k * CUE_STEP, (k + 1) * CUE_STEP));
+        y = up ? lerp(14, -14, f) : lerp(-14, 14, f);              // the hand swipes up, down, up, down
+        page = up ? 64 * f : 64 * (1 - f);                         // and the page moves with it
+        if (k !== c.k) { c.k = k; if (window.Feel) window.Feel.tick('click'); }
+      }
+      if (page !== this.cuePage) { window.scrollTo(0, this.cueBase + page); this.cuePage = page; }
+      el.style.opacity = String(fx(vis));
+      el.style.transform = 'translate(-50%,-50%) translateY(' + r1(y) + 'px) scale(' + fx(0.84 + 0.16 * vis) + ')';
+    } else if (n >= this.nextAt) {
+      this.cycle = { start: n, cutAt: -1, k: -1 };
+      this.cueBase = window.scrollY || 0;
+      this.cuePage = 0;
+      document.documentElement.style.scrollBehavior = 'auto';
+      cueToast(true);
     }
-    if (page !== this.cuePage) { window.scrollTo(0, this.cueBase + page); this.cuePage = page; }
-    el.style.opacity = String(fx(vis));
-    el.style.transform = 'translate(-50%,-50%) translateY(' + r1(y) + 'px) scale(' + fx(0.84 + 0.16 * vis) + ')';
-    if (t >= HR.cueEnd + 350) this.finishCue();
+    if (cueToastOn) cueToast(true);                                // keep the toast up between plays
   };
 
-  View.prototype.finishCue = function () {
-    this.cueDone = true;
-    document.documentElement.style.scrollBehavior = '';
+  View.prototype.endCycle = function (n, cut) {
+    this.cycle = null;
+    this.cueEndedAt = n;
     if (this.cue) this.cue.style.opacity = '0';
+    if (this.cuePage !== 0) { window.scrollTo(0, this.cueBase); this.cuePage = 0; }
+    document.documentElement.style.scrollBehavior = '';
+    if (cut) cueToast(false);
+    this.nextAt = Math.max(n + CUE_GAP, this.lastUser + CUE_GAP);
   };
   View.prototype.destroy = function () {
     if (this.ro) this.ro.disconnect();

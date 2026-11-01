@@ -1,20 +1,27 @@
-/* feel.js -- touch feedback for the gallery: haptics, the water-drop sound, the like celebration,
-   the tick as each work comes to the centre of the screen, and the header butterfly waking up.
+/* feel.js -- touch feedback for the gallery: haptics, sounds, the like and cart celebrations,
+   the scroll ratchet, and the header butterfly waking up.
 
-   Haptics work in two ways. Android Chrome exposes navigator.vibrate. iPhone (iOS 18 and later)
-   has no vibrate API, so a hidden switch-style checkbox is toggled instead; iOS plays its Taptic
-   tick for that. Browsers only allow either one after the visitor has tapped the page once, so
-   the splash ticks are quiet on a first visit and every later tick is felt.
+   Haptics: Android Chrome exposes navigator.vibrate. iPhone (iOS 18 and later) has no vibrate
+   API, so a hidden switch-style checkbox is toggled instead; iOS plays its Taptic tick for that.
+   Browsers only allow vibration after the visitor has tapped the page once, so the first splash
+   ticks are quiet; every tick after that is felt.
 
-   Nothing here touches app logic. app.js calls Feel.like(); the rest is wired by delegation. */
+   The scroll ratchet works like a date picker wheel: a short detent every DETENT_PX of travel,
+   and a firmer click each time a new work reaches the centre of the screen.
+
+   Nothing here touches app logic. app.js calls Feel.like() and Feel.cart(); the rest is wired by
+   delegation. */
 (function () {
   'use strict';
 
-  var PATTERNS = { tap: 8, press: 12, tick: 6, pop: [14, 40, 10] };
+  var PATTERNS = { tap: 8, press: 14, tick: 6, detent: 5, click: 12, pop: [14, 40, 10], cart: [10, 30, 10, 30, 18] };
+  var DETENT_PX = 48;
   var EMOJI = ['✨', '💛', '🙌', '🎨', '🦋', '🌿',
                '🔥', '💫', '🥰', '🌈'];
+  var BAG = ['🛍️', '🧺', '👜', '✨', '🛒'];
   var canVibrate = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
   var reduceMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  function reduced() { return !!(reduceMq && reduceMq.matches); }
 
   /* ───────────── haptics ───────────── */
   var switchLabel = null;
@@ -45,18 +52,18 @@
     return false;
   }
 
-  /* Every press on a control gives a short, firm tap. Capture phase, so it fires even when the
+  /* Every press on a control gives a firm tap. Capture phase, so it fires even when the
      control's own handler stops propagation. */
-  var PRESS_SEL = 'button, [role="button"], a[href], .channel-opt, .filter-chip, .art-btn, .like-btn, .fab-btn, .engage-btn';
+  var PRESS_SEL = 'button, [role="button"], [onclick], a[href], label.btn, .channel-opt, .filter-chip, ' +
+                  '.art-btn, .like-btn, .fab-btn, .engage-btn, .cart-btn, .hamburger-btn';
   document.addEventListener('pointerdown', function (e) {
     var t = e.target && e.target.closest ? e.target.closest(PRESS_SEL) : null;
     if (!t || t.disabled || t.getAttribute('aria-disabled') === 'true') return;
+    if (t.classList && t.classList.contains('feel-switch')) return;
     tick('press');
   }, { capture: true, passive: true });
 
-  /* ───────────── the water drop ─────────────
-     Synthesised, so there is no file to fetch: a short sine that glides upward (the drop), then a
-     softer bubble. It starts on the same frame as the heart's pop. */
+  /* ───────────── sounds (synthesised: no files to fetch) ───────────── */
   var audioCtx = null;
   function ctx() {
     try {
@@ -69,51 +76,51 @@
       return audioCtx;
     } catch (_) { return null; }
   }
-  function drop() {
-    var a = ctx();
-    if (!a) return;
-    var t0 = a.currentTime;
+  /* a sine with a short attack and an exponential decay, starting at t */
+  function blip(a, t, freq, freqEnd, peak, dur, glide) {
     var o = a.createOscillator(), g = a.createGain();
     o.type = 'sine';
-    o.frequency.setValueAtTime(620, t0);
-    o.frequency.exponentialRampToValueAtTime(1280, t0 + 0.085);
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.2, t0 + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    o.frequency.setValueAtTime(freq, t);
+    if (glide) o.frequency.exponentialRampToValueAtTime(freqEnd, t + glide);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(a.destination);
-    o.start(t0); o.stop(t0 + 0.22);
-
-    var t1 = t0 + 0.085;
-    var o2 = a.createOscillator(), g2 = a.createGain();
-    o2.type = 'sine';
-    o2.frequency.setValueAtTime(420, t1);
-    o2.frequency.exponentialRampToValueAtTime(860, t1 + 0.11);
-    g2.gain.setValueAtTime(0.0001, t1);
-    g2.gain.exponentialRampToValueAtTime(0.09, t1 + 0.01);
-    g2.gain.exponentialRampToValueAtTime(0.0001, t1 + 0.14);
-    o2.connect(g2); g2.connect(a.destination);
-    o2.start(t1); o2.stop(t1 + 0.16);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  /* the water drop: a glide upward, then a softer bubble (the like) */
+  function drop() {
+    var a = ctx(); if (!a) return;
+    var t0 = a.currentTime;
+    blip(a, t0, 620, 1280, 0.2, 0.2, 0.085);
+    blip(a, t0 + 0.085, 420, 860, 0.09, 0.14, 0.11);
+  }
+  /* the cart: a bright, short two-note chime, unlike the drop */
+  function chime() {
+    var a = ctx(); if (!a) return;
+    var t0 = a.currentTime;
+    blip(a, t0, 1568, 0, 0.13, 0.42, 0);
+    blip(a, t0 + 0.07, 2349, 0, 0.08, 0.36, 0);
   }
 
-  /* ───────────── the like: heart, drop, haptic, and a thank you ───────────── */
-  function thankYou(btn) {
+  /* ───────────── floating words with emojis (the like and the cart share this) ───────────── */
+  function floatLabel(btn, text, emojis, cls, count) {
     var r = btn.getBoundingClientRect();
     var box = document.createElement('div');
-    box.className = 'feel-thanks';
+    box.className = 'feel-float ' + cls;
     box.setAttribute('aria-hidden', 'true');
     // keep the words inside the screen even when the work sits at the edge
     var cx = Math.min(Math.max(r.left + r.width / 2, 84), window.innerWidth - 84);
     box.style.left = Math.round(cx) + 'px';
     box.style.top = Math.round(r.top) + 'px';
     var msg = document.createElement('span');
-    msg.className = 'feel-thanks-text';
-    msg.textContent = 'Thank you';
+    msg.className = 'feel-float-text';
+    msg.textContent = text;
     box.appendChild(msg);
-    var n = 5 + Math.floor(Math.random() * 3);
-    for (var i = 0; i < n; i++) {
+    for (var i = 0; i < count; i++) {
       var em = document.createElement('span');
       em.className = 'feel-emoji';
-      em.textContent = EMOJI[Math.floor(Math.random() * EMOJI.length)];
+      em.textContent = emojis[Math.floor(Math.random() * emojis.length)];
       em.style.left = Math.round(Math.random() * 180 - 90) + 'px';
       em.style.animationDelay = (0.08 + Math.random() * 0.5).toFixed(2) + 's';
       em.style.setProperty('--tilt', Math.round(Math.random() * 60 - 30) + 'deg');
@@ -123,6 +130,7 @@
     setTimeout(function () { if (box.parentNode) box.parentNode.removeChild(box); }, 2300);
   }
 
+  /* ───────────── the like: heart, drop, haptic, and a thank you ───────────── */
   function like(btn) {
     drop();
     tick('pop');
@@ -131,13 +139,31 @@
     void btn.offsetWidth;                       // restart the 1.5 s heart on repeat likes
     btn.classList.add('x-love');
     setTimeout(function () { btn.classList.remove('x-love'); }, 1500);
-    thankYou(btn);
+    floatLabel(btn, 'Thank you', EMOJI, 'feel-thanks', 5 + Math.floor(Math.random() * 3));
   }
 
-  /* ───────────── the tick as each work passes the centre of the screen ───────────── */
-  var lastCard = -1, frame = 0;
+  /* ───────────── the cart: the bag bounces, a chime, a haptic, and "Added to cart" ───────────── */
+  function cart(btn) {
+    chime();
+    tick('cart');
+    var badge = document.getElementById('cartCount');
+    if (badge) {
+      badge.classList.remove('x-bump');
+      void badge.offsetWidth;
+      badge.classList.add('x-bump');
+      setTimeout(function () { badge.classList.remove('x-bump'); }, 700);
+    }
+    if (!btn) return;
+    btn.classList.remove('x-cart');
+    void btn.offsetWidth;
+    btn.classList.add('x-cart');
+    setTimeout(function () { btn.classList.remove('x-cart'); }, 1100);
+    floatLabel(btn, 'Added to cart', BAG, 'feel-cartlabel', 3 + Math.floor(Math.random() * 2));
+  }
+
+  /* ───────────── the scroll ratchet ───────────── */
+  var lastY = window.scrollY || 0, carry = 0, frame = 0, lastCard = -1;
   function centredCard() {
-    frame = 0;
     var cards = document.querySelectorAll('.art-card');
     if (!cards.length) return;
     var mid = window.innerHeight / 2, best = -1, bestD = Infinity;
@@ -148,12 +174,36 @@
       if (d < bestD) { bestD = d; best = i; }
     }
     if (best < 0) return;
-    if (lastCard >= 0 && best !== lastCard && !(reduceMq && reduceMq.matches)) tick('tick');
+    if (lastCard >= 0 && best !== lastCard) tick('click');
     lastCard = best;
   }
+  function ratchet() {
+    frame = 0;
+    var y = window.scrollY || 0, d = Math.abs(y - lastY);
+    lastY = y;
+    if (!d || reduced()) return;
+    carry += d;
+    var steps = 0;
+    while (carry >= DETENT_PX && steps < 4) { carry -= DETENT_PX; steps++; tick('detent'); }
+    if (carry > DETENT_PX) carry = DETENT_PX;
+    centredCard();
+  }
   window.addEventListener('scroll', function () {
-    if (!frame) frame = window.requestAnimationFrame(centredCard);
+    if (!frame) frame = window.requestAnimationFrame(ratchet);
   }, { passive: true });
+
+  /* On iPhone there is no scroll-driven haptic, so the ratchet is also fed from the finger's
+     movement. Android already gets it from the scroll, so it is not doubled there. */
+  var touchY = null, touchCarry = 0;
+  window.addEventListener('touchstart', function (e) { touchY = e.touches[0].clientY; touchCarry = 0; }, { passive: true });
+  window.addEventListener('touchmove', function (e) {
+    if (canVibrate || touchY === null || reduced()) return;
+    var y = e.touches[0].clientY;
+    touchCarry += Math.abs(y - touchY);
+    touchY = y;
+    while (touchCarry >= DETENT_PX) { touchCarry -= DETENT_PX; tick('detent'); }
+  }, { passive: true });
+  window.addEventListener('touchend', function () { touchY = null; }, { passive: true });
 
   /* ───────────── the header butterfly wakes when the hero opens ───────────── */
   window.addEventListener('monoline:open', function () {
@@ -163,5 +213,5 @@
     setTimeout(function () { mark.classList.remove('is-awake'); }, 1400);
   });
 
-  window.Feel = { tick: tick, like: like, drop: drop };
+  window.Feel = { tick: tick, like: like, cart: cart, drop: drop, chime: chime };
 })();

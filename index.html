@@ -939,16 +939,6 @@ Admin Access
   <div style="text-align:right;margin-bottom:12px;" id="adminForgotToggle">
     <button type="button" onclick="sendAdminPasswordReset()" style="background:none;border:none;color:var(--gold);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Forgot password?</button>
   </div>
-  <div id="adminForgotPanel" class="forgot-panel" style="display:none;">
-    <div class="forgot-panel-header">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-      <span>Forgotten console lock</span>
-    </div>
-    <p class="forgot-panel-sub">The lock asks for your Supabase password before the console opens on this browser. Removing it does <strong>not</strong> sign you in: admin access still requires your Supabase account and an admin role.</p>
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
-      <button type="button" onclick="resetAdminLock()" style="background:none;border:none;color:var(--adm-red,#e05252);font-size:0.78rem;cursor:pointer;text-decoration:underline;">Remove the lock on this device</button>
-    </div>
-  </div>
 
   <button class="btn-admin-login" id="adminLoginBtn" onclick="handleAdminLogin()">
 
@@ -1189,15 +1179,6 @@ LEES.MOBILE  ·  <span style="font-style:italic;opacity:0.7">Admin Dashboard</
   <div class="adm-page-title">Dashboard Overview</div>
 
   <div class="adm-page-sub" id="admWelcome">Welcome back</div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
-    <button id="admSetPwBtn" onclick="toggleSetPasswordPanel()" style="padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:rgba(201,168,76,0.12);color:#e0e0e0;font-size:0.75rem;cursor:pointer;font-family:'Inter',sans-serif;">🔑 Set Password</button>
-  </div>
-  <div id="admSetPwPanel" style="display:none;margin-top:10px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);max-width:320px;">
-    <div class="adm-form-group"><label class="adm-form-label" for="admNewPw">Supabase password</label><div style="position:relative;"><input class="adm-input" type="password" placeholder="Your Supabase password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" id="admNewPw" style="padding-right:64px;"><button type="button" onclick="togglePwVisibility(this)" aria-label="Show password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--gold,#c9a84c);font-size:0.78rem;font-weight:600;padding:6px 8px;width:auto;cursor:pointer;">Show</button></div></div>
-    <div class="adm-form-group"><label class="adm-form-label" for="admNewPw2">Confirm Supabase password</label><div style="position:relative;"><input class="adm-input" type="password" placeholder="Type it again" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" id="admNewPw2" style="padding-right:64px;"><button type="button" onclick="togglePwVisibility(this)" aria-label="Show password" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--gold,#c9a84c);font-size:0.78rem;font-weight:600;padding:6px 8px;width:auto;cursor:pointer;">Show</button></div></div>
-    <button class="adm-btn-sm primary" onclick="saveAdminPassword()">Save &amp; Lock Console</button>
-    <div id="admSetPwMsg" style="font-size:0.75rem;margin-top:8px;"></div>
-  </div>
 
 </div>
 

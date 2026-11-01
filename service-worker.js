@@ -7,7 +7,7 @@
      • cross-origin (Firebase, gstatic, YouTube, GA) -> always network
    Bump CACHE on releases to retire old assets.
    ═══════════════════════════════════════════════════════════════════════ */
-const CACHE = "ail-v19";
+const CACHE = "ail-v20";
 const SHELL = [
   "./",
   "./index.html",

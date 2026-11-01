@@ -890,6 +890,10 @@ function addToCart(id) {
 
   if (!art) return;
 
+  // The cart's own celebration: the bag bounces, a chime plays and the haptic fires (js/feel.js).
+  const cartBtn = document.querySelector(`.art-btn-cart[onclick*="'${cssAttrValue(id)}'"]`);
+  if (window.Feel) window.Feel.cart(cartBtn);
+
   const existing = cart.find(c => String(c.id) === String(id));
 
   if (existing) { existing.qty = (existing.qty || 1) + 1; saveCart(); updateCartCount(); renderCartDrawer(); showToast(`"${art.title}" qty updated`); return; }
@@ -1344,118 +1348,25 @@ function closeAccessDenied() {
 
 }
 
-/* ══ CONSOLE LOCK -- optional, set by the admin, never a privilege ═══════
-   Admin rights come exclusively from a verified Supabase session whose profiles.role is
-   admin/crown (enforced by the row-level policies). The lock only asks the signed-in admin to
-   prove the Supabase password again on this device before the console opens. Supabase does the
-   checking; no password or hash is kept in the browser.                                       */
-
-const CONSOLE_LOCK_KEY = 'ail_console_lock';
-const DEVICE_UNLOCK_KEY = 'ail_device_unlocked';
-
-/* Earlier builds stored a local PIN and a lock flag. Those keys are removed once, here, so a
-   stale value can never lock the console by accident. */
-['ail_admin_pw_salt', 'ail_admin_pw_hash', 'ail_require_login'].forEach((key) => store.remove(key));
-
-/** The lock is off unless the admin turns it on. */
-function deviceLockArmed() {
-  return store.get(CONSOLE_LOCK_KEY, '0') === '1';
-}
-
-function deviceUnlocked() {
-  try { return sessionStorage.getItem(DEVICE_UNLOCK_KEY) === '1'; } catch (_) { return false; }
-}
-
-function markDeviceUnlocked() {
-  try { sessionStorage.setItem(DEVICE_UNLOCK_KEY, '1'); } catch (_) { /* private mode */ }
-}
-
-function toggleSetPasswordPanel() {
-  const panel = document.getElementById('admSetPwPanel');
-  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
-
-/** Asks Supabase whether this is the signed-in admin's password. */
-async function verifySupabasePassword(password) {
-  const email = window._currentUser && window._currentUser.email;
-  if (!email || !password || typeof window.firebaseAdminLogin !== 'function') return false;
-  const res = await window.firebaseAdminLogin(email, password);
-  return !!(res && res.success);
-}
-
-function updateLockButton() {
-  const lockBtn = document.getElementById('admLockBtn');
-  if (!lockBtn) return;
-  const locked = deviceLockArmed();
-  lockBtn.textContent = locked ? 'Console locked' : 'Console unlocked';
-  lockBtn.style.background = locked ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.12)';
-}
-
-async function saveAdminPassword() {
-  // Locking is an admin action, not a way to become one.
-  if (!window._firebaseAdmin) {
-    showToast('Sign in with your admin account first.');
-    return;
-  }
-
-  const pw1   = (document.getElementById('admNewPw') || {}).value || '';
-  const pw2   = (document.getElementById('admNewPw2') || {}).value || '';
-  const msgEl = document.getElementById('admSetPwMsg');
-  const say = (msg, colour) => { if (msgEl) { msgEl.textContent = msg; msgEl.style.color = colour; } };
-
-  if (!pw1) { say('Enter your Supabase password.', 'var(--adm-red)'); return; }
-  if (pw1 !== pw2) { say('Passwords do not match.', 'var(--adm-red)'); return; }
-
-  say('Checking with Supabase...', 'var(--adm-muted)');
-  const ok = await verifySupabasePassword(pw1);
-  if (!ok) { say('That is not your Supabase password.', 'var(--adm-red)'); return; }
-
-  store.set(CONSOLE_LOCK_KEY, '1');
-  markDeviceUnlocked();
-
-  document.getElementById('admNewPw').value = '';
-  document.getElementById('admNewPw2').value = '';
-  say('Console locked. Your Supabase password unlocks it.', 'var(--adm-emerald,#34d399)');
-  updateLockButton();
-  showToast('Console locked on this device');
-}
-
-/** Removes the console lock on this device. Does NOT sign out or grant any access. */
-function clearDeviceLock() {
-  store.remove(CONSOLE_LOCK_KEY);
-  try { sessionStorage.removeItem(DEVICE_UNLOCK_KEY); } catch (_) { /* ignore */ }
-}
-
-function resetAdminLock() {
-  if (!confirm('Remove the console lock from this device?\n\nYou will still need to be signed in with your admin account.')) return;
-  clearDeviceLock();
-  closeAdminLogin();
-  showToast('Console lock removed on this device');
-  openAdminLogin();
-}
+/* The console lock has been removed for good. Anything an earlier build left on a device is cleared
+   here, so nothing can ever stand between the admin and the console. */
+['ail_console_lock', 'ail_admin_pw_salt', 'ail_admin_pw_hash', 'ail_require_login', 'ail_device_unlocked']
+  .forEach((key) => store.remove(key));
 
 /* ══ ADMIN LOGIN ══ */
 
 /** Switch the modal between the Firebase sign-in step and the local PIN step. */
-function setLoginMode(mode) {
-  const pinOnly = mode === 'pin';
+function setLoginMode() {
   const emailGroup = document.getElementById('adminEmailGroup');
-  if (emailGroup) emailGroup.style.display = pinOnly ? 'none' : '';
+  if (emailGroup) emailGroup.style.display = '';
   const subtitle = document.getElementById('adminLoginSubtitle');
-  if (subtitle) {
-    subtitle.textContent = pinOnly
-      ? 'Enter your Supabase password to unlock the console.'
-      : 'Sign in with the admin account that holds an admin or crown role.';
-  }
+  if (subtitle) subtitle.textContent = 'Sign in with the admin account that holds an admin or crown role.';
   const btn = document.getElementById('adminLoginBtn');
   if (btn && !btn.disabled) {
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> ' +
-      (pinOnly ? 'Unlock Console' : 'Sign In');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Sign In';
   }
   const forgot = document.getElementById('adminForgotPanel');
   if (forgot) forgot.style.display = 'none';
-  const note = document.getElementById('adminForgotToggle');
-  if (note) note.style.display = pinOnly ? '' : 'none';
 }
 
 function showAdminLoginModal() {
@@ -1497,23 +1408,18 @@ function openAdminLogin() {
     };
     window.addEventListener('auth_ready', proceed);
     setTimeout(proceed, 4000);
-    setLoginMode('signin');
+    setLoginMode();
     showAdminLoginModal();
     return;
   }
-  // Already verified against Firebase: only the optional device PIN remains.
+  // Already verified against Supabase: straight to the dashboard.
   if (window._firebaseAdmin) {
-    if (deviceLockArmed() && !deviceUnlocked()) {
-      setLoginMode('pin');
-      showAdminLoginModal();
-      return;
-    }
     closeAdminLogin();
     openAdminDashboard();
     return;
   }
 
-  setLoginMode('signin');
+  setLoginMode();
   showAdminLoginModal();
 }
 
@@ -1575,11 +1481,8 @@ async function handleAdminLogin() {
     return;
   }
 
-  const emailGroup = document.getElementById('adminEmailGroup');
-  const pinStep = !!emailGroup && emailGroup.style.display === 'none';
-
-  if (!password) { fail(pinStep ? 'Enter your Supabase password.' : 'Enter your password.'); return; }
-  if (!pinStep && !email) { fail('Enter your admin email and password.'); return; }
+  if (!password) { fail('Enter your password.'); return; }
+  if (!email) { fail('Enter your admin email and password.'); return; }
 
   const originalLabel = loginBtn ? loginBtn.innerHTML : '';
   if (loginBtn) {
@@ -1590,17 +1493,12 @@ async function handleAdminLogin() {
   let ok = false;
   let message = '';
 
-  if (pinStep) {
-    ok = await verifySupabasePassword(password);
-    if (ok) markDeviceUnlocked();
-    else message = 'Wrong password.';
-  } else if (typeof window.firebaseAdminLogin !== 'function') {
+  if (typeof window.firebaseAdminLogin !== 'function') {
     message = 'Firebase is unavailable. Check your connection and reload the page.';
   } else {
     const result = await window.firebaseAdminLogin(email, password);
     ok = !!result.success;
     message = result.error || 'Sign-in failed.';
-    if (ok) markDeviceUnlocked();
   }
 
   if (loginBtn) { loginBtn.innerHTML = originalLabel; loginBtn.disabled = false; }
@@ -1633,7 +1531,7 @@ async function handleAdminLogin() {
 function openAdminDashboard() {
   // Hard gate: no verified Firebase admin session → no dashboard.
   if (!window._firebaseAdmin || !window._currentRole) {
-    setLoginMode('signin');
+    setLoginMode();
     showAdminLoginModal();
     return;
   }
@@ -1658,30 +1556,12 @@ function openAdminDashboard() {
 
   loadDashboardStats();
 
-  // Show lock status
-  updateLockButton();
-
   renderOverviewArtGrid();
 
   renderArtworksTable();
 
   track('admin_dashboard_opened', {role});
 
-}
-
-function toggleAdminLock() {
-  if (!window._firebaseAdmin) {
-    showToast('Sign in with your admin account first.');
-    return;
-  }
-  if (deviceLockArmed()) {
-    clearDeviceLock();
-    updateLockButton();
-    showToast('Console unlocked on this device');
-  } else {
-    // Locking asks for the Supabase password, confirmed twice, in the set-password panel.
-    toggleSetPasswordPanel();
-  }
 }
 
 function closeAdminDashboard() {
@@ -2537,8 +2417,6 @@ async function handleAdminLogout() {
     window._currentUser = null;
   }
 
-  // Drop the per-session device unlock so the PIN is required next time.
-  try { sessionStorage.removeItem(DEVICE_UNLOCK_KEY); } catch (_) { /* ignore */ }
 
   closeAdminDashboard();
 
