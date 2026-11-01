@@ -112,6 +112,7 @@
     if (closed) return;
     i += 1;
     typed.data = TEXT1.slice(0, i);
+    if (window.Feel && i > 0 && TEXT1.charAt(i - 1) !== ' ') window.Feel.tick('tick');   // one haptic tick per letter
     if (i < TEXT1.length) {
       later(nextChar, delays[i - 1]);
     } else {
@@ -124,6 +125,10 @@
       line1.classList.add('is-out');        // the welcome line dissolves only after it has been read
       later(function () {
         line2.classList.add('is-on');       // then "Art is Life" resolves letter by letter
+        // the same haptic typewriter for "Art is Life": one tick as each letter lands
+        for (var k = 0; k < TEXT2.length; k++) {
+          if (TEXT2.charAt(k) !== ' ') later(function () { if (window.Feel) window.Feel.tick('tick'); }, k * LETTER_STEP);
+        }
       }, LINE_FADE);
     }, READ_WELCOME);
     later(close, READ_WELCOME + LINE_FADE + LETTER_STEP * TEXT2.length + 1000 + READ_ART);

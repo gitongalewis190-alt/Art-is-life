@@ -35,6 +35,16 @@
   function esine(t) { return 0.5 - 0.5 * Math.cos(PI * t); }
   function ssm(t) { return t * t * (3 - 2 * t); }
   function r1(v) { return Math.round(v * 10) / 10; }
+  function eo(t) { return 1 - Math.pow(1 - t, 3); }
+  function unit(x, y) { var l = Math.hypot(x, y) || 1; return [x / l, y / l]; }
+
+  /* Wing beat. A second harmonic makes the stroke lopsided (a quicker down-stroke, a lazier
+     recovery) and a faint flutter keeps it from looking like a metronome. ft is flap time. */
+  function wingQ(ft, ph) {
+    var th = ft * 0.0148 + ph;
+    var q = 0.5 + 0.5 * Math.sin(th) + 0.2 * Math.sin(2 * th + 0.9) + 0.05 * Math.sin(ft / 190 + ph * 3);
+    return clamp(q, 0, 1);
+  }
 
   /* 2D affine [a b c d e f]: x' = a x + c y + e,  y' = b x + d y + f */
   function mmul(m, n) {
@@ -178,6 +188,14 @@
 
     this.pStr = el('path', { 'class': 'ml-line ml-string' }, svg);
 
+    /* the flow trail behind a free butterfly (hero only): soft dots that thin out behind it */
+    this.trailDots = null;
+    if (kind === 'view') {
+      this.gTrail = el('g', { 'class': 'ml-trail' }, svg);
+      this.trailDots = [];
+      for (var td = 0; td < 14; td++) this.trailDots.push(el('circle', { r: 0, fill: 'url(#' + id + 'gl)', cx: 0, cy: 0 }, this.gTrail));
+    }
+
     this.gBf = el('g', { 'class': 'ml-bf' }, svg);
     this.gWings = el('g', null, this.gBf);
     this.gGlow = el('g', { 'class': 'ml-glow' }, this.gWings);
@@ -196,6 +214,19 @@
   }
 
   Rig.prototype.setWidth = function (px) { this.svg.style.setProperty('--ml-w', px.toFixed(2) + 'px'); };
+
+  /* the flow trail: pts is newest-last; each dot is smaller and fainter than the one ahead of it */
+  Rig.prototype.drawTrail = function (pts, a) {
+    var dots = this.trailDots, n = dots.length, i;
+    for (i = 0; i < n; i++) {
+      var c = dots[i], p = pts[pts.length - 1 - i];
+      if (!p || a <= 0.01) { if (c.__r !== 0) { c.setAttribute('r', 0); c.__r = 0; } continue; }
+      var f = i / n;
+      c.setAttribute('cx', r1(p.x)); c.setAttribute('cy', r1(p.y));
+      c.setAttribute('r', r1(4 + 9 * (1 - f))); c.__r = 1;
+      c.style.opacity = r1(clamp(a, 0, 1) * (1 - f) * (1 - f) * 0.42);
+    }
+  };
 
   /* Draws one frame from a state object (see the *State functions below). */
   Rig.prototype.render = function (st) {
@@ -217,8 +248,8 @@
 
     /* butterfly: position, heading, size, wing flap */
     var bf = st.bf;
-    var q = 0.5 + 0.5 * Math.sin(t * 0.0156 + this.phase) + 0.18 * Math.sin(t * 0.0312 + this.phase + 0.7);
-    q = clamp(q, 0, 1) * bf.flap;
+    var q = wingQ(st.flapT != null ? st.flapT : t, this.phase) * bf.flap;
+    if (this.trailDots) this.drawTrail(st.trail || [], st.trailA || 0);
     var fl = about(mmul(mR(AXIS), mmul(mS(1, 1 - 0.36 * q), mR(-AXIS))), PIV[0], PIV[1]);
     fl = mmul(about(mR(3.2 * DEG * (2 * q - 1)), PIV[0], PIV[1]), fl);
     var Mb = mmul(mT(bf.x, bf.y), mmul(mR(bf.rot), mmul(mS(bf.sc), mT(-PIV[0], -PIV[1]))));
@@ -309,6 +340,162 @@
     return st;
   }
 
+  /* ───────────────────────── HERO: freeing, the scroll cue, then the free flight ─────────────────────────
+     Times are ms from the moment the hero opens:
+       0 - 1.5 s    the hand draws and opens; the butterfly rests on its string
+       1.8 - 3.0 s  the butterfly struggles: three tugs, each pulled back and then punching harder
+       3.0 s        the string lets go; the butterfly glows and flees up and out to the right
+       4.1 - 4.9 s  it comes back closer and larger, and melts into a hand
+       4.9 - 6.9 s  the hand gives the scroll cue (up, down, up, down; half a second each) and a toast
+       6.9 - 7.5 s  the butterfly rises out of the hand and roams the hero                              */
+  var HR = { draw: 1500, bfIn: 1100, s0: 1800, s1: 3000, f1: 4100, back1: 4900,
+             cueIn: 4500, cue0: 4900, cueStep: 500, cueEnd: 6900, roam0: 7500 };
+  var FLEE = [BOX[2] + 320, BOX[1] - 240];
+  var CENTRE = [(BOX[0] + BOX[2]) / 2, (BOX[1] + BOX[3]) / 2];
+  var SAFE = [BOX[0] + 150, BOX[1] + 130, BOX[2] - 150, BOX[3] - 130];
+
+  /* one struggle, u in 0..1: three tugs; each pulls back a little, then punches harder than the last */
+  function struggleOffset(u) {
+    var c = Math.min(u, 0.999999) * 3, k = Math.floor(c), s = c - k;
+    var A = 40 + 34 * k;
+    return s < 0.62 ? -0.35 * A * eio(s / 0.62) : lerp(-0.35 * A, A, eo((s - 0.62) / 0.38));
+  }
+
+  /* roaming: 96 combinations of shape (6) x size (4) x side (2) x tempo (2), changed abruptly */
+  var ROAM_AMP = [70, 110, 150, 185], ROAM_PER = [5200, 3300];
+  function roamCombo(i) {
+    var shape = i % 6, size = Math.floor(i / 6) % 4, side = Math.floor(i / 24) % 2 ? -1 : 1;
+    var A = ROAM_AMP[size];
+    return { shape: shape, A: A, B: A * (0.45 + 0.35 * ((size + shape) % 2)), dir: side, per: ROAM_PER[Math.floor(i / 48) % 2] };
+  }
+  function roamOffset(cb, tau) {
+    var th = 2 * PI * tau / cb.per, A = cb.A, B = cb.B, x, y, r;
+    switch (cb.shape) {
+      case 0: x = A * Math.cos(th); y = 0.5 * B * Math.sin(2 * th); break;                 // figure of eight
+      case 1: x = A * Math.sin(th); y = -B * Math.cos(th); break;                          // loop
+      case 2: x = A * 0.6366 * Math.asin(Math.sin(th)); y = 0.6 * B * Math.sin(2 * th); break; // zigzag
+      case 3: x = A * Math.sin(th); y = 0.5 * B * (1 - Math.cos(2 * th)); break;           // swoop
+      case 4: x = 0.7 * A * Math.sin(th) + 0.3 * A * Math.sin(2.9 * th); y = 0.6 * B * Math.sin(1.7 * th); break; // hover
+      default: r = A * (0.55 + 0.45 * Math.cos(0.37 * th)); x = r * Math.cos(th); y = 0.7 * r * Math.sin(th); // spiral
+    }
+    return [cb.dir * x, y];
+  }
+  function roamPlan(inst, upTo) {
+    var segs = inst.roam || (inst.roam = []);
+    while ((segs.length ? segs[segs.length - 1].end : 0) < upTo) {
+      var prev = segs[segs.length - 1], pick, guard = 0;
+      do { pick = Math.floor(Math.random() * 96); } while (prev && pick === prev.pick && guard++ < 8);
+      var cb = roamCombo(pick), start = prev ? prev.end : 0, dur = 3200 + Math.random() * 2600;
+      var c = [lerp(SAFE[0] + cb.A, SAFE[2] - cb.A, Math.random()), lerp(SAFE[1] + cb.B, SAFE[3] - cb.B, Math.random())];
+      segs.push({ pick: pick, combo: cb, start: start, end: start + dur, c: c });
+    }
+  }
+  function segPos(sg, tau) {
+    var o = roamOffset(sg.combo, tau - sg.start);
+    return [sg.c[0] + o[0], sg.c[1] + o[1]];
+  }
+  /* where the roaming butterfly's pivot is, tau ms after the roam begins */
+  function roamAt(inst, tau) {
+    roamPlan(inst, tau + 2000);
+    var segs = inst.roam, i = 0;
+    while (i < segs.length - 1 && tau >= segs[i].end) i++;
+    var sg = segs[i], cur = segPos(sg, tau);
+    var prev = i === 0 ? CENTRE : segPos(segs[i - 1], segs[i - 1].end);
+    var b = ssm(seg(tau, sg.start, sg.start + 420));                   // a short blend, then the new pattern
+    return [lerp(prev[0], cur[0], b) + 9 * Math.sin(tau / 700) + 5 * Math.sin(tau / 1130 + 1.2),
+            lerp(prev[1], cur[1], b) + 7 * Math.cos(tau / 890 + 0.4)];
+  }
+
+  function heroState(inst, t) {
+    var st = blankState(t), P = PIV, d = unit(PIV[0] - ATT[0], PIV[1] - ATT[1]);
+    var s0 = HR.s0, s1 = HR.s1, f1 = HR.f1, b1 = HR.back1;
+    st.penHand = esine(seg(t, 0, HR.draw)) * ART.handPen;
+    st.handAlpha = ssm(seg(t, 0, 300));
+    st.handColour = ssm(seg(t, 250, 1100));
+    st.open = eio(seg(t, 500, 1500));
+    st.penWing = esine(seg(t, 800, 1700)) * ART.wingPen;
+
+    /* the string: drawn in, tightens while the butterfly tugs, then snaps away */
+    var strIn = esine(seg(t, 500, 1600)), snap = ssm(seg(t, s1, s1 + 260));
+    st.str.a = 0; st.str.b = strIn; st.str.loose = 0;
+    st.str.alpha = strIn > 0 ? 1 - snap : 0;
+    st.str.amp = 2.6 + 2.4 * seg(t, s0, s1);
+
+    var bob = 2.6 * Math.sin(t / 940) * ssm(seg(t, HR.bfIn + 200, 1800));
+    var px = P[0], py = P[1] + bob, sc = 1, rot = 2.5 * DEG * Math.sin(t / 1500), rate = 1;
+    if (t < s0) {
+      /* resting on the string */
+    } else if (t < s1) {
+      var u = seg(t, s0, s1), off = struggleOffset(u);
+      px = P[0] + d[0] * off; py = P[1] + d[1] * off + 3 * Math.sin(t / 37);
+      rate = 1 + 0.9 * u;
+    } else if (t < f1) {
+      var F = Math.pow(seg(t, s1, f1), 2.2), off1 = struggleOffset(1);
+      var x0 = P[0] + d[0] * off1, y0 = P[1] + d[1] * off1;
+      px = lerp(x0, FLEE[0], F); py = lerp(y0, FLEE[1], F);
+      rot = clamp((Math.atan2(FLEE[1] - y0, FLEE[0] - x0) - AXIS) * 0.5, -0.9, 0.9);
+      rate = 2.2;
+    } else if (t < b1) {
+      var e = eio(seg(t, f1, b1)), arc = Math.sin(PI * e) * -90;
+      px = lerp(FLEE[0], CENTRE[0], e) + arc * 0.4; py = lerp(FLEE[1], CENTRE[1], e) + arc;
+      sc = lerp(1, 1.7, ssm(seg(t, f1 + 300, b1)));
+      rate = 1.6;
+    } else if (t < HR.cueEnd) {
+      px = CENTRE[0]; py = CENTRE[1]; sc = 1.7;
+    } else if (t < HR.roam0) {
+      px = CENTRE[0]; py = CENTRE[1]; sc = lerp(1.7, 1, ssm(seg(t, HR.cueEnd, HR.roam0)));
+    } else {
+      var tau = t - HR.roam0, rp = roamAt(inst, tau), h0 = roamAt(inst, tau - 12), h1 = roamAt(inst, tau + 12);
+      var hd = Math.atan2(h1[1] - h0[1], h1[0] - h0[0]);
+      px = rp[0]; py = rp[1];
+      rot = lerp(rot, clamp((hd - AXIS) * 0.5, -0.9, 0.9), ssm(seg(t, HR.roam0, HR.roam0 + 600)));
+    }
+    st.bf.x = px; st.bf.y = py; st.bf.sc = sc; st.bf.rot = rot;
+    st.flapRate = rate;
+
+    /* visibility: it appears on the string, melts into the hand, and rises again out of it */
+    var appear = ssm(seg(t, HR.bfIn, HR.bfIn + 400));
+    var melt = 1 - ssm(seg(t, b1 + 100, b1 + 600));
+    st.bf.alpha = t < HR.cueEnd ? appear * melt : ssm(seg(t, HR.cueEnd, HR.cueEnd + 300));
+    st.bf.flap = ssm(seg(t, HR.bfIn + 150, 1800));
+
+    /* glow: a first flash at release, then a steady warm glow; the trail flows behind it */
+    var vBase = lerp(0.04, 0.5, ssm(seg(t, 1300, 2600))) + 0.22 * seg(t, s0, s1);
+    var rel = seg(t, s1, s1 + 1500);
+    st.v = t < s1 ? vBase : (t < HR.roam0 ? 0.5 + 0.5 * Math.pow(1 - rel, 2) : 0.5 + 0.06 * Math.sin(t / 900));
+    var trailIn = ssm(seg(t, s1 + 120, s1 + 700)), trailOut = 1 - ssm(seg(t, b1 - 500, b1));
+    st.trailA = t < b1 ? trailIn * trailOut : (t >= HR.cueEnd ? ssm(seg(t, HR.cueEnd + 200, HR.roam0 + 500)) : 0);
+    return st;
+  }
+
+  /* the scroll cue: a hand that swipes up and down, the page nudging with it, a toast, and a
+     gentle retreat as soon as the visitor touches the page */
+  function makeCue(host) {
+    var el = document.createElement('div');
+    el.className = 'ml-cue';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<svg class="ml-cue-hand" viewBox="0 0 64 64" focusable="false">' +
+      '<g fill="currentColor"><rect x="25" y="3" width="11" height="32" rx="5.5"/>' +
+      '<rect x="37" y="14" width="10" height="24" rx="5"/><rect x="17" y="19" width="9" height="20" rx="4.5"/>' +
+      '<rect x="43" y="23" width="8" height="17" rx="4"/><rect x="5" y="31" width="13" height="9" rx="4.5"/>' +
+      '<rect x="14" y="28" width="36" height="28" rx="14"/></g></svg>';
+    host.appendChild(el);
+    return el;
+  }
+  function cueSeen() { try { return sessionStorage.getItem('ail_cue_seen') === '1'; } catch (_) { return false; } }
+  function markCueSeen() { try { sessionStorage.setItem('ail_cue_seen', '1'); } catch (_) { /* private mode */ } }
+  function fx(v) { return Math.round(clamp(v, 0, 1) * 1000) / 1000; }
+
+  /* a visitor's touch, wheel, key or press during the cue retreats it */
+  function cutCues() {
+    views.forEach(function (v) {
+      if (v.cue && v.cueStarted && !v.cueDone && v.cutAt < 0) v.cutAt = v.lastMs || 0;
+    });
+  }
+  ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (ev) {
+    window.addEventListener(ev, cutCues, { passive: true, capture: true });
+  });
+
   function staticState(inst) {
     var st = blankState(0);
     st.waveHand = 0; st.waveWing = 0; st.breath = 0; st.v = inst.mode === 'hero' ? 1 : 0.6;
@@ -324,6 +511,9 @@
     host.appendChild(this.rig.svg);
     host.classList.add('ml-host');
     this.t0 = 0; this.started = false; this.visible = true; this.lastDraw = 0;
+    this.flapT = 0; this.lastT = -1; this.lastMs = 0; this.hist = []; this.roam = null;
+    this.cue = mode === 'hero' ? makeCue(host) : null; this.cueStarted = false; this.cueDone = false;
+    this.cueK = -1; this.cuePage = 0; this.cueBase = 0; this.cutAt = -1;
     this.still = reduced();
     var self = this;
     this.measure();
@@ -353,10 +543,70 @@
     var gap = this.mode === 'ph' ? 33 : 0;
     if (gap && t - this.lastDraw < gap) return;
     this.lastDraw = t;
-    this.rig.render(viewState(this, t - this.t0));
+    var ms = t - this.t0;
+    this.lastMs = ms;
+    if (this.mode !== 'hero') { this.rig.render(viewState(this, ms)); return; }
+    var st = heroState(this, ms);
+    var dt = this.lastT < 0 ? 16 : Math.min(64, t - this.lastT);
+    this.lastT = t;
+    this.flapT += dt * st.flapRate;
+    st.flapT = this.flapT;
+    if (st.trailA > 0.01) { this.hist.push({ x: st.bf.x, y: st.bf.y }); if (this.hist.length > 14) this.hist.shift(); }
+    else this.hist.length = 0;
+    st.trail = this.hist;
+    st.trailA = st.trailA || 0;
+    this.rig.render(st);
+    this.cueTick(ms);
+  };
+
+  View.prototype.cueTick = function (t) {
+    var el = this.cue;
+    if (!el || this.cueDone) return;
+    if (!this.cueStarted) {
+      if (t < HR.cueIn) return;
+      this.cueStarted = true;
+      if (window.scrollY > 4 || cueSeen()) { this.cueDone = true; el.style.opacity = '0'; return; }
+      markCueSeen();
+      var rr = this.rig.svg.getBoundingClientRect(), hr = this.host.getBoundingClientRect();
+      el.style.left = (rr.left - hr.left + rr.width / 2) + 'px';
+      el.style.top = (rr.top - hr.top + rr.height / 2) + 'px';
+      this.cueBase = window.scrollY || 0;
+      document.documentElement.style.scrollBehavior = 'auto';
+    }
+    var vis = ssm(seg(t, HR.cueIn, HR.cue0)) * (1 - ssm(seg(t, HR.cueEnd, HR.cueEnd + 350)));
+    if (this.cutAt >= 0) {                                   // the visitor touched the page: retreat
+      var out = 1 - ssm(seg(t, this.cutAt, this.cutAt + 320));
+      el.style.opacity = String(fx(out));
+      el.style.transform = 'translate(-50%,-50%) scale(' + fx(0.84 + 0.16 * out) + ')';
+      if (t >= this.cutAt + 320) this.finishCue();
+      return;
+    }
+    var y = 0, page = 0;
+    if (t >= HR.cue0 && t < HR.cueEnd) {
+      var k = Math.floor((t - HR.cue0) / HR.cueStep), up = k % 2 === 0;
+      var e = eio(seg(t, HR.cue0 + k * HR.cueStep, HR.cue0 + (k + 1) * HR.cueStep));
+      y = up ? lerp(14, -14, e) : lerp(-14, 14, e);
+      page = up ? 64 * e : 64 * (1 - e);
+      if (k !== this.cueK) { this.cueK = k; if (window.Feel) window.Feel.tick('tick'); }
+      if (!this.toasted) {
+        this.toasted = true;
+        if (typeof window.showToast === 'function') window.showToast('Scroll up for contents and more', 2000);
+      }
+    }
+    if (page !== this.cuePage) { window.scrollTo(0, this.cueBase + page); this.cuePage = page; }
+    el.style.opacity = String(fx(vis));
+    el.style.transform = 'translate(-50%,-50%) translateY(' + r1(y) + 'px) scale(' + fx(0.84 + 0.16 * vis) + ')';
+    if (t >= HR.cueEnd + 350) this.finishCue();
+  };
+
+  View.prototype.finishCue = function () {
+    this.cueDone = true;
+    document.documentElement.style.scrollBehavior = '';
+    if (this.cue) this.cue.style.opacity = '0';
   };
   View.prototype.destroy = function () {
     if (this.ro) this.ro.disconnect();
+    if (this.cue && this.cue.parentNode) this.cue.parentNode.removeChild(this.cue);
     if (this.io) this.io.disconnect();
     if (this.rig.svg.parentNode) this.rig.svg.parentNode.removeChild(this.rig.svg);
     this.host.classList.remove('ml-host');
@@ -549,7 +799,7 @@
     if (!this.freeze && tb >= 1500) this.freeze = { sB: sB, tb: tb, off: null };
     var rig = this.rig;
     var Mb = mmul(mT(st.bf.x, st.bf.y), mmul(mR(st.bf.rot), mmul(mS(st.bf.sc), mT(-PIV[0], -PIV[1]))));
-    var q = clamp(0.5 + 0.5 * Math.sin(t * 0.0156 + rig.phase) + 0.18 * Math.sin(t * 0.0312 + rig.phase + 0.7), 0, 1);
+    var q = wingQ(t, rig.phase);
     var fl = about(mmul(mR(AXIS), mmul(mS(1, 1 - 0.36 * q), mR(-AXIS))), PIV[0], PIV[1]);
     var B = mapply(mmul(Mb, fl), ATT[0], ATT[1]);
     var offLive = [B[0] - p.x, B[1] - p.y];

@@ -218,7 +218,7 @@ let toastTimer;
 
 /* Toasts are plain, calm and icon-free: any emoji/symbol in a message is dropped and turned
    into a small coloured dot (green = done, amber = check this, red = problem). */
-function showToast(msg) {
+function showToast(msg, ms) {
 
   const t = document.getElementById('toast');
   if (!t) return;
@@ -239,7 +239,7 @@ function showToast(msg) {
 
   clearTimeout(toastTimer);
 
-  toastTimer = setTimeout(() => t.classList.remove('show'), Math.min(4200, 2300 + text.length * 28));
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms || Math.min(4200, 2300 + text.length * 28));
 
 }
 
@@ -495,6 +495,7 @@ function renderGallery(filter) {
         </button>
 
       </div>
+      <div class="art-sep" aria-hidden="true"></div>
 
     </div>`;
 
@@ -554,6 +555,8 @@ function cssAttrValue(value) {
 function triggerHeartBounce(id) {
   const btn = document.querySelector(`.like-btn[onclick*="'${cssAttrValue(id)}'"]`);
   if (!btn) return;
+  // The water-drop sound, the haptic, the 1.5 s heart and the "Thank you" all start together (js/feel.js).
+  if (window.Feel) window.Feel.like(btn);
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce) return;
 
@@ -576,7 +579,7 @@ function triggerHeartBounce(id) {
     burst.appendChild(dot);
   }
   document.body.appendChild(burst);
-  setTimeout(() => burst.remove(), 800);
+  setTimeout(() => burst.remove(), 1500);
 }
 
 /* Likes work the way X does: the heart fills at once, the count moves at once (with a small
@@ -715,6 +718,7 @@ function toggleStoryLike() {
     icon.setAttribute('stroke', '#e05252');
 
     icon.style.animation = 'heartBeat 0.6s ease';
+    if (window.Feel) window.Feel.like(btn);
 
     setTimeout(() => icon.style.animation = '', 600);
 
@@ -738,7 +742,7 @@ function toggleStoryLike() {
 
 function openStoryComments() {
 
-  currentCommentTarget = { id: 'story', title: 'The Untold Canvas -- My Origin' };
+  currentCommentTarget = { id: 'story', title: 'The Untold Canvas: My Origin' };
 
   openCommentModal();
 
@@ -1058,7 +1062,7 @@ function openOrder(id) {
 
   currentOrderIndex = String(id);
 
-  document.getElementById('orderArtworkName').textContent = `🖼️ ${art.title} -- ${art.price}`;
+  document.getElementById('orderArtworkName').textContent = `🖼️ ${art.title}, ${art.price}`;
 
   ['orderName','orderAddress','orderPhone'].forEach(f => document.getElementById(f).value = '');
 
@@ -1144,13 +1148,13 @@ function sendOrder() {
 
     if (!art) { showToast('⚠️ That artwork is no longer available'); return; }
 
-    artworkLine = `🖼️ ${art.title} -- ${art.price}`;
+    artworkLine = `🖼️ ${art.title}, ${art.price}`;
 
     totalPrice = Number(art.priceNum) || 0;
 
   } else {
 
-    artworkLine = cart.map(c => `🖼️ ${c.title} -- ${c.price} × ${c.qty||1}`).join('\n');
+    artworkLine = cart.map(c => `🖼️ ${c.title}, ${c.price} × ${c.qty||1}`).join('\n');
 
     totalPrice = cart.reduce((s,c) => s + ((c.priceNum||0)*(c.qty||1)), 0);
 
@@ -1168,7 +1172,7 @@ function sendOrder() {
 
     const art = currentOrderIndex !== null ? artworks.find(a=>String(a.id)===String(currentOrderIndex)) : null;
 
-    const subj = art ? `Art Order -- ${art.title}` : `Art Order -- ${cart.length} items`;
+    const subj = art ? `Art Order: ${art.title}` : `Art Order: ${cart.length} items`;
 
     window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent(subj)}&body=${enc}`, '_blank', 'noopener,noreferrer');
 
@@ -1285,14 +1289,14 @@ function sendCommission() {
 
   if(!name||!desc){showToast('⚠️ Please fill in your name and describe your vision');return;}
 
-  const msg=`🎨 COMMISSION REQUEST -- ART IS LIFE FOUNDATION\n\nHello Levis!\n\nI hope this message finds you well. I'm reaching out because I'm very interested in commissioning a beautiful custom artwork from you.\n\n═══════════════════════════════════════\nMY VISION & DETAILS:\n═══════════════════════════════════════\n\nName: ${name}\n${phone?`Contact: ${phone}\n`:''}\n${address?`Address: ${address}\n`:''}\nDescription of Vision:\n${desc}\n\nStyle & Mood: ${mood||'Open to artist suggestions'}\nPreferred Size: ${size||'To be discussed'}\nColor Preferences: ${colors||"I'm open to your artistic direction"}\n\n═══════════════════════════════════════\n\nI'm excited to collaborate with you on this project and would love to discuss timeline, pricing, and any specific details. Please feel free to reach out at your earliest convenience.\n\nThank you for considering my commission request. I look forward to creating something special together!\n\nWarm regards,\n${name}`;
+  const msg=`🎨 COMMISSION REQUEST: ART IS LIFE FOUNDATION\n\nHello Levis!\n\nI hope this message finds you well. I'm reaching out because I'm very interested in commissioning a beautiful custom artwork from you.\n\n═══════════════════════════════════════\nMY VISION & DETAILS:\n═══════════════════════════════════════\n\nName: ${name}\n${phone?`Contact: ${phone}\n`:''}\n${address?`Address: ${address}\n`:''}\nDescription of Vision:\n${desc}\n\nStyle & Mood: ${mood||'Open to artist suggestions'}\nPreferred Size: ${size||'To be discussed'}\nColor Preferences: ${colors||"I'm open to your artistic direction"}\n\n═══════════════════════════════════════\n\nI'm excited to collaborate with you on this project and would love to discuss timeline, pricing, and any specific details. Please feel free to reach out at your earliest convenience.\n\nThank you for considering my commission request. I look forward to creating something special together!\n\nWarm regards,\n${name}`;
 
 
   const enc=encodeURIComponent(msg);
 
   if(selectedCommissionChannel==='wa') window.open(`https://wa.me/${CONTACT.waNum}?text=${enc}`,'_blank','noopener,noreferrer');
 
-  else if(selectedCommissionChannel==='email') window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent('Commission Request -- '+name)}&body=${enc}`,'_blank','noopener,noreferrer');
+  else if(selectedCommissionChannel==='email') window.open(`mailto:${CONTACT.email}?subject=${encodeURIComponent('Commission Request: '+name)}&body=${enc}`,'_blank','noopener,noreferrer');
 
   else window.open(`sms:${CONTACT.phone}?body=${enc}`,'_blank','noopener,noreferrer');
 
@@ -1340,45 +1344,22 @@ function closeAccessDenied() {
 
 }
 
-/* ══ DEVICE PIN -- an optional local screen-lock, NEVER a privilege ═══════
-   Admin rights come exclusively from a verified Firebase session whose
-   users/{uid}.role is admin/crown (enforced by firestore.rules). This PIN
-   only stops a passer-by using an already-signed-in browser, so clearing it
-   cannot grant access to any data.                                        */
+/* ══ CONSOLE LOCK -- optional, set by the admin, never a privilege ═══════
+   Admin rights come exclusively from a verified Supabase session whose profiles.role is
+   admin/crown (enforced by the row-level policies). The lock only asks the signed-in admin to
+   prove the Supabase password again on this device before the console opens. Supabase does the
+   checking; no password or hash is kept in the browser.                                       */
 
-const ADMIN_PW_ITER = 3000;
+const CONSOLE_LOCK_KEY = 'ail_console_lock';
 const DEVICE_UNLOCK_KEY = 'ail_device_unlocked';
 
-async function sha256Hex(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
+/* Earlier builds stored a local PIN and a lock flag. Those keys are removed once, here, so a
+   stale value can never lock the console by accident. */
+['ail_admin_pw_salt', 'ail_admin_pw_hash', 'ail_require_login'].forEach((key) => store.remove(key));
 
-async function hashAdminPassword(password, salt) {
-  let h = salt + ':' + password;
-  for (let i = 0; i < ADMIN_PW_ITER; i++) h = await sha256Hex(h + salt);
-  return h;
-}
-
-/** Constant-time-ish comparison so timing cannot leak the stored hash. */
-function constantTimeEqual(a, b) {
-  const left = String(a || ''), right = String(b || '');
-  if (left.length !== right.length) return false;
-  let diff = 0;
-  for (let i = 0; i < left.length; i++) diff |= left.charCodeAt(i) ^ right.charCodeAt(i);
-  return diff === 0;
-}
-
-async function verifyAdminPassword(password) {
-  const salt = store.get('ail_admin_pw_salt', null);
-  const hash = store.get('ail_admin_pw_hash', null);
-  if (!salt || !hash || !password) return false;
-  return constantTimeEqual(await hashAdminPassword(password, salt), hash);
-}
-
-/* Device PIN lock is switched off for now (to be set up later). Sign-in goes straight to the dashboard. */
+/** The lock is off unless the admin turns it on. */
 function deviceLockArmed() {
-  return false;
+  return store.get(CONSOLE_LOCK_KEY, '0') === '1';
 }
 
 function deviceUnlocked() {
@@ -1394,10 +1375,26 @@ function toggleSetPasswordPanel() {
   if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 
+/** Asks Supabase whether this is the signed-in admin's password. */
+async function verifySupabasePassword(password) {
+  const email = window._currentUser && window._currentUser.email;
+  if (!email || !password || typeof window.firebaseAdminLogin !== 'function') return false;
+  const res = await window.firebaseAdminLogin(email, password);
+  return !!(res && res.success);
+}
+
+function updateLockButton() {
+  const lockBtn = document.getElementById('admLockBtn');
+  if (!lockBtn) return;
+  const locked = deviceLockArmed();
+  lockBtn.textContent = locked ? 'Console locked' : 'Console unlocked';
+  lockBtn.style.background = locked ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.12)';
+}
+
 async function saveAdminPassword() {
-  // Setting a PIN is an admin action, not a way to become one.
+  // Locking is an admin action, not a way to become one.
   if (!window._firebaseAdmin) {
-    showToast('⛔ Sign in with your admin account first.');
+    showToast('Sign in with your admin account first.');
     return;
   }
 
@@ -1406,45 +1403,34 @@ async function saveAdminPassword() {
   const msgEl = document.getElementById('admSetPwMsg');
   const say = (msg, colour) => { if (msgEl) { msgEl.textContent = msg; msgEl.style.color = colour; } };
 
-  if (pw1.length < 6) { say('Use at least 6 characters.', 'var(--adm-red)'); return; }
-  if (pw1 !== pw2)    { say('Passwords do not match.', 'var(--adm-red)'); return; }
+  if (!pw1) { say('Enter your Supabase password.', 'var(--adm-red)'); return; }
+  if (pw1 !== pw2) { say('Passwords do not match.', 'var(--adm-red)'); return; }
 
-  say('Hashing…', 'var(--adm-muted)');
-  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-  const salt = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  const hash = await hashAdminPassword(pw1, salt);
+  say('Checking with Supabase...', 'var(--adm-muted)');
+  const ok = await verifySupabasePassword(pw1);
+  if (!ok) { say('That is not your Supabase password.', 'var(--adm-red)'); return; }
 
-  store.set('ail_admin_pw_salt', salt);
-  store.set('ail_admin_pw_hash', hash);
-  store.set('ail_require_login', '1');
+  store.set(CONSOLE_LOCK_KEY, '1');
   markDeviceUnlocked();
 
   document.getElementById('admNewPw').value = '';
   document.getElementById('admNewPw2').value = '';
-  say('✓ PIN set -- the console now locks on this device.', 'var(--adm-emerald,#34d399)');
-
-  const lockBtn = document.getElementById('admLockBtn');
-  if (lockBtn) { lockBtn.textContent = '🔒 Console Locked'; lockBtn.style.background = 'rgba(251,113,133,0.15)'; }
-  showToast('🔑 PIN set -- console locked on this device');
+  say('Console locked. Your Supabase password unlocks it.', 'var(--adm-emerald,#34d399)');
+  updateLockButton();
+  showToast('Console locked on this device');
 }
 
-/** Remove the local screen-lock. Does NOT sign out or grant any access. */
+/** Removes the console lock on this device. Does NOT sign out or grant any access. */
 function clearDeviceLock() {
-  store.remove('ail_admin_pw_salt');
-  store.remove('ail_admin_pw_hash');
-  store.remove('ail_require_login');
+  store.remove(CONSOLE_LOCK_KEY);
   try { sessionStorage.removeItem(DEVICE_UNLOCK_KEY); } catch (_) { /* ignore */ }
 }
 
-/* The old console PIN and lock are retired for good: wipe whatever an earlier version left on this
-   device. The PIN/lock functions stay in place for when the lock is set up again. */
-try { clearDeviceLock(); } catch (_) { /* storage blocked -- nothing to clear */ }
-
 function resetAdminLock() {
-  if (!confirm('Remove the console PIN from this device?\n\nThis only clears the local screen-lock -- you will still need to sign in with your admin account.')) return;
+  if (!confirm('Remove the console lock from this device?\n\nYou will still need to be signed in with your admin account.')) return;
   clearDeviceLock();
   closeAdminLogin();
-  showToast('🔓 Device PIN cleared -- sign in with your admin account.');
+  showToast('Console lock removed on this device');
   openAdminLogin();
 }
 
@@ -1458,7 +1444,7 @@ function setLoginMode(mode) {
   const subtitle = document.getElementById('adminLoginSubtitle');
   if (subtitle) {
     subtitle.textContent = pinOnly
-      ? 'Enter your console PIN to unlock this device.'
+      ? 'Enter your Supabase password to unlock the console.'
       : 'Sign in with the admin account that holds an admin or crown role.';
   }
   const btn = document.getElementById('adminLoginBtn');
@@ -1555,7 +1541,7 @@ async function sendAdminPasswordReset() {
   const res = await window.firebaseResetPassword(email);
   if (res.success) {
     if (errEl) errEl.textContent = '';
-    showToast('📧 Reset link sent to ' + email + ' -- check your inbox and spam.');
+    showToast('📧 Reset link sent to ' + email + '. Check your inbox and spam.');
   } else if (errEl) {
     errEl.textContent = res.error || 'Could not send the reset email.';
   }
@@ -1589,9 +1575,10 @@ async function handleAdminLogin() {
     return;
   }
 
-  const pinStep = false;
+  const emailGroup = document.getElementById('adminEmailGroup');
+  const pinStep = !!emailGroup && emailGroup.style.display === 'none';
 
-  if (!password) { fail(pinStep ? 'Enter your console PIN.' : 'Enter your password.'); return; }
+  if (!password) { fail(pinStep ? 'Enter your Supabase password.' : 'Enter your password.'); return; }
   if (!pinStep && !email) { fail('Enter your admin email and password.'); return; }
 
   const originalLabel = loginBtn ? loginBtn.innerHTML : '';
@@ -1604,9 +1591,9 @@ async function handleAdminLogin() {
   let message = '';
 
   if (pinStep) {
-    ok = await verifyAdminPassword(password);
+    ok = await verifySupabasePassword(password);
     if (ok) markDeviceUnlocked();
-    else message = 'Incorrect PIN.';
+    else message = 'Wrong password.';
   } else if (typeof window.firebaseAdminLogin !== 'function') {
     message = 'Firebase is unavailable. Check your connection and reload the page.';
   } else {
@@ -1672,12 +1659,7 @@ function openAdminDashboard() {
   loadDashboardStats();
 
   // Show lock status
-  const locked = deviceLockArmed();
-  const lockBtn = document.getElementById('admLockBtn');
-  if (lockBtn) {
-    lockBtn.textContent = locked ? '🔒 Console Locked' : '🔓 Console Unlocked';
-    lockBtn.style.background = locked ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.12)';
-  }
+  updateLockButton();
 
   renderOverviewArtGrid();
 
@@ -1688,26 +1670,18 @@ function openAdminDashboard() {
 }
 
 function toggleAdminLock() {
-  showToast('🔓 Console lock is off for now.');
-  return;
   if (!window._firebaseAdmin) {
-    showToast('⛔ Sign in with your admin account first.');
+    showToast('Sign in with your admin account first.');
     return;
   }
-  const current = deviceLockArmed();
-  if (!current && !store.get('ail_admin_pw_hash', null)) {
-    showToast('🔑 Set a PIN first, then lock the console.');
-    return;
+  if (deviceLockArmed()) {
+    clearDeviceLock();
+    updateLockButton();
+    showToast('Console unlocked on this device');
+  } else {
+    // Locking asks for the Supabase password, confirmed twice, in the set-password panel.
+    toggleSetPasswordPanel();
   }
-  store.set('ail_require_login', current ? '0' : '1');
-  const locked = !current;
-  if (locked) markDeviceUnlocked(); // an explicit lock toggles the current session too
-  const lockBtn = document.getElementById('admLockBtn');
-  if (lockBtn) {
-    lockBtn.textContent = locked ? '🔒 Console Locked' : '🔓 Console Unlocked';
-    lockBtn.style.background = locked ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.12)';
-  }
-  showToast(locked ? '🔒 Login required on next open' : '🔓 Direct access enabled');
 }
 
 function closeAdminDashboard() {

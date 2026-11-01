@@ -7,7 +7,7 @@
      • cross-origin (Firebase, gstatic, YouTube, GA) -> always network
    Bump CACHE on releases to retire old assets.
    ═══════════════════════════════════════════════════════════════════════ */
-const CACHE = "ail-v18";
+const CACHE = "ail-v19";
 const SHELL = [
   "./",
   "./index.html",
@@ -16,11 +16,13 @@ const SHELL = [
   "./css/glass.css",
   "./css/layouts.css",
   "./css/monoline.css",
+  "./css/feel.css",
   "./js/sanitize.js",
   "./js/app.js",
   "./js/splash.js",
   "./js/monoline-art.js",
   "./js/monoline.js",
+  "./js/feel.js",
   "./js/pwa.js",
   "./js/console.js",
   "./js/services/firebase.js",

@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   daraja.js — Safaricom Daraja (M-Pesa) integration service  [Phase 1 STUB]
+   daraja.js -- Safaricom Daraja (M-Pesa) integration service  [Phase 1 STUB]
    ───────────────────────────────────────────────────────────────────────
    WHY THIS IS A STUB:
    The M-Pesa STK Push flow requires your Daraja Consumer Key, Consumer
-   Secret and Lipa-na-M-Pesa Passkey. Those are SECRETS — they must NEVER
+   Secret and Lipa-na-M-Pesa Passkey. Those are SECRETS -- they must NEVER
    live in front-end code, because anything shipped to the browser is
    readable by every visitor. They belong on a server you control
    (a small Node/Express endpoint, a Firebase Cloud Function, or Apps
@@ -11,7 +11,7 @@
    the donation, validates it, and POSTs to YOUR backend endpoint, which
    holds the secrets and talks to Safaricom.
    ───────────────────────────────────────────────────────────────────────
-   TO GO LIVE (no code changes needed here — just configuration):
+   TO GO LIVE (no code changes needed here -- just configuration):
      window.SITE_CONFIG.daraja = {
        endpoint: 'https://art-is-life-iota.vercel.app/api/mpesa',
        businessName: 'Art is Life Foundation'
@@ -27,7 +27,7 @@
      3. Handle the async C2B callback to confirm payment.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/** Endpoints retired during the M-Pesa consolidation — never trust these even if saved. */
+/** Endpoints retired during the M-Pesa consolidation -- never trust these even if saved. */
 const STALE_ENDPOINT = /\/(api\/)?stkpush\/?$/i;
 
 const Daraja = {
@@ -57,7 +57,7 @@ const Daraja = {
     return p;
   },
 
-  /** KES 200,000 per donation — mirrors the server-side cap in api/mpesa.js. */
+  /** KES 200,000 per donation -- mirrors the server-side cap in api/mpesa.js. */
   MAX_AMOUNT: 200000,
 
   validate(phone, amount) {
@@ -75,7 +75,7 @@ const Daraja = {
 
   /**
    * Initiate an STK Push by delegating to YOUR secure backend.
-   * Returns { ok, message } — never throws into the UI.
+   * Returns { ok, message } -- never throws into the UI.
    */
   async initiateSTKPush({ phone, amount, reference = 'Donation' }) {
     const v = this.validate(phone, amount);
@@ -108,7 +108,7 @@ const Daraja = {
       if (typeof window.track === 'function') window.track('donation_stk_requested', { amount: v.amount });
       return {
         ok: true,
-        message: data.CustomerMessage || 'Check your phone — enter your M-Pesa PIN to complete the donation. Thank you!'
+        message: data.CustomerMessage || 'Check your phone, enter your M-Pesa PIN to complete the donation. Thank you!'
       };
     } catch (err) {
       const aborted = err && err.name === 'AbortError';
@@ -169,5 +169,5 @@ window.sendDonation = async function () {
 
   if (btn) btn.disabled = false;
   setNote(result.message, result.ok ? 'ok' : (result.pending ? '' : 'err'));
-  if (result.ok && typeof window.showToast === 'function') window.showToast('STK push sent — check your phone 📱');
+  if (result.ok && typeof window.showToast === 'function') window.showToast('STK push sent. Check your phone 📱');
 };

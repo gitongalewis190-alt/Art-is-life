@@ -21,11 +21,13 @@ css/
   main.css                  # Base styles
   glass.css                 # Spatial/glassmorphism layer + splash + console/studio
   layouts.css               # 7 switchable structural layout presets
+  feel.css                  # Rounded press-able buttons, price tags, scroll cue, like celebration
 js/
   sanitize.js               # Output escaping + URL validation (loaded first)
   app.js                    # App logic
   splash.js                 # 4-phase launch sequence
   console.js                # Control Console UI (theme/layout/CMS)
+  feel.js                   # Touch feel: haptics, water-drop sound, like celebration, scroll ticks
   studio.js                 # Studio wing (YouTube videos + archive) [module]
   services/
     analytics.js            # Google Analytics
@@ -80,7 +82,7 @@ The browser is treated as untrusted. Every privilege is enforced server-side.
 | Concern | Control |
 | — | — |
 | Admin access | Verified Firebase email/password session **plus** `users/{uid}.role` = `admin`/`crown`. The UI mirrors the role; `firestore.rules` enforces it. |
-| Local console PIN | Optional **screen-lock only**. It never grants access, can be cleared by anyone, and protects no data. |
+| Console lock | Optional, off by default. When an admin turns it on, the console asks for that admin’s **Supabase password** (checked by Supabase, never stored in the browser) before it opens on that device. It never grants access. |
 | Stored XSS | All remote/CMS data is escaped at render time (`js/sanitize.js`), IDs are escaped for inline handlers, and URLs are scheme-checked (`javascript:`, `data:` blocked). |
 | Write forgery | Rules pin document shape, required fields, server timestamps and allowed status/role values. Visitors cannot mark their own order paid or promote themselves. |
 | Likes | Signed-in only, one document per `{uid}_{artworkId}`; anonymous clients cannot write. |
