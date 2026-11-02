@@ -24,6 +24,9 @@
   function reduced() { return !!(reduceMq && reduceMq.matches); }
 
   /* ───────────── haptics ───────────── */
+  /* iOS 18+ Safari plays its Taptic tick whenever a switch-style checkbox is toggled by a real
+     gesture. The checkbox must stay in the render tree (visually hidden, not display:none), and
+     clicking its wrapping <label> toggles it, which is what the tick hangs off. */
   var switchLabel = null;
   function iosSwitch() {
     if (switchLabel) return switchLabel;

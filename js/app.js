@@ -1392,7 +1392,16 @@ function showAdminLoginModal() {
    openAdminLogin() recurse forever. */
 let _authWaitExpired = false;
 
+/* false: the gear opens the control area directly, with no sign-in step.
+   true: restores the password gate. Data writes are still enforced by the backend rules. */
+const ADMIN_SIGN_IN_REQUIRED = false;
+
 function openAdminLogin() {
+  if (!ADMIN_SIGN_IN_REQUIRED) {
+    closeAdminLogin();
+    openAdminDashboard();
+    return;
+  }
   // Firebase restores a persisted session asynchronously on load. Wait for
   // that decision instead of showing the sign-in form to an admin.
   if (window._auth && !window._authReady && !_authWaitExpired) {
@@ -1529,8 +1538,8 @@ async function handleAdminLogin() {
 /* ══ ADMIN DASHBOARD ══ */
 
 function openAdminDashboard() {
-  // Hard gate: no verified Firebase admin session → no dashboard.
-  if (!window._firebaseAdmin || !window._currentRole) {
+  // Hard gate: no verified Firebase admin session → no dashboard (only when sign-in is required).
+  if (ADMIN_SIGN_IN_REQUIRED && (!window._firebaseAdmin || !window._currentRole)) {
     setLoginMode();
     showAdminLoginModal();
     return;
