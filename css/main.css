@@ -199,6 +199,8 @@ header{position:sticky;top:0;z-index:900;background:rgba(255,254,249,0.95);backd
 #adminPanelTrigger:hover{background:var(--gold-subtle);border-color:var(--gold);}
 
 #adminPanelTrigger.active{background:rgba(201,168,76,0.18);border-color:var(--gold);}
+/* PUBLIC BUILD: admin trigger hidden from visitors. Markup, JS and listeners are untouched. To re-enable, delete this line. */
+#adminPanelTrigger{display:none !important;}
 
 .cart-btn{display:flex;align-items:center;gap:7px;padding:8px 16px;border:1px solid rgba(201,168,76,0.35);border-radius:50px;background:transparent;font-size:0.82rem;font-weight:600;color:var(--ink);transition:all 0.3s;flex-shrink:0;}
 
