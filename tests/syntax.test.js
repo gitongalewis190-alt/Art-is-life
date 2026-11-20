@@ -18,11 +18,13 @@ const CLASSIC = [
   "js/monoline-art.js",
   "js/monoline.js",
   "js/pwa.js",
+  "js/visit.js",
   "js/console.js",
   "js/arten.js",
   "js/services/analytics.js",
   "service-worker.js",
   "api/mpesa.js",
+  "api/visit.js",
   "functions/index.js"
 ];
 

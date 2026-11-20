@@ -90,6 +90,18 @@ test("admin privileges are only granted by the Firebase role check", () => {
   assert.match(firebase, /isAdminRole\(result\.role\)/);
 });
 
+test("visitor alerts never put the Telegram token in the browser", () => {
+  const html = read("index.html");
+  const visit = read("js/visit.js");
+  const api = read("api/visit.js");
+  assert.match(html, /src="js\/visit\.js"/);
+  assert.match(visit, /\/api\/visit/);
+  assert.ok(!/TELEGRAM_BOT_TOKEN\s*[:=]\s*["']\d+:/.test(visit), "visit.js must not embed a bot token");
+  assert.ok(!/bot\d{6,}:[A-Za-z0-9_-]{20,}/.test(api), "api/visit.js must not embed a bot token");
+  assert.match(api, /process\.env\.TELEGRAM_BOT_TOKEN/);
+  assert.match(api, /process\.env\.TELEGRAM_CHAT_ID/);
+});
+
 test("the browser never persists an API secret", () => {
   const consoleJs = read("js/console.js");
   assert.ok(!/localStorage\.setItem\(\s*['"]ail_arten_el_key/.test(consoleJs),
